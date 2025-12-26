@@ -1,0 +1,14 @@
+[[tls.certificates]]
+  certFile = "/ssl/twake-server-fullchain.pem"
+  keyFile  = "/ssl/twake-server.key"
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/ssl/twake-server-fullchain.pem"
+      keyFile = "/ssl/twake-server.key"
+
+# Optional: TLS options for better security
+[tls.options]
+  [tls.options.default]
+    minVersion = "VersionTLS12"
+    sniStrict = false

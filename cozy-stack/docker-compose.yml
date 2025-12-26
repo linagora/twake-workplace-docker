@@ -1,62 +1,73 @@
-version: "3.8"
-name: cozy
 
 services:
-  # Database
-  couchdb:
-    image: couchdb:3.3
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - ./volumes/couchdb/data:/opt/couchdb/data
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "-f",
-          "${COUCHDB_PROTOCOL}://${COUCHDB_USER}:${COUCHDB_PASSWORD}@${COUCHDB_HOST}:${COUCHDB_PORT}/_up",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    pids_limit: 100
-    ulimits:
-      nofile: 65536
 
-  # Cozy Stack
-  stack:
-    image: cozy/cozy-stack
-    pull_policy: always
+  reverse-proxy:
+    image: traefik:v2.6
+    container_name: twake_reverse-proxy
     restart: unless-stopped
-    env_file: .env
+    ports:
+      - 443:443
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.twake.local`)"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+    volumes:
+      - ./traefik/config:/etc/traefik
+      - ./traefik/ssl/:/ssl/
+  twake-docker-socket:
+    container_name: twake_docker-socket
+    image: tecnativa/docker-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - CONTAINERS=1
+  couchdb:
+    image: couchdb:latest
+    container_name: cozy-couchdb
+    restart: unless-stopped
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+      COUCHDB_HOST: cozy-couchdb
+    volumes:
+      - ./volumes/couchdb:/opt/couchdb/data
+
+  cozy-stack:
+    image: cozy/cozy-stack:latest
+    container_name: cozy
+    restart: unless-stopped
     depends_on:
       - couchdb
-    healthcheck:
-      test: '[ "$(curl -fsSL http://localhost:8080/status | jq -r .status)" = "OK" ]'
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cozy.rule=HostRegexp(`{subdomain:dwho-home|dwho|oauthcallback|ik|ik-home}.twake.local`)"
+      - "traefik.http.routers.cozy.entrypoints=websecure"
+      - "traefik.http.routers.cozy.tls=true"
+      - "traefik.http.services.cozy.loadbalancer.server.port=8080"
+    environment:
+      COUCHDB_HOST: cozy-couchdb
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+    extra_hosts:
+      - "auth.twake.local:10.180.130.238"
     volumes:
       - ./volumes/cozy-stack/data:/var/lib/cozy/data
-      - ./volumes/cozy-stack/config:/etc/cozy/
-      - ./files/cozy.yml:/etc/cozy/cozy.yml
-
-  # Reverse Proxy
-  caddy:
-    image: caddy:2.7
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    depends_on:
-      - stack
-    volumes:
-      - ./volumes/caddy/data:/data
-      - ./volumes/caddy/etc:/etc/caddy
-      - ./files/Caddyfile:/etc/caddy/Caddyfile
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - ./config:/etc/cozy
+      
+  lemonldap:
+    image: yadd/lemonldap-ng-full:2.21.2-3
+    container_name: twake_lemonldap-ng
+    environment:
+      - SSODOMAIN=twake.local
+      - LOGLEVEL=debug
+      - PROTECTION=none
+      - PORTAL=https://auth.twake.local
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lemonldap-auth.rule=Host(`auth.twake.local`)"  
+      - "traefik.http.services.lemonldap.loadbalancer.server.port=80"
+      - "traefik.http.routers.lemonldap-man.rule=Host(`manager.twake.local`)"    
