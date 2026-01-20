@@ -20,7 +20,7 @@ services:
       - ./root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
       #- ./entrypoint.sh:/entrypoint.sh:ro
     extra_hosts:
-      - "sabre-dav.linagora.local:172.27.0.5"
+      - "sabre-dav.twake.local:172.27.0.5"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sidesvc.rule=Host(`tcalendar-side-service.twake.local`)"
