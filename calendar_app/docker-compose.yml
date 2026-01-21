@@ -13,7 +13,8 @@ services:
       - "traefik.http.services.newcalendar.loadbalancer.server.port=80"
 
   tcalendar-side-service:
-    image: linagora/twake-calendar-side-service:branch-master
+ #   image: linagora/twake-calendar-side-service:branch-master
+    build: .
     container_name: tcalendar-side-service.twake.local
     hostname: tcalendar-side-service.twake.local
     restart: unless-stopped
@@ -21,7 +22,7 @@ services:
       - twake-network
     volumes:
       - ./conf-side-service:/root/conf
-      - ./root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
+#      - ./root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
     extra_hosts:
       - "sabre-dav.twake.local:172.27.0.19"
     labels:
