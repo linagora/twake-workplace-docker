@@ -38,29 +38,45 @@ cd ..
 
 ## Step 3: Configure /etc/hosts
 
-The stack uses `*.twake.local` domains.
+The stack uses `*.twake.local` domains. These need to point to your **Traefik container IP** (the gateway for all services).
 
-Edit your `/etc/hosts` file:
+### 1️⃣ Find Traefik container IP
 
-``` bash
+Run this command to get the IP of the Traefik container:
+
+```bash
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' traefik
+```
+
+Assume it returns:
+
+```
+172.27.0.2
+```
+
+### 2️⃣ Edit /etc/hosts
+
+```bash
 sudo nano /etc/hosts
 ```
 
-Add the following entries:
+Add the following lines, replacing `172.27.0.2` with your Traefik IP:
 
-``` text
-127.0.0.1  tcalendar-side-service.twake.local sabre-dav.twake.local
-127.0.0.1  calendar.twake.local contacts.twake.local account.twake.local excal.twake.local
+```text
+172.27.0.2  tcalendar-side-service.twake.local sabre-dav.twake.local
+172.27.0.2  calendar.twake.local calendar-ng.twake.local contacts.twake.local account.twake.local excal.twake.local
 ```
 
 Save and exit.
+
+> ✅ This ensures all requests to `*.twake.local` go through Traefik, which handles routing and TLS for the services.
 
 ------------------------------------------------------------------------
 
 ## Step 4: Start Calendar Application
 
 ``` bash
-cd TCalendar_app
+cd calendar_app
 docker compose up -d
 ```
 
@@ -70,25 +86,12 @@ docker compose up -d
 
 The side service requires trusting the custom Root CA.
 
-Enter the container:
 
 ``` bash
-docker exec -it tcalendar-side-service.twake.local bash
-```
+cd calendar_app
+chmod +x patch-calendar.sh
+./patch-calendar.sh
 
-Run the following command **inside the container**:
-
-``` bash
-keytool -importcert -trustcacerts   -keystore $JAVA_HOME/lib/security/cacerts   -storepass changeit   -alias twake-root-ca   -file /usr/local/share/ca-certificates/root-ca.crt
-```
-
-Confirm with `yes` when prompted.
-
-Exit the container and restart it:
-
-``` bash
-exit
-docker restart tcalendar-side-service.twake.local
 ```
 
 ------------------------------------------------------------------------
@@ -98,9 +101,9 @@ docker restart tcalendar-side-service.twake.local
 You can now access the applications:
 
 -   Calendar: https://calendar.twake.local
--   Contacts: https://contacts.twake.local
+-   New calendar: https://calendar-ng.twake.local
+-   Contacts: https://contacts.twake.local/contacts/
 -   Account: https://account.twake.local
--   Public calendar: https://excal.twake.local
 
 
 ------------------------------------------------------------------------
