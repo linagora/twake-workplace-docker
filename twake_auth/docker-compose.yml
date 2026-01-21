@@ -6,7 +6,7 @@ services:
     container_name: lemonldap-ng
     volumes:
       #- lemonldap-conf:/var/lib/lemonldap-ng/conf
-      - ./config/lmConf-1.json:/var/lib/lemonldap-ng/config/lmConf-1.json
+      - ./config/lmConf-1.json:/var/lib/lemonldap-ng/conf/lmConf-1.json
     environment:
       - SSODOMAIN=twake.local
       - LOGLEVEL=debug

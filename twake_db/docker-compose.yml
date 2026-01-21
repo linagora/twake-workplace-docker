@@ -60,33 +60,51 @@ services:
       - twake-network  
       
   mongodb:
-    image: mongo:4.2
+    image: mongo:6
     container_name: mongodb
     restart: unless-stopped
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=mongoroot
-      - MONGO_INITDB_ROOT_PASSWORD=password
+      MONGO_INITDB_ROOT_USERNAME: mongoroot
+      MONGO_INITDB_ROOT_PASSWORD: password
+    networks:
+      - twake-network
     volumes:
       - ./data/mongodb_data/db:/data/db
-    networks:
-      - twake-network
-  rabbitmq:
-    image: rabbitmq:3.13.4-management
-    container_name: rabbitmq
-    restart: always
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    volumes:
-      - ./data/rabbitmq_data:/var/lib/rabbitmq  
+    ports:
+      - "27017:27017"
+    command: [ "mongod", "--bind_ip", "0.0.0.0" ]
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "check_running" ]
-      interval: 60s
-      timeout: 5s
-      start_period: 120s
-      retries: 3
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
+      start_period: 40s
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+
+  rabbitmq:
+    image: rabbitmq:3.13.3-management
+    container_name: rabbitmq
+    restart: unless-stopped
     networks:
       - twake-network
+    ports:
+      - "15672:15672"  # Management UI
+      - "5672:5672"    # AMQP port
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 3s
+      timeout: 30s
+      retries: 3
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
       
             
 volumes:

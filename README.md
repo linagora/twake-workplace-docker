@@ -126,9 +126,6 @@ docker ps
 
 Once everything is running, follow these steps to configure the services:
 
-### Configure Lemonldap-ng
-If Lemonldap-ng is not configured, you can restore the configuration file from ./twake_auth/config/lmConf-1.json in the manager interface : https://manager.twake.local/
-
 ### Configure LinShare
 
 1. Browse to `https://admin-linshare.twake.local` and log in using:
