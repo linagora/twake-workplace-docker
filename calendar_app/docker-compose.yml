@@ -24,7 +24,7 @@ services:
       - ./conf-side-service:/root/conf
 #      - ./root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
     extra_hosts:
-      - "sabre-dav.twake.local:172.27.0.19"
+      - "sabre-dav.twake.local:172.27.0.18"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.sidesvc.rule=Host(`tcalendar-side-service.twake.local`)"
@@ -103,7 +103,7 @@ services:
     restart: unless-stopped
     networks:
       twake-network:
-#        ipv4_address: 172.27.0.18
+        ipv4_address: 172.27.0.18
     environment:
       - SABRE_ENV=dev
       - ESN_MONGO_URI=mongoroot:password@mongodb:27017/esn_docker?authSource=admin
