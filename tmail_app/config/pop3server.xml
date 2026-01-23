@@ -1,0 +1,20 @@
+<pop3servers>
+    <pop3server enabled="true">
+        <jmxName>pop3server</jmxName>
+        <bind>0.0.0.0:995</bind>
+        <connectionBacklog>200</connectionBacklog>
+        <timeout>3600</timeout>
+        <connectiontimeout>3600</connectiontimeout>
+        <connectionLimit>0</connectionLimit>
+        <connectionLimitPerIP>0</connectionLimitPerIP>
+        <tls socketTLS="true" startTLS="false">
+            <privateKey>file://secrets/imap/tls.key</privateKey>
+            <certificates>file://secrets/imap/tls.crt</certificates>
+        </tls>
+	<ioWorkerCount>2</ioWorkerCount>
+	<maxExecutorCount>16</maxExecutorCount>
+        <handlerchain>
+            <handler class="org.apache.james.pop3server.core.CoreCmdHandlerLoader"/>
+        </handlerchain>
+    </pop3server>
+</pop3servers>

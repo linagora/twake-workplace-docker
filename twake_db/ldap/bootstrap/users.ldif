@@ -1,40 +1,119 @@
-dn: ou=People,dc=twake,dc=local
+# ========================
+# Organizational Unit
+# ========================
+dn: ou=users,dc=twake,dc=local
 objectClass: organizationalUnit
-ou: People
+ou: users
 
 
-dn: uid=user1,ou=People,dc=twake,dc=local
+# ========================
+# Admin user
+# ========================
+dn: uid=admin,ou=users,dc=twake,dc=local
 objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: admin
+cn: Admin Test
+sn: Test
+givenName: Admin Test
+mail: admin@twake.local
+userPassword: Admin@123
+uidNumber: 10000
+gidNumber: 10000
+homeDirectory: /home/admin
+loginShell: /bin/bash
+
+
+# ========================
+# User 1
+# ========================
+dn: uid=user1,ou=users,dc=twake,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
 uid: user1
 cn: User One
 sn: One
 givenName: User One
 mail: user1@twake.local
 userPassword: user1
+uidNumber: 10001
+gidNumber: 10001
+homeDirectory: /home/user1
+loginShell: /bin/bash
 
-dn: uid=user2,ou=People,dc=twake,dc=local
+
+# ========================
+# User 2
+# ========================
+dn: uid=user2,ou=users,dc=twake,dc=local
 objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
 uid: user2
 cn: User Two
 sn: Two
 givenName: User Two
 mail: user2@twake.local
 userPassword: user2
+uidNumber: 10002
+gidNumber: 10002
+homeDirectory: /home/user2
+loginShell: /bin/bash
 
-dn: uid=user3,ou=People,dc=twake,dc=local
+
+# ========================
+# User 3
+# ========================
+dn: uid=user3,ou=users,dc=twake,dc=local
 objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
 uid: user3
 cn: User Three
 sn: Three
 givenName: User Three
 mail: user3@twake.local
 userPassword: user3
+uidNumber: 10003
+gidNumber: 10003
+homeDirectory: /home/user3
+loginShell: /bin/bash
 
-dn: uid=admin,ou=People,dc=twake,dc=local
+
+# ========================
+# Test user
+# ========================
+dn: uid=test,ou=users,dc=twake,dc=local
 objectClass: inetOrgPerson
-uid: admin
-cn: Admin Test
-sn: Test
-givenName: Admin Test
-mail: admin@twake.local
-userPassword: admin
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: test
+cn: Test User
+sn: User
+mail: test@twake.local
+userPassword: Test@123
+uidNumber: 10004
+gidNumber: 10004
+homeDirectory: /home/test
+loginShell: /bin/bash
+
+
+# ========================
+# DungPD user
+# ========================
+dn: uid=dungpd,ou=users,dc=twake,dc=local
+objectClass: inetOrgPerson
+objectClass: posixAccount
+objectClass: shadowAccount
+uid: dungpd
+cn: Dung Pham
+sn: Pham
+mail: dungpd@twake.local
+userPassword: Dungpd@123
+uidNumber: 10005
+gidNumber: 10005
+homeDirectory: /home/dungpd
+loginShell: /bin/bash
+

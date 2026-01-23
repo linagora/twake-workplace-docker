@@ -1,0 +1,240 @@
+version: '3.3'
+
+networks:
+  twake-network:
+    external: true
+
+services:
+  # ==================== Database ====================
+  cassandra:
+    image: bitnamilegacy/cassandra:4.1.7
+    container_name: cassandra
+    hostname: cassandra
+    restart: always
+    networks:
+      - twake-network
+    environment:
+      - CASSANDRA_USER=cassandra
+      - CASSANDRA_PASSWORD=jK9mL2nP5qR8tW3vX
+      - CASSANDRA_PASSWORD_SEEDER=yes
+      - JAVA_TOOL_OPTIONS=-Dcassandra.skip_wait_for_gossip_to_settle=0
+      - HEAP_NEWSIZE=256M
+      - MAX_HEAP_SIZE=1024M
+    # no published ports (avoid conflicts with existing stack)
+    volumes:
+      - cassandra_data:/bitnami/cassandra
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== Cache & Queue ====================
+  redis:
+    image: bitnamilegacy/redis:7.4.2
+    container_name: redis
+    hostname: redis
+    restart: always
+    networks:
+      - twake-network
+    # no published ports (avoid conflicts with existing stack)
+    environment:
+      - REDIS_PASSWORD=xY4zA7bC9dE2fG5hJ
+    volumes:
+      - redis_data:/bitnami/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "xY4zA7bC9dE2fG5hJ", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== Search Engine ====================
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: opensearch
+    hostname: opensearch
+    restart: always
+    networks:
+      - twake-network
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx768m
+      - cluster.name=opensearch
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    # no published ports (avoid conflicts with existing stack)
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== Object Storage ====================
+  minio:
+    image: bitnamilegacy/minio:2025.2.7
+    container_name: minio
+    hostname: minio
+    restart: always
+    networks:
+      - twake-network
+    # no published ports (avoid conflicts with existing stack)
+    environment:
+      - MINIO_ROOT_USER=vW9xY2zA5bC8dE1fG4hJ3kL
+      - MINIO_ROOT_PASSWORD=hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+      - MINIO_SCHEME=http
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== TMail Backend ====================
+  tmail-backend:
+    image: linagora/tmail-backend:distributed-1.0.13
+    container_name: tmail-backend
+    hostname: tmail-backend
+    restart: always
+    networks:
+      - twake-network
+    ports:
+      # Mail ports still exposed directly
+      - "25:25"       # SMTP
+      - "143:143"     # IMAP
+      - "465:465"     # SMTPS
+      - "587:587"     # SMTP Submission
+      - "993:993"     # IMAPS
+      # JMAP and WebAdmin are expected to be fronted by your existing reverse proxy
+    volumes:
+      - ./config:/root/conf
+      - ./extensions-jars:/root/extensions-jars
+      - ./secrets:/root/secrets
+    labels:
+      - "traefik.enable=true"
+      # Define services explicitly (solves "too many services" error)
+      - "traefik.http.services.tmail-jmap.loadbalancer.server.port=9081"
+      - "traefik.http.services.tmail-webadmin.loadbalancer.server.port=8000"
+      # OIDC discovery → LemonLDAP (highest priority)
+      - "traefik.http.routers.mail-backend-oidc.rule=Host(`jmap.twake.local`) && Path(`/.well-known/openid-configuration`)"
+      - "traefik.http.routers.mail-backend-oidc.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-oidc.tls=true"
+      - "traefik.http.routers.mail-backend-oidc.priority=1000"
+      - "traefik.http.routers.mail-backend-oidc.service=lemonldap"
+      - "traefik.http.routers.mail-backend-oidc.middlewares=lemonldap-host"
+
+      # WebFinger with OpenID query → LemonLDAP (priority 400)
+      - "traefik.http.routers.mail-backend-webfinger-openid.rule=Host(`jmap.twake.local`) && Path(`/.well-known/webfinger`) && Query(`rel=http://openid.net/specs/connect/1.0/issuer`)"
+      - "traefik.http.routers.mail-backend-webfinger-openid.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-webfinger-openid.tls=true"
+      - "traefik.http.routers.mail-backend-webfinger-openid.priority=400"
+      - "traefik.http.routers.mail-backend-webfinger-openid.service=lemonldap"
+      - "traefik.http.routers.mail-backend-webfinger-openid.middlewares=lemonldap-host"
+
+      # JMAP .well-known/jmap endpoint (priority 500)
+      - "traefik.http.routers.mail-backend-jmap-wellknown.rule=Host(`jmap.twake.local`) && Path(`/.well-known/jmap`)"
+      - "traefik.http.routers.mail-backend-jmap-wellknown.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-jmap-wellknown.tls=true"
+      - "traefik.http.routers.mail-backend-jmap-wellknown.middlewares=cors-headers@file"
+      - "traefik.http.routers.mail-backend-jmap-wellknown.priority=500"
+      #- "traefik.http.services.mail-backend-jmap-wellknown.loadbalancer.server.port=9081"
+      - "traefik.http.routers.mail-backend-jmap-wellknown.service=tmail-jmap"
+
+      # JMAP /jmap endpoints (priority 300)
+      - "traefik.http.routers.mail-backend-jmap.rule=Host(`jmap.twake.local`) && PathPrefix(`/jmap`)"
+      - "traefik.http.routers.mail-backend-jmap.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-jmap.tls=true"
+      - "traefik.http.routers.mail-backend-jmap.middlewares=cors-headers@file"
+      - "traefik.http.routers.mail-backend-jmap.priority=300"
+      #- "traefik.http.services.mail-backend-jmap.loadbalancer.server.port=9081"
+      - "traefik.http.routers.mail-backend-jmap.service=tmail-jmap"
+      
+      # WebFinger default (non-OpenID queries) → TMail Backend (priority 200)
+      - "traefik.http.routers.mail-backend-webfinger.rule=Host(`jmap.twake.local`) && Path(`/.well-known/webfinger`)"
+      - "traefik.http.routers.mail-backend-webfinger.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-webfinger.tls=true"
+      - "traefik.http.routers.mail-backend-webfinger.middlewares=cors-headers@file"
+      - "traefik.http.routers.mail-backend-webfinger.priority=200"
+      #- "traefik.http.services.mail-backend-webfinger.loadbalancer.server.port=9081"
+      - "traefik.http.routers.mail-backend-webfinger.service=tmail-jmap"
+
+      # WebAdmin API (fallback, lowest priority)
+      - "traefik.http.routers.mail-backend-webadmin.rule=Host(`jmap.twake.local`) && PathPrefix(`/`)"
+      - "traefik.http.routers.mail-backend-webadmin.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-webadmin.tls=true"
+      - "traefik.http.routers.mail-backend-webadmin.middlewares=cors-headers@file"
+      - "traefik.http.routers.mail-backend-webadmin.priority=1"
+      #- "traefik.http.services.mail-backend-webadmin.loadbalancer.server.port=8000"
+      - "traefik.http.routers.mail-backend-webadmin.service=tmail-webadmin"
+      # Middleware definitions
+      - "traefik.http.middlewares.lemonldap-host.headers.customRequestHeaders.Host=jmap.twake.local"
+    environment:
+      - JAVA_TOOL_OPTIONS=
+          -Xms2000m
+          -Xmx2000m
+          -XX:+AlwaysPreTouch
+          -XX:+ExitOnOutOfMemoryError
+          -Xlog:gc*:file=/root/gc.log
+          -XX:MaxGCPauseMillis=20
+          -XX:ParallelGCThreads=2
+          -Djames.protocols.mdc.hostname=false
+          -Dextra.props=/root/conf/jvm.properties
+    depends_on:
+      - cassandra
+      - opensearch
+      - redis
+      - minio
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -s -o /dev/null 'http://localhost:8000/healthcheck?check=IMAPHealthCheck&check=Cassandra%20backend&check=RabbitMQ%20backend&strict'"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+
+  # ==================== TMail Web UI ====================
+  tmail-web:
+    image: linagora/tmail-web:v0.23.0
+    container_name: tmail-web
+    hostname: tmail-web
+    restart: always
+    networks:
+      - twake-network
+    # Port accessed via existing reverse proxy (Traefik)
+    volumes:
+      - ./tmail-web-conf/.env:/usr/share/nginx/html/assets/env.file
+      - ./tmail-web-conf/env.fcm:/usr/share/nginx/html/assets/configurations/env.fcm
+      - ./tmail-web-conf/app_dashboard.json:/usr/share/nginx/html/assets/configurations/app_dashboard.json
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mail-front.rule=Host(`mail.twake.local`)"
+    depends_on:
+      - tmail-backend
+
+  # ==================== phpLDAPadmin (LDAP UI) ====================
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    hostname: phpldapadmin
+    restart: always
+    networks:
+      - twake-network
+    ports:
+      - "8081:80"  # Access UI on http://localhost:8081
+    environment:
+      - "PHPLDAPADMIN_HTTPS=false"
+      - "PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT=never"
+      - "PHPLDAPADMIN_TRUST_PROXY_SSL=true"
+      - "PHPLDAPADMIN_LDAP_HOSTS=#PYTHON2BASH:[{ 'ldap' : [ { 'server' : [ { 'tls': False }, { 'port' : 389 } ] }, { 'login' : [ { 'bind_id' : 'cn=admin,dc=twake,dc=local' } ] } ] }]"
+    depends_on:
+      - cassandra
+
+volumes:
+  cassandra_data:
+    driver: local
+  redis_data:
+    driver: local
+  opensearch_data:
+    driver: local
+  minio_data:
+    driver: local

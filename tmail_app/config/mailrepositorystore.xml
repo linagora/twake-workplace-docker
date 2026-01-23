@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<!-- Read https://james.apache.org/server/config-mailrepositorystore.html for further details -->
+
+<mailrepositorystore>
+    <defaultProtocol>cassandra</defaultProtocol>
+    <mailrepositories>
+        <mailrepository class="org.apache.james.mailrepository.cassandra.CassandraMailRepository">
+            <protocols>
+                <protocol>cassandra</protocol>
+            </protocols>
+        </mailrepository>
+    </mailrepositories>
+</mailrepositorystore>

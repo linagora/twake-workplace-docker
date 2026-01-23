@@ -1,0 +1,11 @@
+<usersrepository name="LocalUsers"
+  class="org.apache.james.user.ldap.ReadOnlyUsersLDAPRepository"
+  ldapHost="ldap://ldap:389"
+  userBase="dc=twake,dc=local"
+  principal="cn=admin,dc=twake,dc=local"
+  credentials="admin"
+  userIdAttribute="mail"
+  userObjectClass="inetOrgPerson"
+  administratorId="admin@twake.local">
+  <enableVirtualHosting>true</enableVirtualHosting>
+</usersrepository>
