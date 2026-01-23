@@ -34,7 +34,7 @@ create_instance() {
   else
     echo "➕ Creating instance $DOMAIN"
     cozy-stack instances add \
-      --apps home,linshare,drive,settings \
+      --apps home,linshare,drive,mail,settings \
       --email "$EMAIL" \
       --context-name default \
       "$DOMAIN"
@@ -52,6 +52,12 @@ for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
   cozy-stack feature flags --domain "$DOMAIN" \
     '{"linshare.embedded-app-url": "https://linshare.twake.local/new/"}'
 done
+
+for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
+  cozy-stack feature flags --domain "$DOMAIN" \
+    '{"mail.embedded-app-url": "https://mail.twake.local/"}'
+done
+
 
 for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
   cozy-stack feature flags --domain "$DOMAIN" \

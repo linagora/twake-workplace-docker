@@ -1,6 +1,6 @@
 window.openpaas = {
     AUTH_PROVIDER: 'oidc',
-    OPENPAAS_API_URL: 'https://tcalendar-side-service.twake.local/',
+    OPENPAAS_API_URL: 'https://tcalendar-side-service.twake.local',
     BASE_URL: '',
     ACCOUNT_SPA_URL: 'https://account.twake.local/account/',
     MAILTO_SPA_URL: 'http://tmail.twake.local',

@@ -449,7 +449,7 @@ csp_allowlist:
   # img:    https://allowed.domain.com/
   # style:  https://allowed.domain.com/
   # font:   https://allowed.domain.com/
-  frame: "https://linshare.twake.local"
+  frame: "https://linshare.twake.local https://mail.twake.local"
 
   # It is also possible to configure the CSP policy per context. The values are
   # cumulative with the global csp allowlist.
