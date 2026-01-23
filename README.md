@@ -46,7 +46,7 @@ Secure file sharing and storage.
 ### 1. Create the Network
 Before starting any services, create the shared network:
 ```bash
-docker network create twake-net --subnet=172.27.0.0/16
+docker network create twake-network --subnet=172.27.0.0/16
 ```
 
 ### 2. Start Services
