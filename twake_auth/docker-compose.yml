@@ -51,6 +51,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - CONTAINERS=1  
+      - SYSTEM=1 
+      - EXEC=1  
     networks:
       - twake-network    
         

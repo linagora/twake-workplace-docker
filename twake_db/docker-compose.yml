@@ -6,6 +6,7 @@ services:
       LDAP_DOMAIN: "twake.local"
       LDAP_ADMIN_PASSWORD: admin
     volumes:
+      - ldap_data:/var/lib/ldap
       - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
     restart: unless-stopped
     ports:
@@ -25,10 +26,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - ./data/postgres_data:/var/lib/postgresql/data
+      - /postgres_data:/var/lib/postgresql/data
       - ./postgres/init-db-postgres:/docker-entrypoint-initdb.d/
       - ./postgres/scripts:/scripts/
-
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - twake-network
 
@@ -40,6 +46,8 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    #volumes:
+      #- /valkey_data:/bitnami/valkey/data  
     networks:
       - twake-network
 
@@ -52,7 +60,7 @@ services:
       COUCHDB_PASSWORD: password
       COUCHDB_HOST: couchdb
     volumes:
-      - ./data/couchdb:/opt/couchdb/data
+      - /couchdb_data:/opt/couchdb/data
     ports:
       - "5984:5984"  
     networks:
@@ -68,7 +76,7 @@ services:
     networks:
       - twake-network
     volumes:
-      - ./data/mongodb_data/db:/data/db
+      - /mongodb_data/db:/data/db
     ports:
       - "27017:27017"
     command: [ "mongod", "--bind_ip", "0.0.0.0" ]
@@ -93,6 +101,9 @@ services:
     restart: unless-stopped
     networks:
       - twake-network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq  
+      - ./rabbitmq/rabbitmq-definitions.json:/etc/rabbitmq/definitions.json
     ports:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP port
@@ -104,10 +115,116 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-      
+      RABBITMQ_LOAD_DEFINITIONS: /etc/rabbitmq/definitions.json
+  # ==================== Database ====================
+  cassandra:
+    image: bitnamilegacy/cassandra:4.1.7
+    container_name: cassandra
+    hostname: cassandra
+    restart: always
+    networks:
+      - twake-network
+    environment:
+      - CASSANDRA_USER=cassandra
+      - CASSANDRA_PASSWORD=jK9mL2nP5qR8tW3vX
+      - CASSANDRA_PASSWORD_SEEDER=yes
+      - JAVA_TOOL_OPTIONS=-Dcassandra.skip_wait_for_gossip_to_settle=0
+      - HEAP_NEWSIZE=256M
+      - MAX_HEAP_SIZE=1024M
+    # no published ports (avoid conflicts with existing stack)
+    volumes:
+      - cassandra_data:/bitnami/cassandra
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== Cache & Queue ====================
+  redis:
+    image: bitnamilegacy/redis:7.4.2
+    container_name: redis
+    hostname: redis
+    restart: always
+    networks:
+      - twake-network
+    # no published ports (avoid conflicts with existing stack)
+    environment:
+      - REDIS_PASSWORD=xY4zA7bC9dE2fG5hJ
+    volumes:
+      - redis_data:/bitnami/redis/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "xY4zA7bC9dE2fG5hJ", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== Search Engine ====================
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: opensearch
+    hostname: opensearch
+    restart: always
+    networks:
+      - twake-network
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx768m
+      - cluster.name=opensearch
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    # no published ports (avoid conflicts with existing stack)
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==================== Object Storage ====================
+  minio:
+    image: bitnamilegacy/minio:2025.2.7
+    container_name: minio
+    hostname: minio
+    restart: always
+    networks:
+      - twake-network
+    # no published ports (avoid conflicts with existing stack)
+    environment:
+      - MINIO_ROOT_USER=vW9xY2zA5bC8dE1fG4hJ3kL
+      - MINIO_ROOT_PASSWORD=hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+      - MINIO_SCHEME=http
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5      
             
 volumes:
   postgres_data:
+    driver: local
+  ldap_data:
+    driver: local
+  couchdb_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  cassandra_data:
+    driver: local
+  redis_data:
+    driver: local
+  opensearch_data:
+    driver: local
+  minio_data:
+    driver: local    
+  #valkey_data:
+    #driver: local
+
 
 networks:
   twake-network:

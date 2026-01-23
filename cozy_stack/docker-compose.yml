@@ -26,7 +26,7 @@ services:
       - "user2.twake.local:172.27.0.100"
       - "user3.twake.local:172.27.0.100"
     volumes:
-      - ./volumes/data:/var/lib/cozy/
+      - /cozy-data:/var/lib/cozy/
       - ./config/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
       - ./config/cozy.yaml:/etc/cozy/cozy.yaml
       - ./config/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
@@ -36,7 +36,24 @@ services:
       - ./config/example-shortcut.json:/usr/local/bin/example-shortcut.json
     networks:
       - twake-network  
-
+  patcher-cozy:
+    image: docker:26-cli
+    container_name: patcher-cozy
+    networks:
+      - twake-network
+    #environment:
+      #DOCKER_HOST: tcp://docker-socket:2375
+    depends_on:
+      - cozy-stack  
+    environment:
+      - CONTAINER=cozyt   
+    volumes:
+      - ./scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "/scripts/entrypoint.sh"]
+    restart: "no" 
+volumes:
+  cozy-data:    
 networks:
   twake-network:
     external: true

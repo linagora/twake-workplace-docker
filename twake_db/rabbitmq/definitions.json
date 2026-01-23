@@ -1,0 +1,23 @@
+{
+    "users": [
+        {
+            "name": "guest",
+            "password": "guest",
+            "tags": "administrator"
+        }
+    ],
+    "vhosts": [
+        {
+            "name": "tmail"
+        }
+    ],
+    "permissions": [
+        {
+            "user": "guest",
+            "vhost": "tmail",
+            "configure": ".*",
+            "write": ".*",
+            "read": ".*"
+        }
+    ]
+}

@@ -5,92 +5,7 @@ networks:
     external: true
 
 services:
-  # ==================== Database ====================
-  cassandra:
-    image: bitnamilegacy/cassandra:4.1.7
-    container_name: cassandra
-    hostname: cassandra
-    restart: always
-    networks:
-      - twake-network
-    environment:
-      - CASSANDRA_USER=cassandra
-      - CASSANDRA_PASSWORD=jK9mL2nP5qR8tW3vX
-      - CASSANDRA_PASSWORD_SEEDER=yes
-      - JAVA_TOOL_OPTIONS=-Dcassandra.skip_wait_for_gossip_to_settle=0
-      - HEAP_NEWSIZE=256M
-      - MAX_HEAP_SIZE=1024M
-    # no published ports (avoid conflicts with existing stack)
-    volumes:
-      - cassandra_data:/bitnami/cassandra
-    healthcheck:
-      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
-  # ==================== Cache & Queue ====================
-  redis:
-    image: bitnamilegacy/redis:7.4.2
-    container_name: redis
-    hostname: redis
-    restart: always
-    networks:
-      - twake-network
-    # no published ports (avoid conflicts with existing stack)
-    environment:
-      - REDIS_PASSWORD=xY4zA7bC9dE2fG5hJ
-    volumes:
-      - redis_data:/bitnami/redis/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "xY4zA7bC9dE2fG5hJ", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # ==================== Search Engine ====================
-  opensearch:
-    image: opensearchproject/opensearch:2.18.0
-    container_name: opensearch
-    hostname: opensearch
-    restart: always
-    networks:
-      - twake-network
-    environment:
-      - discovery.type=single-node
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx768m
-      - cluster.name=opensearch
-      - DISABLE_SECURITY_PLUGIN=true
-      - DISABLE_INSTALL_DEMO_CONFIG=true
-    # no published ports (avoid conflicts with existing stack)
-    volumes:
-      - opensearch_data:/usr/share/opensearch/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # ==================== Object Storage ====================
-  minio:
-    image: bitnamilegacy/minio:2025.2.7
-    container_name: minio
-    hostname: minio
-    restart: always
-    networks:
-      - twake-network
-    # no published ports (avoid conflicts with existing stack)
-    environment:
-      - MINIO_ROOT_USER=vW9xY2zA5bC8dE1fG4hJ3kL
-      - MINIO_ROOT_PASSWORD=hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
-      - MINIO_SCHEME=http
-    volumes:
-      - minio_data:/bitnami/minio/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # ==================== TMail Backend ====================
   tmail-backend:
@@ -181,11 +96,7 @@ services:
           -XX:ParallelGCThreads=2
           -Djames.protocols.mdc.hostname=false
           -Dextra.props=/root/conf/jvm.properties
-    depends_on:
-      - cassandra
-      - opensearch
-      - redis
-      - minio
+
     healthcheck:
       test: ["CMD-SHELL", "curl -f -s -o /dev/null 'http://localhost:8000/healthcheck?check=IMAPHealthCheck&check=Cassandra%20backend&check=RabbitMQ%20backend&strict'"]
       interval: 60s
@@ -226,8 +137,7 @@ services:
       - "PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT=never"
       - "PHPLDAPADMIN_TRUST_PROXY_SSL=true"
       - "PHPLDAPADMIN_LDAP_HOSTS=#PYTHON2BASH:[{ 'ldap' : [ { 'server' : [ { 'tls': False }, { 'port' : 389 } ] }, { 'login' : [ { 'bind_id' : 'cn=admin,dc=twake,dc=local' } ] } ] }]"
-    depends_on:
-      - cassandra
+
 
 volumes:
   cassandra_data:
