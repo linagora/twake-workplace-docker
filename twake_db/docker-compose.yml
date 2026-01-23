@@ -103,7 +103,7 @@ services:
       - twake-network
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq  
-      - ./rabbitmq/rabbitmq-definitions.json:/etc/rabbitmq/definitions.json
+      - ./rabbitmq/entrypoint.sh:/etc/rabbitmq/rabbitmq-init.sh
     ports:
       - "15672:15672"  # Management UI
       - "5672:5672"    # AMQP port
@@ -115,7 +115,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_LOAD_DEFINITIONS: /etc/rabbitmq/definitions.json
+    entrypoint: ["/bin/bash", "/etc/rabbitmq/rabbitmq-init.sh"]  
   # ==================== Database ====================
   cassandra:
     image: bitnamilegacy/cassandra:4.1.7
@@ -159,28 +159,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # ==================== Search Engine ====================
-  opensearch:
-    image: opensearchproject/opensearch:2.18.0
-    container_name: opensearch
-    hostname: opensearch
-    restart: always
-    networks:
-      - twake-network
-    environment:
-      - discovery.type=single-node
-      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx768m
-      - cluster.name=opensearch
-      - DISABLE_SECURITY_PLUGIN=true
-      - DISABLE_INSTALL_DEMO_CONFIG=true
-    # no published ports (avoid conflicts with existing stack)
-    volumes:
-      - opensearch_data:/usr/share/opensearch/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+
 
   # ==================== Object Storage ====================
   minio:
@@ -217,8 +196,6 @@ volumes:
   cassandra_data:
     driver: local
   redis_data:
-    driver: local
-  opensearch_data:
     driver: local
   minio_data:
     driver: local    

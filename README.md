@@ -16,7 +16,7 @@ Centralized data storage services used by other components.
 
 ### 2. Authentication & Proxy Layer (`twake_auth`)
 Handles entry points and security.
-*   **Traefik**: Reverse proxy. Handles routing to all services via `twake-net` and manages SSL.
+*   **Traefik**: Reverse proxy. Handles routing to all services via `twake-network` and manages SSL.
 *   **LemonLDAP::NG**: Web Single Sign-On (SSO).
 *   **Docker Socket Proxy**: Securely exposes the Docker socket to Traefik.
 
@@ -94,13 +94,21 @@ cd calendar_app
 docker-compose up -d
 cd ..
 ```
+#### Step 7: Start TMail Application
+```bash
+cd tmail_app
+docker-compose up -d
+cd ..
+```
 
-#### Step 7: Start Cozy Stack
+#### Step 8: Start Cozy Stack
 ```bash
 cd cozy_stack
 docker-compose up -d
 cd ..
 ```
+
+
 
 ### 3. Verify Deployment
 Check that all services are running:
@@ -113,11 +121,11 @@ docker ps
 *   **Domains**: The stack is configured for `*.twake.local` domains. Configure your `/etc/hosts` with:
 
 ```bash
-127.0.0.1  linshare.twake.local admin-linshare.twake.local upload-request-linshare.twake.local meet.twake.local onlyoffice.twake.local calendar.twake.local contacts.twake.local account.twake.local excal.twake.local
+127.0.0.1  linshare.twake.local admin-linshare.twake.local upload-request-linshare.twake.local meet.twake.local onlyoffice.twake.local calendar.twake.local contacts.twake.local account.twake.local excal.twake.local mail.twake.local jmap.twake.local
 127.0.0.1  oauthcallback.twake.local manager.twake.local auth.twake.local tcalendar-side-service.twake.local sabre-dav.twake.local
-127.0.0.1  user1.twake.local user1-home.twake.local user1-linshare.twake.local user1-drive.twake.local user1-settings.twake.local
-127.0.0.1  user2.twake.local user2-home.twake.local user2-linshare.twake.local user2-drive.twake.local user2-settings.twake.local
-127.0.0.1  user3.twake.local user3-home.twake.local user3-linshare.twake.local user3-drive.twake.local user3-settings.twake.local
+127.0.0.1  user1.twake.local user1-home.twake.local user1-linshare.twake.local user1-drive.twake.local user1-settings.twake.local user1-mail.twake.local
+127.0.0.1  user2.twake.local user2-home.twake.local user2-linshare.twake.local user2-drive.twake.local user2-settings.twake.local user2-mail.twake.local
+127.0.0.1  user3.twake.local user3-home.twake.local user3-linshare.twake.local user3-drive.twake.local user3-settings.twake.local user3-mail.twake.local
 ```
 
 *   **Certificates**: SSL certificates are expected in `twake_auth/traefik/ssl/`.
@@ -145,37 +153,12 @@ Once everything is running, follow these steps to configure the services:
    - Select **OIDC**
    - Fill in the **Associated domain identifier** with `domain_discriminator` and save
 
-### Configure Calendar
-In order to configure calendar, run the following command:
-```bash
-cd calendar_app
-./patch-calendar.sh
-```  
 
-### Configure OnlyOffice
-In order to integrate OnlyOffice with cozy, run the following command:
-```bash
-cd onlyoffice_app
-./patch-onlyoffice.sh
-```   
+To access cozy stack instances, use the following credentials:
 
-### Configure Cozy Stack
-
-1. For cozy stack instances setup, run the following command:
-```bash
-cd cozy_stack
-./patch-cozy.sh
-```
-2. This will create three cozy instances: user1, user2 and user3
-The credentials are the following:
-   - **Username**: `user1`
-   - **Password**: `user1`
-
-   - **Username**: `user2`
-   - **Password**: `user2`
-
-   - **Username**: `user3` 
-   - **Password**: `user3`
-
-3. To access cozy stack instances, browse to `https://user1.twake.local`, `https://user2.twake.local` and `https://user3.twake.local`
-
+| Workplace | Login | Password |
+| :--- | :--- | :--- |
+| `https://user1.twake.local` | `user1` | `user1` |
+| `https://user2.twake.local` | `user2` | `user2` |
+| `https://user3.twake.local` | `user3` | `user3` |
+      
