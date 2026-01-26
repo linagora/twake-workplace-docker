@@ -147,7 +147,11 @@ Once everything is running, follow these steps:
 
 ### Note
 For this twake workplace docker compose version, we are not integrating Linshare in the twake home.
-If you want to integrate Linshare in the twake home, you need to run this patch : [cozy_stack/patch-cozy.sh](cozy_stack/patch-cozy.sh)
+If you want to integrate Linshare in the twake home, you need to run this patch : [cozy_stack/patch-cozy.sh](cozy_stack/patch-cozy.sh) with :
+```bash
+cd cozy_stack
+./patch-cozy.sh
+```
 
 ### Configure LinShare
 
