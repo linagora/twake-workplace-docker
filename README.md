@@ -4,7 +4,7 @@ This repository contains the infrastructure and services for Twake POC. The syst
 
 ## Architecture Overview
 
-The POC is split into 5 operational layers:
+The POC is split into the following operational layers:
 
 ### 1. Database Layer (`twake_db`)
 Centralized data storage services used by other components.
