@@ -1,21 +1,10 @@
 #!/bin/sh
 set -e
 
+# Use environment variable or fallback
 CONTAINER="${CONTAINER:-cozyt}"
-ENABLE_APPS="${ENABLE_APPS:-}"
 
-# Helper: check if an app is enabled
-has_app() {
-  echo ",$ENABLE_APPS," | grep -q ",$1,"
-}
-
-APPS="home,drive,settings"
-
-has_app linshare && APPS="$APPS,linshare"
-has_app mail     && APPS="$APPS,mail"
-has_app calendar && APPS="$APPS,calendar"
-has_app meet     && APPS="$APPS,meet"
-# List of users 
+# List of users as plain space-separated string
 USERS="user1:user1@twake.local user2:user2@twake.local user3:user3@twake.local"
 
 LINSHARE_URL="https://linshare.twake.local/new"
@@ -43,7 +32,7 @@ create_instance() {
   else
     echo "➕ Creating instance $DOMAIN"
     cozy-stack instances add \
-      --apps "$APPS" \
+      --apps home,drive,mail,settings \
       --email "$EMAIL" \
       --context-name default \
       "$DOMAIN"
@@ -58,22 +47,12 @@ for user in user1:user1@twake.local user2:user2@twake.local user3:user3@twake.lo
 done
 
 echo "▶ Applying feature flags..."
-
-if has_app linshare; then
-  for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
-    cozy-stack feature flags --domain "$DOMAIN" \
-      '{"linshare.embedded-app-url": "https://linshare.twake.local/new/"}'
-  done
-fi
-
-if has_app mail; then
-  for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
-    cozy-stack feature flags --domain "$DOMAIN" \
-      '{"mail.embedded-app-url": "https://mail.twake.local"}'
-  done
-fi
-
 for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
+  #cozy-stack feature flags --domain "$DOMAIN" \
+    #'{"linshare.embedded-app-url": "https://linshare.twake.local/new/"}'
+
+  cozy-stack feature flags --domain "$DOMAIN" \
+    '{"mail.embedded-app-url": "https://mail.twake.local"}'
 
   cozy-stack feature flags --domain "$DOMAIN" \
     '{"home.add-tile.add-shortcut": "true"}'
@@ -97,3 +76,4 @@ done
 
 echo "✅ Cozy patch completed"
 EOF
+

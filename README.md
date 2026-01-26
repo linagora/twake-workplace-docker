@@ -37,6 +37,17 @@ Secure file sharing and storage.
 ### 5. Cozy Stack (`cozy_stack`)
 *   **Cozy Stack**: Personal cloud platform server.
 
+### 6. OnlyOffice Application (`onlyoffice_app`)
+*   **OnlyOffice**: Document editing and collaboration.
+
+### 7. Calendar Application (`calendar_app`)
+*   **Calendar**: Calendar application.
+
+### 8. TMail Application (`tmail_app`)
+*   **TMail**: Email application.
+
+
+
 ## Prerequisites
 
 *   **Docker** and **Docker Compose** installed.
@@ -132,7 +143,11 @@ docker ps
 
 ## Quick Start Guide
 
-Once everything is running, follow these steps to configure the services:
+Once everything is running, follow these steps:
+
+### Note
+For this twake workplace docker compose version, we are not integrating Linshare in the twake home.
+If you want to integrate Linshare in the twake home, you need to run this patch : [cozy_stack/patch-cozy.sh](cozy_stack/patch-cozy.sh)
 
 ### Configure LinShare
 
@@ -153,6 +168,11 @@ Once everything is running, follow these steps to configure the services:
    - Select **OIDC**
    - Fill in the **Associated domain identifier** with `domain_discriminator` and save
 
+### Browser self-signed certificate
+
+Add the self-signed certificate to your browser:
+
+[twake_auth/traefik/ssl/root-ca.pem](twake_auth/traefik/ssl/root-ca.pem)
 
 To access cozy stack instances, use the following credentials:
 

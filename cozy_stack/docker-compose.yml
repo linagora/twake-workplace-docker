@@ -24,7 +24,7 @@ services:
       - "user2.twake.local:172.27.0.100"
       - "user3.twake.local:172.27.0.100"
     volumes:
-      - /cozy-data:/var/lib/cozy/
+      - cozy-data:/var/lib/cozy/
       - ./config/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
       - ./config/cozy.yaml:/etc/cozy/cozy.yaml
       - ./config/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
@@ -44,7 +44,7 @@ services:
       - cozy-stack  
     environment:
       - CONTAINER=cozyt   
-      - ENABLE_APPS="mail,calendar,meet"
+      #- ENABLE_APPS="mail,calendar,meet"
     volumes:
       - ./scripts:/scripts
       - /var/run/docker.sock:/var/run/docker.sock

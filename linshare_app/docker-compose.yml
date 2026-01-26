@@ -5,7 +5,7 @@ services:
         restart: on-failure
         image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-backend:6.5.3
         volumes:
-            - /linshare_data/lib:/var/lib/linshare
+            - linshare_data:/var/lib/linshare
             - ./config/backend/log4j.properties:/etc/linshare/log4j.properties
             - ./config/root-ca.pem:/new-ca/root-ca.pem
             - ./config/backend/linshare.extra.properties:/etc/linshare/linshare.extra.properties            

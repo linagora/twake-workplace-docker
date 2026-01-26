@@ -48,6 +48,8 @@ services:
     environment:
       VALKEY_PASSWORD: valkeypass
     restart: unless-stopped
+    volumes:
+      - valkey_data:/bitnami/valkey/data
     labels:
       - "traefik.enable=false"
     #ports:
@@ -191,6 +193,8 @@ volumes:
   redis_data:
     driver: local
   minio_data:
+    driver: local  
+  valkey_data:
     driver: local    
 
 
