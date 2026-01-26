@@ -174,6 +174,15 @@ cd cozy_stack
 
 ### Browser self-signed certificate
 
+This POC uses a self-signed Certificate Authority (CA).
+
+When Cozy Stack integrates external applications (Mail,LinShare, etc.), they are loaded inside **iframes**.  
+If the CA is **not trusted by the browser**, modern browsers will block or partially break these iframes due to TLS and security restrictions.
+
+To avoid iframe loading issues, mixed-content warnings, and blocked resources, you **must trust the CA certificate** used by the reverse-proxy (Traefik).
+
+### What to do
+
 Add the self-signed certificate to your browser:
 
 [twake_auth/traefik/ssl/root-ca.pem](twake_auth/traefik/ssl/root-ca.pem)
