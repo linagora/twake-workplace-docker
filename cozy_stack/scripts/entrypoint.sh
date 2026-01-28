@@ -7,7 +7,8 @@ set -e
 
 # Use the CONTAINER env variable from Docker Compose
 CONTAINER="${CONTAINER:-cozyt}"   # fallback to 'cozyt' if not set
-PATCH_SCRIPT="/scripts/patch-cozy.sh"
+ADD_INSTANCES_SCRIPT="/scripts/patch-cozy.sh"
+ADD_SHORTCUTS_SCRIPT="/scripts/add-shortcut.sh"
 
 echo "▶ Waiting for Docker API..."
 until docker ps >/dev/null 2>&1; do
@@ -30,12 +31,23 @@ done
 echo "✔ Cozy HTTP server is ready"
 
 # Apply the patch
-if [ -f "$PATCH_SCRIPT" ]; then
+if [ -f "$ADD_INSTANCES_SCRIPT" ]; then
   echo "▶ Applying Cozy patch"
   ENABLE_APPS="${ENABLE_APPS}" sh /scripts/patch-cozy.sh
 
   echo "🎉 Cozy patch completed successfully"
 else
-  echo "❌ Patch script $PATCH_SCRIPT not found!"
+  echo "❌ Patch script $ADD_INSTANCES_SCRIPT not found!"
+  exit 1
+fi
+
+# Apply the shortcuts creation
+if [ -f "$ADD_SHORTCUTS_SCRIPT" ]; then
+  echo "▶ Applying Shortcut apps creation"
+  ENABLE_APPS="${ENABLE_APPS}" sh /scripts/add-shortcut.sh
+
+  echo "🎉 Shortcut apps creation completed successfully"
+else
+  echo "❌ Patch script $ADD_SHORTCUTS_SCRIPT not found!"
   exit 1
 fi

@@ -89,14 +89,14 @@ echo "▶ Applying global feature defaults..."
 cozy-stack features defaults \
   '{"drive.office": {"enabled": true, "write": true}}'
 
-echo "▶ Creating shortcuts..."
-for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
-  /usr/local/bin/create-shortcut.sh \
-    "\$DOMAIN" \
-    /usr/local/bin/example-shortcut.json \
-    http://localhost:6060 \
-    "https://\$DOMAIN"
-done
+# echo "▶ Creating shortcuts..."
+# for DOMAIN in user1.twake.local user2.twake.local user3.twake.local; do
+#   /usr/local/bin/create-shortcut.sh \
+#     "\$DOMAIN" \
+#     /usr/local/bin/example-shortcut.json \
+#     http://localhost:6060 \
+#     "https://\$DOMAIN"
+# done
 
 echo "✅ Cozy patch completed"
 EOF
