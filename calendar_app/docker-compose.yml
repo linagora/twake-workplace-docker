@@ -131,15 +131,9 @@ services:
       - ./secret.env
     environment:
       - SABRE_ENV=dev
-<<<<<<< HEAD
       #- ESN_MONGO_URI=mongoroot:password@mongodb:27017/esn_docker?authSource=admin
       #- SABRE_MONGO_URI=mongoroot:password@mongodb:27017/sabre?authSource=admin
       - ESN_HOST=tcalendar-side-service.${BASE_DOMAIN}
-=======
-      - ESN_MONGO_URI=mongoroot:password@mongodb:27017/esn_docker?authSource=admin
-      - SABRE_MONGO_URI=mongoroot:password@mongodb:27017/sabre?authSource=admin
-      - ESN_HOST=tcalendar-side-service.twake.local
->>>>>>> bc2d1d4151d9bab2a2188c5cd548a1aea0b7e891
       - ESN_PORT=80
       - AMQP_HOST=rabbitmq
       - AMQP_PORT=5672

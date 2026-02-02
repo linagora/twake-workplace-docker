@@ -4,16 +4,13 @@ services:
     image: busybox
     volumes:
       - ./synapse:/data
-    command: sh -c "chown -R 991:991 /data && chmod -R u+rwX /data"
+    command: sh -c "chown -R 991:991 /data/media_store && chmod -R u+rwX /data/media_store"
     restart: "no"
 
   synapse:
-#    image: matrixdotorg/synapse:v1.119.0
-    build:
-      context: ./synapse
-      dockerfile: Dockerfile
+    image: matrixdotorg/synapse:v1.119.0
     restart: unless-stopped
-    user: "991:991"
+    user: "root"
     depends_on:
       - synapse-init
     env_file:
@@ -22,7 +19,7 @@ services:
     volumes:
       - ./synapse:/data
       - ./synapse/homeserver-postgres.yaml:/data/homeserver.yaml
-      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
+      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
     networks:
       - twake-network
     extra_hosts:

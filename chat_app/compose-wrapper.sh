@@ -40,3 +40,5 @@ echo "Starting Docker Compose..."
 
 # Pass all arguments to docker compose
 sudo docker compose --env-file ../.env "$@"
+
+sudo docker exec -it chat_app-synapse-1 update-ca-certificates
