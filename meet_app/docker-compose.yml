@@ -2,7 +2,8 @@ services:
   livekit:
 #    image: livekit/livekit-server:v1.8.3
     build:
-      context: Dockerfile.livekit
+      context: .
+      dockerfile: Dockerfile.livekit
     container_name: visio-livekit
     command: ["--config", "/etc/livekit.yaml"]
     volumes:

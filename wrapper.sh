@@ -13,11 +13,12 @@ REPOS=(
     ["cozy_stack"]="${BASE_DIR}/cozy_stack"
     ["onlyoffice_app"]="${BASE_DIR}/onlyoffice_app"
     ["linshare_app"]="${BASE_DIR}/linshare_app"
+    ["meet_app"]="${BASE_DIR}/meet_app"
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "linshare_app")
-STOP_ORDER=("linshare_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "linshare_app" "meet_app")
+STOP_ORDER=("meet_app" "linshare_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 show_help() {
     echo "Usage: $0 <up|down> [repo] [service] [docker-compose options]"
