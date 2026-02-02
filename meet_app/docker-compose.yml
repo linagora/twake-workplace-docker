@@ -1,19 +1,26 @@
 services:
   livekit:
-    image: livekit/livekit-server:v1.8.3
+#    image: livekit/livekit-server:v1.8.3
+    build:
+      context: Dockerfile.livekit
     container_name: visio-livekit
     command: ["--config", "/etc/livekit.yaml"]
     volumes:
       - ./config/livekit.yaml:/etc/livekit.yaml:ro
     restart: always
-    #ports:
-    #- "7880:7880"
-    #- "7881:7881/tcp"
-    #- "7881:7881/udp"
+    ports:
+      - "7880:7880"
+      - "7881:7881/tcp"
+      - "7881:7881/udp"
     labels:
       - "traefik.enable=false"
     networks:
       - twake-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:7880/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -22,6 +29,7 @@ services:
     container_name: visio-backend
     entrypoint: |
       /bin/sh -c "
+       apk add --no-cache curl && \
        python manage.py migrate --no-input && \
        gunicorn -c /usr/local/etc/gunicorn/meet.py --forwarded-allow-ips="*" meet.wsgi:application --reload"
     user: root   
@@ -87,12 +95,21 @@ services:
       - "traefik.enable=false"
     networks:
       - twake-network
+    depends_on:
+      livekit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1.0/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   frontend:
     image: ghcr.io/cozy/meet-frontend:0.0.1
     container_name: visio-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
       #- ./config/twake-server.key:/etc/ssl/certs/twake-server.key

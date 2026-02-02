@@ -37,6 +37,9 @@ services:
       # dockerfile: ./packages/tom-server/Dockerfile
       dockerfile: Dockerfile
     restart: unless-stopped
+    depends_on:
+      synapse:
+        condition: service_started
     networks:
       - twake-network
     environment:
@@ -113,6 +116,9 @@ services:
   fed:
     image: fed
     restart: unless-stopped
+    depends_on:
+      tom:
+        condition: service_started
     build:
       context:  ./
       dockerfile: packages/federated-identity-service/Dockerfile

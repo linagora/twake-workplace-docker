@@ -1,0 +1,5 @@
+FROM livekit/livekit-server:v1.8.3
+USER root
+
+# install curl for healthcheck
+RUN apk add curl
