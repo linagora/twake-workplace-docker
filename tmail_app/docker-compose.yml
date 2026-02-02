@@ -154,7 +154,7 @@ services:
       - "PHPLDAPADMIN_HTTPS=false"
       - "PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT=never"
       - "PHPLDAPADMIN_TRUST_PROXY_SSL=true"
-      - "PHPLDAPADMIN_LDAP_HOSTS=#PYTHON2BASH:[{ 'ldap' : [ { 'server' : [ { 'tls': False }, { 'port' : 389 } ] }, { 'login' : [ { 'bind_id' : 'cn=admin,dc=twake,dc=local' } ] } ] }]"
+      - "PHPLDAPADMIN_LDAP_HOSTS=#PYTHON2BASH:[{ 'ldap' : [ { 'server' : [ { 'tls': False }, { 'port' : 389 } ] }, { 'login' : [ { 'bind_id' : 'cn=admin,${LDAP_BASE_DN}' } ] } ] }]"
 
 
 volumes:

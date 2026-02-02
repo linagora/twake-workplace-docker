@@ -53,7 +53,7 @@ services:
       - cozy-stack  
     environment:
       - CONTAINER=cozyt   
-      - ENABLE_APPS="mail,linshare,calendar,meet,calendar-v2,contacts"
+      - ENABLE_APPS="mail,linshare,chat,calendar,meet,calendar-v2,contacts"
       - BASE_DOMAIN=${BASE_DOMAIN}
     volumes:
       - ./scripts:/scripts

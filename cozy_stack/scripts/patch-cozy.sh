@@ -80,6 +80,13 @@ for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
     cozy-stack feature flags --domain "\$DOMAIN" \\
       '{"mail.embedded-app-url": "https://mail.$BASE_DOMAIN"}'
   fi  
+  
+  if echo ",\$ENABLED_APPS," | grep -q ",chat,"; then
+    echo "▶ Installing chat app for \$DOMAIN"
+    cozy-stack apps install chat --domain "\$DOMAIN"
+    cozy-stack feature flags --domain "\$DOMAIN" \
+      '{"chat.embedded-app-url": "https://chat.$BASE_DOMAIN"}'
+  fi
 
   cozy-stack feature flags --domain "\$DOMAIN" \
     '{"home.add-tile.add-shortcut": "true"}'

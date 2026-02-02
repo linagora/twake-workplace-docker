@@ -16,7 +16,7 @@ if [ "$ACTION" = "up" ]; then
     > config/lmConf-1.json
 
   if [ ! -f "config/lmConf-1.json" ]; then
-    echo "❌ Failed to create configuration file"
+    echo "Failed to create configuration file"
     exit 1
   fi
 
@@ -26,3 +26,35 @@ fi
 
 
 sudo docker compose --env-file ../.env "$@"
+
+#  Everything below is UP-only
+if [ "$ACTION" != "up" ]; then
+  exit 0
+fi
+
+while true; do
+  STATUS=$(sudo docker inspect \
+    --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
+    "lemonldap-ng" 2>/dev/null || echo "starting")
+
+  case "$STATUS" in
+    healthy)
+      echo "✔ Lemonldap is healthy"
+      break
+      ;;
+    unhealthy)
+      echo "❌ Lemonldap is unhealthy"
+      exit 1
+      ;;
+    ""|starting)
+      echo "… Lemonldap status: starting"
+      sleep 4
+      ;;
+    *)
+      echo "… Lemonldap status: $STATUS"
+      sleep 4
+      ;;
+  esac
+done
+
+sudo docker exec -it lemonldap-ng /usr/share/lemonldap-ng/bin/rotateOidcKeys

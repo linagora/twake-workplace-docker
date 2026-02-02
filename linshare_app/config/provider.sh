@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
+echo "Using BASE_DOMAIN: ${BASE_DOMAIN:-NOT SET}"
 # Configuration
 BASE_URL="https://admin-linshare.${BASE_DOMAIN}/linshare/webservice/rest/admin/v5"
 

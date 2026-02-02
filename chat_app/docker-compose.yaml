@@ -65,9 +65,9 @@ services:
 
       - USERDB_ENGINE=ldap
       - LDAP_URI=ldap://ldap
-      - LDAP_BASE=ou=users,dc=twake,dc=local
+      - LDAP_BASE=ou=users,${LDAP_BASE_DN}
       - LDAP_FILTER=(objectClass=inetOrgPerson)
-      - LDAP_USER=cn=admin,dc=twake,dc=local
+      - LDAP_USER=cn=admin,${LDAP_BASE_DN}
       - LDAP_PASSWORD=admin
 
       - MATRIX_INTERNAL_HOST=http://synapse:8008

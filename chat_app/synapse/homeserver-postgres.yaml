@@ -9,8 +9,8 @@
 # For more information on how to configure Synapse, including a complete accounting of
 # each option, go to docs/usage/configuration/config_documentation.md or
 # https://matrix-org.github.io/synapse/latest/usage/configuration/config_documentation.html
-server_name: "twake.local"
-public_baseurl: "https://matrix.twake.local/"
+server_name: "workplace.local"
+public_baseurl: "https://matrix.workplace.local/"
 
 pid_file: /data/homeserver.pid
 
@@ -58,7 +58,7 @@ database:
 # Number of events to cache in memory
 event_cache_size: "10K"
 
-log_config: "/data/matrix.twake.local.log.config"
+log_config: "/data/matrix.workplace.local.log.config"
 
 media_store_path: /data/media_store
 uploads_path: /data/uploads
@@ -111,7 +111,7 @@ form_secret: ":m_kP~38:lPnlfO2S8lhSrMRy8T52~dT=e35X+jCMHNz-pxIoZ"
 expire_access_token: False
 
 ## Signing key
-signing_key_path: "/data/matrix.twake.local.signing.key"
+signing_key_path: "/data/matrix.workplace.local.signing.key"
 # To rotate signing keys
 old_signing_keys: {}
 key_refresh_interval: "1d" # 1 Day.
@@ -133,7 +133,7 @@ oidc_providers:
   - idp_id: twake
     idp_name: Connect with Twake
     enabled: true
-    issuer: "https://auth.twake.local/"
+    issuer: "https://auth.workplace.local/"
     client_id: "matrix1"
     client_secret: "matrix1"
     scopes: ["openid", "profile", "email", "phone"]
@@ -150,7 +150,7 @@ oidc_providers:
 
 sso:
   client_whitelist:
-    - https://chat.twake.local
+    - https://chat.workplace.local
   update_profile_information: true
 
 # Whether to allow non server admin to create groups on this server
@@ -169,7 +169,7 @@ federation_verify_certificates: false
 # TODO: identity_server integration
 # * invite_client_location
 # * account_threepid_delegates
-default_identity_server: https://tom.twake.local
+default_identity_server: https://tom.workplace.local
 
 ### Matrix Synapse's scalability part - using workers
 # instance_map:

@@ -18,7 +18,7 @@ services:
         networks:
             - twake-network    
         extra_hosts:
-            - "auth.twake.local:172.27.0.100"    
+            - "auth.${BASE_DOMAIN}:172.27.0.100"    
         env_file:
             - ./config/backend.env 
         environment:

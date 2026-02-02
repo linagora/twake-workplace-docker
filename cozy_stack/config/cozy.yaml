@@ -121,16 +121,16 @@ authentication:
       client_secret: secretcozy
       scope: openid profile
       login_domain: login.cozy.tn
-      redirect_uri: https://oauthcallback.twake.local/oidc/redirect
-      authorize_url: https://auth.twake.local/oauth2/authorize
-      token_url: https://auth.twake.local/oauth2/token
-      userinfo_url: https://auth.twake.local/oauth2/userinfo
+      redirect_uri: https://oauthcallback.workplace.local/oidc/redirect
+      authorize_url: https://auth.workplace.local/oauth2/authorize
+      token_url: https://auth.workplace.local/oauth2/token
+      userinfo_url: https://auth.workplace.local/oauth2/userinfo
       userinfo_instance_field: user_name
       #userinfo_instance_prefix: name
-      userinfo_instance_suffix: .twake.local
+      userinfo_instance_suffix: .workplace.local
       allow_custom_instance: false
       allow_oauth_token: true
-      logout_url: https://auth.twake.local/oauth2/logout
+      logout_url: https://auth.workplace.local/oauth2/logout
       #id_token_jwk_url: https://identity-provider/path/to/jwk
 # jobs parameters to configure the job system
 jobs:
@@ -368,7 +368,7 @@ move:
 # OnlyOffice server for collaborative edition of office documents
 office:
   default:
-    onlyoffice_url: https://onlyoffice.twake.local/
+    onlyoffice_url: https://onlyoffice.workplace.local/
     onlyoffice_inbox_secret: {{.Env.INBOX_SECRET}}
     onlyoffice_outbox_secret: {{.Env.OUTBOX_SECRET}}
 
@@ -450,7 +450,7 @@ csp_allowlist:
   # img:    https://allowed.domain.com/
   # style:  https://allowed.domain.com/
   # font:   https://allowed.domain.com/
-  frame: "https://linshare.twake.local https://mail.twake.local"
+  frame: "https://linshare.workplace.local https://mail.workplace.local"
 
   # It is also possible to configure the CSP policy per context. The values are
   # cumulative with the global csp allowlist.

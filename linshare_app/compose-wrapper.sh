@@ -60,4 +60,5 @@ done
 
 # ---- Run provider bootstrap ----
 echo "🚀 Running OIDC provider bootstrap..."
+export BASE_DOMAIN 
 bash "$PROVIDER_SCRIPT"
