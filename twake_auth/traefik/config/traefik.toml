@@ -1,3 +1,7 @@
+[ping]
+
+# Enable ping
+entryPoint = "traefik"
 [entryPoints]
   [entryPoints.web]
     address = ":80"

@@ -1,25 +1,28 @@
 #!/bin/bash
 # compose-wrapper.sh
+set -e
+
+ACTION="$1"
 
 # Load environment variables
 set -a
 source ../.env
 set +a
 
-# Process configuration
-echo "Processing LemonLDAP configuration..."
-envsubst '$BASE_DOMAIN $LDAP_BASE_DN' < ./config/lmConf-1.json.template > config/lmConf-1.json
+if [ "$ACTION" = "up" ]; then
+  echo "Processing LemonLDAP configuration..."
+  envsubst '$BASE_DOMAIN $LDAP_BASE_DN' \
+    < ./config/lmConf-1.json.template \
+    > config/lmConf-1.json
 
-# Check if file was created
-if [ ! -f "config/lmConf-1.json" ]; then
-    echo "Failed to create configuration file"
+  if [ ! -f "config/lmConf-1.json" ]; then
+    echo "❌ Failed to create configuration file"
     exit 1
+  fi
+
+  echo "Creating certs..."
+  ./generate-cert.sh
 fi
 
-echo "Creating  Certs..."
-./generate-cert.sh
 
-echo "Starting Docker Compose..."
-
-# Pass all arguments to docker compose
 sudo docker compose --env-file ../.env "$@"

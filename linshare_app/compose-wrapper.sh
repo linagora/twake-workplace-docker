@@ -1,39 +1,41 @@
 #!/bin/bash
-# compose-wrapper.sh
+set -e
 
-# Load environment variables
+ACTION="$1"
+
 set -a
 source ../.env
 set +a
 
 BACKEND_CONTAINER="linshare_backend"
 PROVIDER_SCRIPT="./config/provider.sh"
-# Process configuration
-echo "Processing configuration..."
-envsubst '$BASE_DOMAIN' < config/backend/linshare.extra.properties.template > config/backend/linshare.extra.properties
-envsubst '$BASE_DOMAIN' < config/user-ui/config.js.template > config/user-ui/config.js
 
-# Check if file was created
-if [ ! -f "config/backend/linshare.extra.properties" ]; then
-    echo "Failed to create configuration file"
-    exit 1
-fi
-if [ ! -f "config/user-ui/config.js" ]; then
-    echo "Failed to create configuration file"
-    exit 1
+if [ "$ACTION" = "up" ]; then
+  echo "Processing configuration..."
+
+  envsubst '$BASE_DOMAIN' \
+    < config/backend/linshare.extra.properties.template \
+    > config/backend/linshare.extra.properties
+
+  envsubst '$BASE_DOMAIN' \
+    < config/user-ui/config.js.template \
+    > config/user-ui/config.js
 fi
 
-echo "Starting Docker Compose..."
-
-# Pass all arguments to docker compose
+# Always call compose
 sudo docker compose --env-file ../.env "$@"
+
+# 🚨 Everything below is UP-only
+if [ "$ACTION" != "up" ]; then
+  exit 0
+fi
 
 # ---- Wait for backend to be healthy ----
 echo "⏳ Waiting for backend container to become healthy..."
 
 while true; do
   STATUS=$(sudo docker inspect \
-    --format='{{.State.Health.Status}}' \
+    --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
     "$BACKEND_CONTAINER" 2>/dev/null || echo "starting")
 
   case "$STATUS" in
@@ -44,6 +46,10 @@ while true; do
     unhealthy)
       echo "❌ Backend is unhealthy"
       exit 1
+      ;;
+    ""|starting)
+      echo "… backend status: starting"
+      sleep 7
       ;;
     *)
       echo "… backend status: $STATUS"

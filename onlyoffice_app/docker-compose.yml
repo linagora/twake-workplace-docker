@@ -56,7 +56,7 @@ services:
        
   patcher:
     image: docker:26-cli
-    container_name: patcher
+    container_name: patcher-onlyoffice
     networks:
       - twake-network
     depends_on:

@@ -17,6 +17,12 @@ services:
       - "traefik.http.services.lemonldap.loadbalancer.server.port=80"
       - "traefik.http.routers.lemonldap-man.rule=Host(`manager.${BASE_DOMAIN}`)"  
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
     networks:
       - twake-network
@@ -37,6 +43,12 @@ services:
     volumes:
       - ./traefik/config:/etc/traefik
       - ./traefik/ssl/:/ssl/
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s  
     networks:
       twake-network:
         ipv4_address: 172.27.0.100 
@@ -51,6 +63,13 @@ services:
       - CONTAINERS=1  
       - SYSTEM=1 
       - EXEC=1  
+    healthcheck:
+      # Check if HAProxy process is running (confirmed working)
+      test: ["CMD-SHELL", "pgrep haproxy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - twake-network    
         
