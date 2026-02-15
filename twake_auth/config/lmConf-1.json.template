@@ -202,6 +202,7 @@
    "exportedVars" : {},
    "ext2fActivation" : 0,
    "ext2fCodeActivation" : "\\d{6}",
+   "externalMenu" : "https://$uid-home.${BASE_DOMAIN}/",
    "facebookAuthnLevel" : 1,
    "facebookExportedVars" : {},
    "facebookUserField" : "id",
