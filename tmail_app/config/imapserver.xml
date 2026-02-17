@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<!-- Read https://james.apache.org/server/config-imap4.html for further details -->
+
+<imapservers>
+    <imapserver enabled="true">
+        <jmxName>imapserver-ssl</jmxName>
+        <bind>0.0.0.0:993</bind>
+        <connectionBacklog>200</connectionBacklog>
+        <tls socketTLS="true" startTLS="false">
+            <privateKey>file://secrets/imap/tls.key</privateKey>
+            <certificates>file://secrets/imap/tls.crt</certificates>
+        </tls>
+        <auth>
+            <plainAuthEnabled>true</plainAuthEnabled>
+            <requireSSL>true</requireSSL>
+        </auth>
+
+        <connectionLimit>0</connectionLimit>
+        <connectionLimitPerIP>0</connectionLimitPerIP>
+
+        <inMemorySizeLimit>102400</inMemorySizeLimit>
+        <literalSizeLimit>20M</literalSizeLimit>
+
+        <connectionBacklog>9600</connectionBacklog>
+        <compress>false</compress>
+        <timeout>3600</timeout>
+        <connectiontimeout>3600</connectiontimeout>
+        <concurrentRequests>200</concurrentRequests>
+        <maxQueueSize>4096</maxQueueSize>
+        <ioWorkerCount>2</ioWorkerCount>
+        <ignoreIDLEUponProcessing>false</ignoreIDLEUponProcessing>
+
+        <idleTimeInterval>120</idleTimeInterval>
+        <idleTimeIntervalUnit>SECONDS</idleTimeIntervalUnit>
+        <enableIdle>true</enableIdle>
+        <disabledCaps>ID</disabledCaps>
+        <idCommandResponse>
+            <field name="name" value="Twake Mail"/>
+            <field name="version" value="0.11.0"/>
+            <field name="vendor" value="Linagora"/>
+            <field name="support-url" value="https://linagora.com/en/our-contacts"/>
+        </idCommandResponse>
+        <imapPackages>com.linagora.tmail.imap.TMailImapPackage</imapPackages>
+    </imapserver>
+</imapservers>

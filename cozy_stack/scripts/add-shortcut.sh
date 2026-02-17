@@ -1,0 +1,138 @@
+#!/bin/sh
+set -e
+
+# Use environment variable or fallback
+CONTAINER="${CONTAINER:-cozyt}"
+
+# List of users as plain space-separated string
+USERS="user1:user1@$BASE_DOMAIN user2:user2@$BASE_DOMAIN user3:user3@$BASE_DOMAIN"
+
+ENABLE_APPS="${ENABLE_APPS:-}"
+ENABLE_APPS=$(echo "$ENABLE_APPS" | sed 's/"//g')
+echo "▶ Enabled apps: $ENABLE_APPS"
+echo "▶ Checking Cozy container..."
+if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+  echo "❌ Container $CONTAINER is not running"
+  exit 1
+fi
+
+echo "▶ Running Cozy patch inside container..."
+
+docker exec -i -e ENABLE_APPS="$ENABLE_APPS" "$CONTAINER" sh <<EOF
+set -e
+
+echo "▶ Enabled apps in exec: \$ENABLE_APPS"
+
+echo "▶ Creating shortcuts..."
+for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
+  echo "Creating shortcuts for \$DOMAIN"
+  
+  # Create a filtered shortcuts JSON based on enabled apps
+  # Create a temporary JSON file with filtered shortcuts
+  TEMP_JSON="/tmp/filtered-shortcuts-\$DOMAIN.json"
+  
+  # Start with an empty array
+  echo "[" > "\$TEMP_JSON"
+  
+  # Map app names to their shortcut configurations
+  # Check each app and add to JSON if enabled
+  
+  FIRST_ENTRY=true
+  
+  # Calendar
+  if echo ",\$ENABLE_APPS," | grep -iq ",calendar,"; then
+    if [ "\$FIRST_ENTRY" = "false" ]; then
+      echo "," >> "\$TEMP_JSON"
+    fi
+    cat >> "\$TEMP_JSON" <<'SHORTCUT_EOF'
+  {
+    "name": "Calendar",
+    "path": "/Settings/Home/",
+    "url": "https://calendar.$BASE_DOMAIN",
+    "icon": "<svg width=\"70\" height=\"70\" viewBox=\"0 0 70 70\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0.0494995\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"white\"/>\n<rect x=\"0.0494995\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"url(#paint0_linear_58558_341)\"/>\n<g filter=\"url(#filter0_d_58558_341)\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M23.7874 13.8803C23.3827 13.6636 22.9039 13.5482 22.2623 13.5482H22.0593C21.4177 13.5482 20.9389 13.6636 20.5342 13.8803C20.1296 14.0968 19.812 14.4148 19.5957 14.8199C19.3793 15.2251 19.264 15.7045 19.264 16.3468L19.266 17.2871C18.3176 17.5068 17.6081 17.8097 16.896 18.191C15.2775 19.0576 14.0072 20.3294 13.1416 21.9499C12.276 23.5704 11.815 25.1777 11.815 29.6103V43.8909C11.815 48.3235 12.276 49.9309 13.1416 51.5514C14.0072 53.1719 15.2775 54.4436 16.896 55.3102C18.5146 56.1769 20.1199 56.6384 24.5471 56.6384H45.4319C49.8591 56.6384 51.4646 56.1769 53.0831 55.3102C54.7016 54.4436 55.9719 53.1719 56.8375 51.5514C57.7032 49.9309 58.1641 48.3235 58.1641 43.8909V29.6103C58.1641 25.1777 57.7032 23.5704 56.8375 21.9499C55.9719 20.3294 54.7016 19.0576 53.0831 18.191C52.3718 17.8101 51.6631 17.5074 50.7162 17.2879L50.7151 16.3468C50.7151 15.7045 50.5999 15.2251 50.3835 14.8199C50.167 14.4148 49.8495 14.0968 49.4449 13.8803C49.0403 13.6636 48.5613 13.5482 47.9198 13.5482H47.7168C47.0752 13.5482 46.5964 13.6636 46.1918 13.8803C45.7871 14.0968 45.4695 14.4148 45.2531 14.8199C45.0368 15.2251 44.9215 15.7045 44.9215 16.3468V16.8627L25.0576 16.8595V16.3468C25.0576 15.7045 24.9424 15.2251 24.7259 14.8199C24.5096 14.4148 24.192 14.0968 23.7874 13.8803ZM20.3673 29.2926H49.6118C50.571 29.2926 50.9189 29.3927 51.2696 29.5804C51.6202 29.7682 51.8954 30.0437 52.083 30.395C52.2706 30.746 52.3704 31.0943 52.3704 32.0547V47.0176L52.3482 47.4329C52.1413 49.3429 50.5252 50.8295 48.5548 50.8295L22.4801 50.7722L21.9536 50.7644C20.6485 50.7271 20.102 50.5538 19.5516 50.258C18.9325 49.9253 18.4467 49.438 18.1158 48.8173C17.7848 48.1965 17.6086 47.5812 17.6086 45.8841V32.0547L17.6148 31.6788C17.639 30.9947 17.7354 30.6958 17.8961 30.395C18.0836 30.0437 18.3588 29.7682 18.7096 29.5804C19.0602 29.3927 19.4081 29.2926 20.3673 29.2926ZM45.0491 33.4359H43.1385C42.0317 33.4359 41.6305 33.5513 41.2258 33.768C40.8212 33.9847 40.5035 34.3026 40.2871 34.7077C40.0708 35.1128 39.9556 35.5147 39.9556 36.6229V38.5356C39.9556 39.6438 40.0708 40.0457 40.2871 40.4508C40.5035 40.8559 40.8212 41.1738 41.2258 41.3905C41.6305 41.6072 42.0317 41.7226 43.1385 41.7226H45.0491C46.156 41.7226 46.5572 41.6072 46.9619 41.3905C47.3665 41.1738 47.6841 40.8559 47.9006 40.4508C48.1168 40.0457 48.2321 39.6438 48.2321 38.5356V36.6229C48.2321 35.5147 48.1168 35.1128 47.9006 34.7077C47.6841 34.3026 47.3665 33.9847 46.9619 33.768C46.5572 33.5513 46.156 33.4359 45.0491 33.4359Z\" fill=\"white\"/>\n</g>\n<defs>\n<filter id=\"filter0_d_58558_341\" x=\"8.24972\" y=\"10.6959\" width=\"53.4797\" height=\"50.2208\" filterUnits=\"userSpaceOnUse\" color-interpolation-filters=\"sRGB\">\n<feFlood flood-opacity=\"0\" result=\"BackgroundImageFix\"/>\n<feColorMatrix in=\"SourceAlpha\" type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0\" result=\"hardAlpha\"/>\n<feOffset dy=\"0.713063\"/>\n<feGaussianBlur stdDeviation=\"1.78266\"/>\n<feComposite in2=\"hardAlpha\" operator=\"out\"/>\n<feColorMatrix type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0\"/>\n<feBlend mode=\"normal\" in2=\"BackgroundImageFix\" result=\"effect1_dropShadow_58558_341\"/>\n<feBlend mode=\"normal\" in=\"SourceGraphic\" in2=\"effect1_dropShadow_58558_341\" result=\"shape\"/>\n</filter>\n<linearGradient id=\"paint0_linear_58558_341\" x1=\"6.64533\" y1=\"69.8802\" x2=\"83.8344\" y2=\"-9.80462\" gradientUnits=\"userSpaceOnUse\">\n<stop offset=\"0.286667\" stop-color=\"#FD813C\"/>\n<stop offset=\"1\" stop-color=\"#FFF500\"/>\n</linearGradient>\n</defs>\n</svg>"
+  }
+SHORTCUT_EOF
+    FIRST_ENTRY=false
+  fi
+  
+  # Calendar-v2
+  if echo ",\$ENABLE_APPS," | grep -q ",calendar-v2,"; then
+    if [ "\$FIRST_ENTRY" = "false" ]; then
+      echo "," >> "\$TEMP_JSON"
+    fi
+    cat >> "\$TEMP_JSON" <<'SHORTCUT_EOF'
+  {
+    "name": "Calendar-v2",
+    "path": "/Settings/Home/",
+    "url": "https://calendar-ng.$BASE_DOMAIN",
+    "icon": "<svg width=\"70\" height=\"70\" viewBox=\"0 0 70 70\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0.0494995\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"white\"/>\n<rect x=\"0.0494995\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"url(#paint0_linear_58558_341)\"/>\n<g filter=\"url(#filter0_d_58558_341)\">\n<path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M23.7874 13.8803C23.3827 13.6636 22.9039 13.5482 22.2623 13.5482H22.0593C21.4177 13.5482 20.9389 13.6636 20.5342 13.8803C20.1296 14.0968 19.812 14.4148 19.5957 14.8199C19.3793 15.2251 19.264 15.7045 19.264 16.3468L19.266 17.2871C18.3176 17.5068 17.6081 17.8097 16.896 18.191C15.2775 19.0576 14.0072 20.3294 13.1416 21.9499C12.276 23.5704 11.815 25.1777 11.815 29.6103V43.8909C11.815 48.3235 12.276 49.9309 13.1416 51.5514C14.0072 53.1719 15.2775 54.4436 16.896 55.3102C18.5146 56.1769 20.1199 56.6384 24.5471 56.6384H45.4319C49.8591 56.6384 51.4646 56.1769 53.0831 55.3102C54.7016 54.4436 55.9719 53.1719 56.8375 51.5514C57.7032 49.9309 58.1641 48.3235 58.1641 43.8909V29.6103C58.1641 25.1777 57.7032 23.5704 56.8375 21.9499C55.9719 20.3294 54.7016 19.0576 53.0831 18.191C52.3718 17.8101 51.6631 17.5074 50.7162 17.2879L50.7151 16.3468C50.7151 15.7045 50.5999 15.2251 50.3835 14.8199C50.167 14.4148 49.8495 14.0968 49.4449 13.8803C49.0403 13.6636 48.5613 13.5482 47.9198 13.5482H47.7168C47.0752 13.5482 46.5964 13.6636 46.1918 13.8803C45.7871 14.0968 45.4695 14.4148 45.2531 14.8199C45.0368 15.2251 44.9215 15.7045 44.9215 16.3468V16.8627L25.0576 16.8595V16.3468C25.0576 15.7045 24.9424 15.2251 24.7259 14.8199C24.5096 14.4148 24.192 14.0968 23.7874 13.8803ZM20.3673 29.2926H49.6118C50.571 29.2926 50.9189 29.3927 51.2696 29.5804C51.6202 29.7682 51.8954 30.0437 52.083 30.395C52.2706 30.746 52.3704 31.0943 52.3704 32.0547V47.0176L52.3482 47.4329C52.1413 49.3429 50.5252 50.8295 48.5548 50.8295L22.4801 50.7722L21.9536 50.7644C20.6485 50.7271 20.102 50.5538 19.5516 50.258C18.9325 49.9253 18.4467 49.438 18.1158 48.8173C17.7848 48.1965 17.6086 47.5812 17.6086 45.8841V32.0547L17.6148 31.6788C17.639 30.9947 17.7354 30.6958 17.8961 30.395C18.0836 30.0437 18.3588 29.7682 18.7096 29.5804C19.0602 29.3927 19.4081 29.2926 20.3673 29.2926ZM45.0491 33.4359H43.1385C42.0317 33.4359 41.6305 33.5513 41.2258 33.768C40.8212 33.9847 40.5035 34.3026 40.2871 34.7077C40.0708 35.1128 39.9556 35.5147 39.9556 36.6229V38.5356C39.9556 39.6438 40.0708 40.0457 40.2871 40.4508C40.5035 40.8559 40.8212 41.1738 41.2258 41.3905C41.6305 41.6072 42.0317 41.7226 43.1385 41.7226H45.0491C46.156 41.7226 46.5572 41.6072 46.9619 41.3905C47.3665 41.1738 47.6841 40.8559 47.9006 40.4508C48.1168 40.0457 48.2321 39.6438 48.2321 38.5356V36.6229C48.2321 35.5147 48.1168 35.1128 47.9006 34.7077C47.6841 34.3026 47.3665 33.9847 46.9619 33.768C46.5572 33.5513 46.156 33.4359 45.0491 33.4359Z\" fill=\"white\"/>\n</g>\n<defs>\n<filter id=\"filter0_d_58558_341\" x=\"8.24972\" y=\"10.6959\" width=\"53.4797\" height=\"50.2208\" filterUnits=\"userSpaceOnUse\" color-interpolation-filters=\"sRGB\">\n<feFlood flood-opacity=\"0\" result=\"BackgroundImageFix\"/>\n<feColorMatrix in=\"SourceAlpha\" type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0\" result=\"hardAlpha\"/>\n<feOffset dy=\"0.713063\"/>\n<feGaussianBlur stdDeviation=\"1.78266\"/>\n<feComposite in2=\"hardAlpha\" operator=\"out\"/>\n<feColorMatrix type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0\"/>\n<feBlend mode=\"normal\" in2=\"BackgroundImageFix\" result=\"effect1_dropShadow_58558_341\"/>\n<feBlend mode=\"normal\" in=\"SourceGraphic\" in2=\"effect1_dropShadow_58558_341\" result=\"shape\"/>\n</filter>\n<linearGradient id=\"paint0_linear_58558_341\" x1=\"6.64533\" y1=\"69.8802\" x2=\"83.8344\" y2=\"-9.80462\" gradientUnits=\"userSpaceOnUse\">\n<stop offset=\"0.286667\" stop-color=\"#FD813C\"/>\n<stop offset=\"1\" stop-color=\"#FFF500\"/>\n</linearGradient>\n</defs>\n</svg>" 
+  }
+SHORTCUT_EOF
+    FIRST_ENTRY=false
+  fi
+  
+  # Contacts
+  if echo ",\$ENABLE_APPS," | grep -q ",contacts,"; then
+    if [ "\$FIRST_ENTRY" = "false" ]; then
+      echo "," >> "\$TEMP_JSON"
+    fi
+    cat >> "\$TEMP_JSON" <<'SHORTCUT_EOF'
+  {
+    "name": "Contacts",
+    "path": "/Settings/Home/",
+    "url": "https://contacts.$BASE_DOMAIN/contacts",
+    "icon": "<svg width=\"70\" height=\"70\" viewBox=\"0 0 70 70\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"0.0660095\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"white\"/><rect x=\"0.0660095\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"url(#paint0_linear_58558_338)\"/><g filter=\"url(#filter0_d_58558_338)\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M13.6414 17.9727C12.5446 20.1249 12.5446 22.9427 12.5446 28.578V41.6587C12.5446 47.294 12.5446 50.1117 13.6414 52.264C14.606 54.1574 16.1453 55.6967 18.0387 56.6613C20.191 57.7581 23.0087 57.7581 28.644 57.7581H41.7247C47.36 57.7581 50.1777 57.7581 52.33 56.6613C54.2234 55.6967 55.7627 54.1574 56.7273 52.264C57.8241 50.1117 57.8241 47.294 57.8241 41.6587V28.578C57.8241 22.9427 57.8241 20.1249 56.7273 17.9727C55.7627 16.0793 54.2234 14.54 52.33 13.5754C50.1777 12.4786 47.36 12.4786 41.7247 12.4786H28.644C23.0087 12.4786 20.191 12.4786 18.0387 13.5754C16.1453 14.54 14.606 16.0793 13.6414 17.9727ZM35.1844 22.5407C38.659 22.5407 41.4732 25.3549 41.4732 28.8295C41.4732 32.3041 38.659 35.1183 35.1844 35.1183C31.7097 35.1183 28.8955 32.3041 28.8955 28.8295C28.8955 25.3549 31.7097 22.5407 35.1844 22.5407ZM22.6067 46.1159V44.5999C22.6067 39.1819 30.9866 37.6339 35.1844 37.6339C39.3821 37.6339 47.762 39.1819 47.762 44.5999V46.1159C47.762 46.9886 47.0546 47.696 46.1819 47.696H24.1868C23.3141 47.696 22.6067 46.9886 22.6067 46.1159Z\" fill=\"white\"/></g><defs><filter id=\"filter0_d_58558_338\" x=\"8.97929\" y=\"9.62633\" width=\"52.4101\" height=\"52.4101\" filterUnits=\"userSpaceOnUse\" color-interpolation-filters=\"sRGB\"><feFlood flood-opacity=\"0\" result=\"BackgroundImageFix\"/><feColorMatrix in=\"SourceAlpha\" type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0\" result=\"hardAlpha\"/><feOffset dy=\"0.713063\"/><feGaussianBlur stdDeviation=\"1.78266\"/><feComposite in2=\"hardAlpha\" operator=\"out\"/><feColorMatrix type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0\"/><feBlend mode=\"normal\" in2=\"BackgroundImageFix\" result=\"effect1_dropShadow_58558_338\"/><feBlend mode=\"normal\" in=\"SourceGraphic\" in2=\"effect1_dropShadow_58558_338\" result=\"shape\"/></filter><linearGradient id=\"paint0_linear_58558_338\" x1=\"12.1881\" y1=\"63.6409\" x2=\"66.0243\" y2=\"4.27838\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0.229502\" stop-color=\"#F74EA9\"/><stop offset=\"1\" stop-color=\"#FFB2A8\"/></linearGradient></defs></svg>"
+  
+  }
+SHORTCUT_EOF
+    FIRST_ENTRY=false
+  fi
+  
+  # Meet
+  if echo ",\$ENABLE_APPS," | grep -q ",meet,"; then
+    if [ "\$FIRST_ENTRY" = "false" ]; then
+      echo "," >> "\$TEMP_JSON"
+    fi
+    cat >> "\$TEMP_JSON" <<'SHORTCUT_EOF'
+  {
+    "name": "Meet",
+    "path": "/Settings/Home/",
+    "url": "https://meet.$BASE_DOMAIN",
+    "icon": "<svg width=\"70\" height=\"70\" viewBox=\"0 0 70 70\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"0.0825195\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"white\"/><rect x=\"0.0825195\" width=\"69.9175\" height=\"69.9175\" rx=\"23.0904\" fill=\"url(#paint0_linear_58558_344)\"/><g filter=\"url(#filter0_d_58558_344)\"><path d=\"M11.135 31.8739C11.135 27.5809 11.135 25.4343 11.9433 23.7946C12.6542 22.3523 13.7887 21.1796 15.1841 20.4447C16.7704 19.6092 18.8471 19.6092 23.0003 19.6092H32.641C36.7942 19.6092 38.8709 19.6092 40.4572 20.4447C41.8526 21.1796 42.9871 22.3523 43.698 23.7946C44.5063 25.4343 44.5063 27.5809 44.5063 31.8739V38.0062C44.5063 42.2993 44.5063 44.4458 43.698 46.0855C42.9871 47.5279 41.8526 48.7005 40.4572 49.4354C38.8709 50.2709 36.7942 50.2709 32.641 50.2709H23.0003C18.8471 50.2709 16.7704 50.2709 15.1841 49.4354C13.7887 48.7005 12.6542 47.5279 11.9433 46.0855C11.135 44.4458 11.135 42.2993 11.135 38.0062V31.8739Z\" fill=\"white\"/><path d=\"M48.2143 30.1136C48.2143 29.7782 48.2143 29.6105 48.2628 29.4616C48.3057 29.3299 48.3758 29.2095 48.4683 29.1086C48.5728 28.9945 48.7162 28.916 49.0029 28.759L53.1286 26.4987C54.5658 25.7114 55.2843 25.3177 55.8706 25.397C56.3823 25.4662 56.843 25.7528 57.1418 26.1877C57.4841 26.686 57.4841 27.5267 57.4841 29.2079V40.6722C57.4841 42.3535 57.4841 43.1941 57.1418 43.6924C56.843 44.1274 56.3823 44.4139 55.8706 44.4831C55.2843 44.5624 54.5658 44.1687 53.1286 43.3814L49.0029 41.1212C48.7162 40.9641 48.5728 40.8856 48.4683 40.7715C48.3758 40.6707 48.3057 40.5502 48.2628 40.4185C48.2143 40.2696 48.2143 40.1019 48.2143 39.7666V30.1136Z\" fill=\"white\"/></g><defs><filter id=\"filter0_d_58558_344\" x=\"7.56966\" y=\"16.757\" width=\"53.4797\" height=\"37.7923\" filterUnits=\"userSpaceOnUse\" color-interpolation-filters=\"sRGB\"><feFlood flood-opacity=\"0\" result=\"BackgroundImageFix\"/><feColorMatrix in=\"SourceAlpha\" type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0\" result=\"hardAlpha\"/><feOffset dy=\"0.713063\"/><feGaussianBlur stdDeviation=\"1.78266\"/><feComposite in2=\"hardAlpha\" operator=\"out\"/><feColorMatrix type=\"matrix\" values=\"0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0\"/><feBlend mode=\"normal\" in2=\"BackgroundImageFix\" result=\"effect1_dropShadow_58558_344\"/><feBlend mode=\"normal\" in=\"SourceGraphic\" in2=\"effect1_dropShadow_58558_344\" result=\"shape\"/></filter><linearGradient id=\"paint0_linear_58558_344\" x1=\"8.28274\" y1=\"63.2843\" x2=\"79.9456\" y2=\"-10.5177\" gradientUnits=\"userSpaceOnUse\"><stop offset=\"0.23798\" stop-color=\"#50C750\"/><stop offset=\"1\" stop-color=\"#EBFF00\"/></linearGradient></defs></svg>"
+
+  }
+SHORTCUT_EOF
+    FIRST_ENTRY=false
+  fi
+  
+  # Close the array
+  echo "]" >> "\$TEMP_JSON"
+  
+  # Check if we have any shortcuts to create
+  if [ "\$FIRST_ENTRY" = "true" ]; then
+    echo "No shortcuts to create for enabled apps"
+    rm -f "\$TEMP_JSON"
+    continue
+  fi
+  
+  # Show what we're creating
+  echo "Shortcuts to create for \$DOMAIN:"
+  cat "\$TEMP_JSON"
+  
+  # Check if create-shortcut.sh exists
+  if [ -f "/usr/local/bin/create-shortcut.sh" ]; then
+    /usr/local/bin/create-shortcut.sh \\
+      "\$DOMAIN" \\
+      "\$TEMP_JSON" \\
+      http://localhost:6060 \\
+      "https://\$DOMAIN"
+  else
+    echo "⚠ Warning: /usr/local/bin/create-shortcut.sh not found"
+  fi
+  
+  # Clean up temp file
+  rm -f "\$TEMP_JSON"
+done
+
+echo "✅ Cozy shortcut instances added"
+EOF

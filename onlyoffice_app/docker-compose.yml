@@ -1,0 +1,70 @@
+services:
+  onlyoffice-documentserver:
+    image: onlyoffice/documentserver:8.0.1 
+    container_name: onlyoffice-documentserver
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - DB_PWD=onlyoffice
+      - AMQP_URI=amqp://guest:guest@rabbitmq
+      - JWT_ENABLED=true
+      - JWT_SECRET=secret
+      - USE_UNAUTHORIZED_STORAGE=true
+      - USE_FORWARDED_HEADERS=true
+      - ALLOW_META_IP_ADDRESS=true
+      - ALLOW_PRIVATE_IP_ADDRESS=true
+      - SSL_CERTIFICATE_PATH=/var/www/onlyoffice/Data/certs/root-ca.pem
+      - SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/root-ca.key
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.onlyoffice.rule=Host(`onlyoffice.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.onlyoffice.entrypoints=websecure"
+      - "traefik.http.routers.onlyoffice.tls=true"
+      - "traefik.http.services.onlyoffice.loadbalancer.server.port=443" 
+      - "traefik.http.services.onlyoffice.loadbalancer.server.scheme=https"
+      - "traefik.http.services.onlyoffice.loadbalancer.serversTransport=insecure-transport@file" 
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/info/info.json"]
+      interval: 30s
+      retries: 5
+      start_period: 60s
+      timeout: 10s
+    stdin_open: true
+    restart: always
+    stop_grace_period: 60s
+    volumes:
+       - /var/www/onlyoffice/Data
+       - /var/log/onlyoffice
+       - /var/lib/onlyoffice/documentserver/App_Data/cache/files
+       - /var/www/onlyoffice/documentserver-example/public/files
+       - /usr/share/fonts
+       - ../twake_auth/traefik/ssl/root-ca.pem:/var/www/onlyoffice/Data/certs/root-ca.pem
+       - ../twake_auth/traefik/ssl/root-ca.key:/var/www/onlyoffice/Data/certs/root-ca.key
+    extra_hosts:
+       - "user1.${BASE_DOMAIN}:172.27.0.100"
+       - "user2.${BASE_DOMAIN}:172.27.0.100"
+       - "user3.${BASE_DOMAIN}:172.27.0.100"  
+    networks:
+      - twake-network   
+       
+  patcher:
+    image: docker:26-cli
+    container_name: patcher-onlyoffice
+    networks:
+      - twake-network
+    depends_on:
+      - onlyoffice-documentserver  
+    volumes:
+      - ./scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "/scripts/entrypoint.sh"]
+    restart: "no"         
+  
+networks:
+  twake-network:
+    external: true

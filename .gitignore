@@ -1,0 +1,24 @@
+# Ignore database data
+twake_db/ldap/bootstrap/users.ldif
+twake_auth/config/lmConf-1.json
+tmail_app/config/domainlist.xml
+tmail_app/config/jmap.properties
+tmail_app/config/mailetcontainer.xml
+tmail_app/config/smtpserver.xml
+tmail_app/config/usersrepository.xml
+tmail_app/config/webadmin.properties
+tmail_app/tmail-web-conf/.env
+meet_app/config/nginx.conf
+linshare_app/config/backend/linshare.extra.properties
+linshare_app/config/user-ui/config.js
+cozy-stack/config/cozy.yaml
+chat_app/synapse/homeserver-postgres.yaml
+chat_app/synapse/wellknownclient.conf
+chat_app/synapse/wellknownserver.conf
+chat_app/synapse/.env
+chat_app/chat/config.json
+calendar_app/conf-side-service/configuration.properties
+calendar_app/frontend/account/openpaas.js
+calendar_app/frontend/calendar/openpaas.js
+calendar_app/frontend/contacts/openpaas.js
+calendar_app/frontend/env.js

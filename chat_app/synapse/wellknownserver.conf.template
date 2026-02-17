@@ -1,0 +1,3 @@
+{
+    "m.server": "matrix.${BASE_DOMAIN}:443"
+}

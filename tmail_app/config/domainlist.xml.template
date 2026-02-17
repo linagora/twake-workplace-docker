@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!-- Read https://james.apache.org/server/config-domainlist.html for further details -->
+
+<domainlist>
+    <autodetect>false</autodetect>
+    <autodetectIP>false</autodetectIP>
+    <defaultDomain>${BASE_DOMAIN}</defaultDomain>
+</domainlist>

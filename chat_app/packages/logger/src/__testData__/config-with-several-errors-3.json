@@ -1,0 +1,9 @@
+{
+  "logging": {
+    "default_meta": {},
+    "silent": false,
+    "exit_on_error":false,
+    "log_level": "error",
+    "log_lransports": "falsy"
+  }
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<!-- Read https://james.apache.org/server/config-recipientrewritetable.html for further details -->
+
+<!-- The default table for storing James' RecipientRewriteTable mappings. -->
+<recipientrewritetable>
+  <recursiveMapping>true</recursiveMapping>
+  <mappingLimit>10</mappingLimit>
+</recipientrewritetable>
+

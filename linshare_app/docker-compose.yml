@@ -1,0 +1,127 @@
+services:
+
+    backend-linshare:
+        container_name: linshare_backend
+        restart: on-failure
+        image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-backend:6.5.3
+        volumes:
+            - linshare_data:/var/lib/linshare
+            - ./config/backend/log4j.properties:/etc/linshare/log4j.properties
+            - ../twake_auth/traefik/ssl/root-ca.pem:/new-ca/root-ca.pem
+            - ./config/backend/linshare.extra.properties:/etc/linshare/linshare.extra.properties            
+        healthcheck:
+            test: ["CMD", "curl", "-s", "-f", "http://localhost:8080/linshare/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+        networks:
+            - twake-network    
+        extra_hosts:
+            - "auth.${BASE_DOMAIN}:172.27.0.100"    
+        environment:
+            # These variables are mandatory
+            - SMTP_HOST=linshare_mail
+            - SMTP_PORT=25
+            - CLAMAV_HOST=linshare_clamav
+            - POSTGRES_HOST=postgres
+            - POSTGRES_PORT=5432
+            - POSTGRES_USER=linshare
+            - POSTGRES_PASSWORD=linshare
+            - CLAMAV_PORT=3310
+            - MONGODB_DATA_REPLICA_SET=mongodb:27017
+            - MONGODB_SMALLFILES_REPLICA_SET=mongodb:27017
+            - MONGODB_USER=mongoroot
+            - MONGODB_PASSWORD=password
+            - THUMBNAIL_ENABLE=true
+            - START_DEBUG=1
+            - DEBUG=1
+            - LS_DEBUG=1
+
+    thumbnail-server:
+        container_name: linshare_thumbnail-server
+        restart: on-failure
+        image: linagora/linshare-thumbnail-server:2.1.1
+        healthcheck:
+            test: ["CMD", "curl", "-s", "-f", "http://localhost:8081/healthcheck"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+        networks:
+            - twake-network    
+
+    ui-user:
+        container_name: linshare_ui-user
+        restart: on-failure
+        image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-ui-user:6.5.3
+        healthcheck:
+            test: ["CMD", "curl", "-s", "-f", "http://localhost/linshare/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+        depends_on:
+            - backend-linshare
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.linshare-http.rule=Host(`linshare.${BASE_DOMAIN}`)"
+          - "traefik.http.routers.linshare-http.entrypoints=web"
+          - "traefik.http.routers.user.rule=Host(`linshare.${BASE_DOMAIN}`)"
+          - "traefik.http.routers.user.entrypoints=websecure"
+          - "traefik.http.routers.linshare-http.middlewares=redirect-to-https"
+        environment:
+            - EXTERNAL_URL=linshare.${BASE_DOMAIN}
+            - TOMCAT_URL=backend-linshare
+            - TOMCAT_PORT=8080
+            - LINSHARE_FRAME_ANCESTOR=https://*.${BASE_DOMAIN}
+        volumes:
+          - ./config/user-ui/config.js:/usr/local/apache2/htdocs/linshare-ui-user/new/config/config.js
+          - ./config/user-ui/linshare-ui-user.conf:/usr/local/apache2/conf/extra/linshare-ui-user.conf    
+        networks:
+            - twake-network
+    ui-admin:
+        container_name: linshare_ui-admin
+        restart: on-failure
+        image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-ui-admin:6.5.3
+        healthcheck:
+            test: ["CMD", "curl", "-s", "-f", "http://localhost/linshare/"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 40s
+        depends_on:
+            - backend-linshare
+        labels:
+          - "traefik.enable=true"
+          - "traefik.http.routers.admin.rule=Host(`admin-linshare.${BASE_DOMAIN}`)"
+        environment:
+            - EXTERNAL_URL=admin-linshare.${BASE_DOMAIN}
+            - TOMCAT_URL=backend-linshare
+            - TOMCAT_PORT=8080
+        networks:
+            - twake-network
+    ui-upload-request:
+      container_name: linshare_ui-upload-request
+      image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-ui-upload-request:6.5.3
+      environment:
+        - EXTERNAL_URL=upload-request-linshare.${BASE_DOMAIN}
+        - TOMCAT_URL=backend-linshare
+        - TOMCAT_PORT=8080
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.uploadrequest.rule=Host(`upload-request-linshare.${BASE_DOMAIN}`)"
+      networks:
+            - twake-network
+    clamav:
+        container_name: linshare_clamav
+        restart: on-failure
+        image: mkodockx/docker-clamav
+        networks:
+            - twake-network
+volumes:
+  linshare_data:
+    driver: local            
+networks:
+  twake-network:
+    external: true

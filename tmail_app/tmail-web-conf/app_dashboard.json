@@ -1,0 +1,9 @@
+{
+  "apps": [
+    {
+      "appName": "TMail",
+      "icon": "ic_tmail_app.svg",
+      "appLink": "http://localhost:8071/"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+    "logging": {
+      "default_meta": {},
+      "silent": false,
+      "exit_on_error":false,
+      "log_level": "falsy",
+      "log_transports": [{
+        "type": "File",
+        "options": "falsy"
+      }]
+    }
+  }

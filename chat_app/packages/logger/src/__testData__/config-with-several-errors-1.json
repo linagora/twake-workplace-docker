@@ -1,0 +1,10 @@
+{
+  "logging": {
+    "default_meta": {},
+    "silent": "falsy",
+    "exit_on_error": "falsy",
+    "log_transports": [{
+      "falsy": "falsy"
+    }]
+  }
+}

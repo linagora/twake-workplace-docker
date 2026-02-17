@@ -1,0 +1,76 @@
+window.APP_CONFIGURATION = Object.freeze({
+  resetPasswordUrl: null,
+  legacyAppUrl: 'https://linshare.linagora.com/',
+  appContext: '/new',
+  flowSettings: {
+    // Size of a chunk when uploading files, default value is 10Mb
+    stack: [],
+    chunkSize: 10e6,
+    simultaneousUploads: 1,
+    permanentErrors: [401, 404, 500, 501],
+    successStatuses: [200],
+  },
+  flowFactoryProviderDefaults: {
+    /* Do not update this value. It is not yet supported by the backend. */
+    simultaneousUploads: 3,
+    allowDuplicateUploads: true,
+    maxChunkRetries: 3,
+    testChunks: true,
+    chunkRetryInterval: 1000,
+    initFileFn: function (flowFile) {
+      const MIN_CHUNK_SIZE = 2 * 1024 * 1024;
+      const MAX_CHUNK_SIZE = 100 * 1024 * 1024;
+
+      const fileSize = flowFile.size;
+
+      /*
+        We have discovered a bug in flow.js which prevents us from
+        leveraging a chunkSize that is not an integer.
+        For example 1.73*1024*1024 is not going to work.
+        As a solution, we decided to leverage an integer number of Megabyte.
+      */
+      const proposedChunkSize = Math.ceil((fileSize * 0.02) / (1024 * 1024)) * 1024 * 1024;
+
+      const actualChunkSize = Math.min(Math.max(proposedChunkSize, MIN_CHUNK_SIZE), MAX_CHUNK_SIZE);
+
+      flowFile.flowObj.opts.chunkSize = actualChunkSize;
+      flowFile.dynamicChunkSize = actualChunkSize;
+    },
+  },
+  /**
+   * Configuration for OIDC authentication
+   * - oidcForceRedirection: upon unauthenticated user event,
+   * the page will be redirected directly to OIDC authentication portal,
+   * skipping the login page
+   */
+  oidcEnabled: true,
+  oidcForceRedirection: true,
+  oidcSetting: {
+    authority: 'https://auth.${BASE_DOMAIN}/',
+    client_id: 'linshare',
+    client_secret: 'linshare',
+    client_logo: 'linagora-logo-favicon.svg',
+    client_name: 'Linagora',
+    scope: 'openid email profile',
+    oidcToken: 'Oidc-Jwt',
+    loadUserInfo: true
+  },
+  /**
+   * Allow users to login with email and password.
+   * If false:
+   *  - Login form for email and password will be hidden
+   *  - Keep logged in and Reset password buttons will also be hidden
+   */
+  showLoginForm: true,
+  // For upload options management
+  mySpacePage: 'myspace',
+  workgroupPage: 'workgroup',
+  asyncUploadDelay: 2000,
+  // For application configuration
+  accountType: {
+    internal: 'INTERNAL',
+    guest: 'GUEST',
+    superadmin: 'SUPERADMIN',
+    system: 'SYSTEM',
+  },
+});

@@ -1,0 +1,196 @@
+services:
+
+  synapse-init:
+    image: busybox
+    volumes:
+      - ./synapse:/data
+    command: sh -c "chown -R 991:991 /data/media_store && chmod -R u+rwX /data/media_store"
+    restart: "no"
+    networks:
+      - twake-network
+
+  synapse:
+    image: matrixdotorg/synapse:v1.119.0
+    restart: unless-stopped
+    user: "root"
+    depends_on:
+      - synapse-init
+    env_file:
+      - path: ./synapse/.env
+        required: true
+    volumes:
+      - ./synapse:/data
+      - ./synapse/homeserver-postgres.yaml:/data/homeserver.yaml
+      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
+    networks:
+      - twake-network
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.synapse.rule=Host(`matrix.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.synapse.entrypoints=websecure"
+      - "traefik.http.services.synapse.loadbalancer.server.port=8008"
+      - "traefik.http.routers.matrixfromchat.rule=Host(`chat.${BASE_DOMAIN}`) && PathPrefix(`/_matrix`)"
+      - "traefik.http.routers.matrixfromchat.entrypoints=websecure"
+      - "traefik.http.routers.matrixfromchat.priority=100"
+
+  tom:
+    image: tom
+    build:
+      context: .
+      # dockerfile: ./packages/tom-server/Dockerfile
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      synapse:
+        condition: service_started
+    networks:
+      - twake-network
+    environment:
+      # - NODE_OPTIONS="--inspect=0.0.0.0:9229"
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+      - SERVER_NAME=${BASE_DOMAIN}
+      - BASE_URL=https://tom.${BASE_DOMAIN}
+      - OIDC_ISSUER=https://auth.${BASE_DOMAIN}
+      - TRUSTED_PROXIES=uniquelocal
+
+      - ADDITIONAL_FEATURES=true
+      # - FEDERATED_IDENTITY_SERVICES=fed.docker.localhost
+
+      # - CRON_SERVICE=true
+      # - UPDATE_FEDERATED_IDENTITY_HASHES_CRON=0-59/2 * * * *
+      # - UPDATE_USERS_CRON=1-59/2 * * * *
+
+      - DATABASE_ENGINE=pg
+      - DATABASE_HOST=postgres
+      - DATABASE_NAME=tom
+      - DATABASE_USER=twake
+      - DATABASE_PASSWORD=twake!1
+
+      - USERDB_ENGINE=ldap
+      - LDAP_URI=ldap://ldap
+      - LDAP_BASE=ou=users,${LDAP_BASE_DN}
+      - LDAP_FILTER=(objectClass=inetOrgPerson)
+      - LDAP_USER=cn=admin,${LDAP_BASE_DN}
+      - LDAP_PASSWORD=admin
+
+      - MATRIX_INTERNAL_HOST=http://synapse:8008
+      - MATRIX_SERVER=matrix.${BASE_DOMAIN}
+      - MATRIX_DATABASE_ENGINE=pg
+      - MATRIX_DATABASE_HOST=postgres
+      - MATRIX_DATABASE_NAME=synapse
+      - MATRIX_DATABASE_USER=synapse
+      - MATRIX_DATABASE_PASSWORD=synapse!1
+
+      - SMS_API_KEY=SOME_SECRET_KEY
+      - SMS_API_LOGIN=login@domain.com
+      - SMS_API_URL=https://api.octopush.com/v1/public
+
+      - TCHAT_ENABLE_INVITATIONS=true
+
+      - FEATURE_MATRIX_PROFILE_UPDATES_ALLOWED=''
+
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_VHOST=/
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_TLS=false
+
+      - FEATURE_COMMON_SETTINGS_ENABLED=true
+      - FEATURE_COMMON_SETTINGS_QUEUE=chat.settings.updated.queue
+      - FEATURE_COMMON_SETTINGS_EXCHANGE="settings exchange"
+      - FEATURE_COMMON_SETTINGS_ROUTING_KEY="user.settings.updated"
+
+      - FEATURE_USER_DIRECTORY_ENABLED=true
+      - FEATURE_USER_PROFILE_DEFAULT_VISIBILITY=public
+      - FEATURE_USER_PROFILE_DEFAULT_VISIBLE_FIELDS=email,phone
+
+      - LOG_LEVEL=silly
+      - LOG_TRANSPORTS=Console
+    extra_hosts:
+      - "matrix.${BASE_DOMAIN}:172.27.0.100"  
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tom.rule=Host(`tom.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.tom.entrypoints=websecure"
+      - "traefik.http.services.tom.loadbalancer.server.port=3000"
+      - "traefik.http.routers.tomfromchat.rule=Host(`chat.${BASE_DOMAIN}`) && PathPrefix(`/_twake`)"
+      - "traefik.http.routers.tomfromchat.entrypoints=websecure"
+      - "traefik.http.routers.tomfromchat.priority=100" 
+
+  fed:
+    image: fed
+    restart: unless-stopped
+    depends_on:
+      tom:
+        condition: service_started
+    build:
+      context:  ./
+      dockerfile: packages/federated-identity-service/Dockerfile
+    # ports:
+    #   - 3001:3001
+    #   - 9229:9229
+    networks:
+      - twake-network
+    environment:
+      # - NODE_OPTIONS="--inspect=0.0.0.0:9229"
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+
+      - BASE_URL=https://fed.${BASE_DOMAIN}
+      - SERVER_NAME=${BASE_DOMAIN}
+      - TRUSTED_PROXIES=uniquelocal
+      - TRUSTED_SERVERS_ADDRESSES=172.0.0.0/8
+
+      - ADDITIONAL_FEATURES=true
+
+      - CRON_SERVICE=true
+      # - UPDATE_FEDERATED_IDENTITY_HASHES_CRON=0-59/2 * * * *
+      # - UPDATE_USERS_CRON=1-59/2 * * * *
+
+      - DATABASE_ENGINE=pg
+      - DATABASE_HOST=postgres
+      - DATABASE_NAME=fed
+      - DATABASE_USER=twake
+      - DATABASE_PASSWORD=twake!1
+
+      ## For storing the federated identity raw users
+      # - USERDB_ENGINE=ldap
+      # - LDAP_URI=ldap://ldap
+      # - LDAP_BASE=ou=users,dc=docker,dc=localhost
+      # - LDAP_FILTER=(objectClass=inetOrgPerson)
+      # - LDAP_USER=uid=fed,dc=docker,dc=localhost  ## Local LDAP is fully readable
+      # - LDAP_PASSWORD=F3d_p@Ss                    ## Local LDAP is fully readable
+
+      - LOG_LEVEL=silly
+      - LOG_TRANSPORTS=Console
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.fed.rule=Host(`fed.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.fed.entrypoints=websecure"
+      - "traefik.http.services.fed.loadbalancer.server.port=3000"
+
+  chat:
+    image: linagora/twake-web
+    restart: unless-stopped
+    volumes:
+      - ./chat/config.json:/usr/share/nginx/html/web/config.json
+    networks:
+      - twake-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chat-redirect.rule=Host(`chat.${BASE_DOMAIN}`) && Path(`/`)"
+      - "traefik.http.routers.chat-redirect.entrypoints=websecure"
+      - "traefik.http.routers.chat-redirect.middlewares=chat-redirect"
+      - "traefik.http.middlewares.chat-redirect.redirectregex.regex=^https://chat.${BASE_DOMAIN}/$"
+      - "traefik.http.middlewares.chat-redirect.redirectregex.replacement=https://chat.${BASE_DOMAIN}/web/"
+      - "traefik.http.middlewares.chat-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.chat.rule=Host(`chat.${BASE_DOMAIN}`) && PathPrefix(`/web`)"
+      - "traefik.http.routers.chat.entrypoints=websecure"
+      - "traefik.http.services.chat.loadbalancer.server.port=80"
+      
+networks:
+  twake-network:
+    external: true
+

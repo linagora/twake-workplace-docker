@@ -1,0 +1,5 @@
+oidc.on=true
+oidc.issuerUri=https://auth.${BASE_DOMAIN}/
+oidc.client.id=linshare
+oidc.client.secret=linshare
+oidc.opaqueToken.lengh=64

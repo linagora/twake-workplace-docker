@@ -1,0 +1,26 @@
+port: 7880
+
+rtc:
+  udp_port: 7881
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: false
+turn:
+  enabled: true
+  udp_port: 443
+
+keys:
+#  <LIVEKIT_API_KEY>: <LIVEKIT_API_SECRET>
+  9f3b2c7a8e6d4f1c: 6a9d0a3f5e4b8c2f9a7d6e3c1b4f8a2e
+
+
+
+redis:
+  address: valkey:6379
+  password: valkeypass
+
+
+logging:
+  level: info
+

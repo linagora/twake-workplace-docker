@@ -1,0 +1,8 @@
+{
+  "logging": {
+    "log_level": "warn",
+    "log_transports": [{
+      "type":"Console"
+    }]
+  }
+}

@@ -1,0 +1,80 @@
+services:
+
+  lemonldap:
+    image: yadd/lemonldap-ng-full:2026-01-23
+    container_name: lemonldap-ng
+    volumes:
+      - ./config/lmConf-1.json:/var/lib/lemonldap-ng/conf/lmConf-1.json
+    environment:
+      - SSODOMAIN=${BASE_DOMAIN}
+      - LDAP_BASE_DN=${LDAP_BASE_DN}
+      - LOGLEVEL=debug
+      - PROTECTION=none
+      - PORTAL=https://auth.${BASE_DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.lemonldap-auth.rule=Host(`auth.${BASE_DOMAIN}`)"  
+      - "traefik.http.services.lemonldap.loadbalancer.server.port=80"
+      - "traefik.http.routers.lemonldap-man.rule=Host(`manager.${BASE_DOMAIN}`)"  
+    restart: unless-stopped
+    extra_hosts:
+      - "oauthcallback.${BASE_DOMAIN}:172.27.0.100"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    networks:
+      - twake-network
+  reverse-proxy:
+    image: traefik:v2.6
+    container_name: reverse-proxy
+    restart: unless-stopped
+    ports:
+      - 443:443
+      - 80:80
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${BASE_DOMAIN}`)"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+    volumes:
+      - ./traefik/config:/etc/traefik
+      - ./traefik/ssl/:/ssl/
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s  
+    networks:
+      twake-network:
+        ipv4_address: 172.27.0.100 
+      
+  twake-docker-socket:
+    container_name: docker-socket
+    image: tecnativa/docker-socket-proxy
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - CONTAINERS=1  
+      - SYSTEM=1 
+      - EXEC=1  
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep haproxy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - twake-network    
+        
+  
+networks:
+  twake-network:
+    external: true

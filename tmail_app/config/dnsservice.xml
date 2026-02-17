@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!-- Read https://james.apache.org/server/config-dnsservice.html for further details -->
+
+<dnsservice>
+  <autodiscover>true</autodiscover>
+  <authoritative>false</authoritative>
+  <maxcachesize>50000</maxcachesize>
+</dnsservice>

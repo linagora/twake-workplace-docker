@@ -1,0 +1,13 @@
+{
+  "logging": {
+    "log_level": "info",
+    "log_transports": [{
+      "type":"Console"
+    }],
+    "silent": false,
+    "exit_on_error": false,
+    "default_meta": null,
+    "exception_handlers": [],
+    "rejection_handlers": []
+  }
+}

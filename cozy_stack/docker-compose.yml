@@ -1,0 +1,66 @@
+services:
+
+  cozy-stack:
+    image: cozy/cozy-stack:1.6.44
+    container_name: cozyt
+    restart: unless-stopped
+   
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cozy.rule=HostRegexp(`{subdomain:user3-home|user3|user3-drive|user3-linshare|user3-mail|user3-chat|user3-settings|user3-notes|user3-dataproxy|oauthcallback|user1-dataproxy|user1|user1-home|user1-chat|user1-linshare|user1-settings|user1-drive|user1-mail|user1-notes|user2|user2-home|user2-dataproxy|user2-settings|user2-chat|user2-linshare|user2-mail|user2-drive|user2-notes}.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.cozy.entrypoints=websecure"
+      - "traefik.http.routers.cozy.tls=true"
+      - "traefik.http.services.cozy.loadbalancer.server.port=8080"
+    environment:
+      COUCHDB_HOST: couchdb
+      COUCHDB_USER: admin
+      BASE_DOMAIN: ${BASE_DOMAIN}
+      COUCHDB_PASSWORD: password
+      COZY_ADMIN_PASSPHRASE: admin
+      INBOX_SECRET: secret
+      OUTBOX_SECRET: secret
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+      - "user1.${BASE_DOMAIN}:172.27.0.100"
+      - "user2.${BASE_DOMAIN}:172.27.0.100"
+      - "user3.${BASE_DOMAIN}:172.27.0.100"
+    volumes:
+      - cozy-data:/var/lib/cozy/
+      - ./config/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
+      - ./config/cozy.yaml:/etc/cozy/cozy.yaml
+      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
+      - ./config/create-shortcut.sh:/usr/local/bin/create-shortcut.sh
+      #- ./config/change-features.sh:/usr/local/bin/change-features.sh
+      #- ./config/example-features.json:/usr/local/bin/example-features.json
+      - ./config/example-shortcut.json:/usr/local/bin/example-shortcut.json
+    healthcheck:
+      test: ["CMD-SHELL", "[ \"$(curl -fsSL http://localhost:8080/status | jq -r .status)\" = \"OK\" ] || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 4
+      start_period: 10s  
+    networks:
+      - twake-network  
+  patcher-cozy:
+    image: docker:26-cli
+    container_name: patcher-cozy
+    networks:
+      - twake-network
+
+    depends_on:
+      - cozy-stack  
+    environment:
+      - CONTAINER=cozyt   
+      - ENABLE_APPS="mail,linshare,chat,calendar,meet,calendar-v2,contacts"
+      - BASE_DOMAIN=${BASE_DOMAIN}
+    volumes:
+      - ./scripts:/scripts
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "/scripts/entrypoint.sh"]
+    restart: "no" 
+volumes:
+  cozy-data:   
+    driver: local 
+networks:
+  twake-network:
+    external: true

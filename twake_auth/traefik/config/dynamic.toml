@@ -1,0 +1,36 @@
+[[tls.certificates]]
+  certFile = "/ssl/twake-server-fullchain.pem"
+  keyFile  = "/ssl/twake-server.key"
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/ssl/twake-server-fullchain.pem"
+      keyFile = "/ssl/twake-server.key"
+
+
+[tls.options]
+  [tls.options.default]
+    minVersion = "VersionTLS12"
+    sniStrict = false
+    
+
+[http.serversTransports]
+  [http.serversTransports.insecure-transport]
+    insecureSkipVerify = true    
+
+[http.middlewares]
+  [http.middlewares.cors-headers]
+    [http.middlewares.cors-headers.headers]
+      accessControlAllowOriginList = ["*"]
+      accessControlAllowHeaders = [
+        "Content-Type", 
+        "Authorization", 
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+        "User-Agent",
+        "Accept-Language",
+        "Cache-Control"
+      ]
+      accessControlMaxAge = 86400
+      addVaryHeader = true

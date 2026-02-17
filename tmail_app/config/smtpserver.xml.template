@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+
+<!-- Read https://james.apache.org/server/config-smtp-lmtp.html#SMTP_Configuration for further details -->
+
+<smtpservers>
+    <smtpserver enabled="true">
+        <jmxName>smtpserver-mx</jmxName>
+        <bind>0.0.0.0:25</bind>
+        <connectionBacklog>200</connectionBacklog>
+        <connectiontimeout>360</connectiontimeout>
+        <connectionLimit>0</connectionLimit>
+        <connectionLimitPerIP>0</connectionLimitPerIP>
+        <tls socketTLS="false" startTLS="true">
+            <privateKey>file://secrets/smtp/tls.key</privateKey>
+            <certificates>file://secrets/smtp/tls.crt</certificates>
+        </tls>
+        <authRequired>false</authRequired>
+        <verifyIdentity>false</verifyIdentity> <!-- Trust SpamTitan -->
+        <maxmessagesize>27M</maxmessagesize>
+        <ioWorkerCount>1</ioWorkerCount>
+        <maxExecutorCount>4</maxExecutorCount>
+
+        <addressBracketsEnforcement>true</addressBracketsEnforcement>
+        <smtpGreeting>Hello from Twake Mail</smtpGreeting>
+        <helloName autodetect="false">smtp.${BASE_DOMAIN}</helloName>
+        <authorizedAddresses>127.0.0.1,::1,172.16.0.0/12,192.168.0.0/16</authorizedAddresses>
+        <handlerchain coreHandlersPackage="com.linagora.tmail.smtp.TMailCmdHandlerLoader">
+        </handlerchain>
+    </smtpserver>
+    <smtpserver enabled="true">
+        <jmxName>smtpserver-authenticated</jmxName>
+        <bind>0.0.0.0:587</bind>
+        <connectionBacklog>200</connectionBacklog>
+        <connectiontimeout>360</connectiontimeout>
+        <connectionLimit>0</connectionLimit>
+        <connectionLimitPerIP>0</connectionLimitPerIP>
+        <tls socketTLS="false" startTLS="true">
+            <privateKey>file://secrets/smtp/tls.key</privateKey>
+            <certificates>file://secrets/smtp/tls.crt</certificates>
+        </tls>
+        <authRequired>true</authRequired>
+        <auth>
+            <announce>forUnauthorizedAddresses</announce>
+            <requireSSL>true</requireSSL>
+            <plainAuthEnabled>true</plainAuthEnabled>
+        </auth>
+        <verifyIdentity>true</verifyIdentity>
+        <maxmessagesize>27M</maxmessagesize>
+        <ioWorkerCount>1</ioWorkerCount>
+        <maxExecutorCount>4</maxExecutorCount>
+
+        <addressBracketsEnforcement>true</addressBracketsEnforcement>
+        <smtpGreeting>Hello from Twake Mail</smtpGreeting>
+        <helloName autodetect="false">smtp.${BASE_DOMAIN}</helloName>
+        <handlerchain coreHandlersPackage="com.linagora.tmail.smtp.TMailCmdHandlerLoader">
+            <handler class="com.linagora.tmail.smtp.TMailValidRcptHandler"/>
+        </handlerchain>
+    </smtpserver>
+    <smtpserver enabled="true">
+        <jmxName>smtpserver-TLS</jmxName>
+        <bind>0.0.0.0:465</bind>
+        <connectionBacklog>200</connectionBacklog>
+        <connectiontimeout>360</connectiontimeout>
+        <connectionLimit>0</connectionLimit>
+        <connectionLimitPerIP>0</connectionLimitPerIP>
+        <tls socketTLS="true" startTLS="false">
+            <privateKey>file://secrets/smtp/tls.key</privateKey>
+            <certificates>file://secrets/smtp/tls.crt</certificates>
+        </tls>
+        <auth>
+            <announce>forUnauthorizedAddresses</announce>
+            <requireSSL>true</requireSSL>
+            <plainAuthEnabled>true</plainAuthEnabled>
+        </auth>
+        <authRequired>true</authRequired>
+        <verifyIdentity>true</verifyIdentity>
+        <maxmessagesize>27M</maxmessagesize>
+        <ioWorkerCount>1</ioWorkerCount>
+        <maxExecutorCount>4</maxExecutorCount>
+        <addressBracketsEnforcement>true</addressBracketsEnforcement>
+        <smtpGreeting>Hello from Twake Mail</smtpGreeting>
+	    <helloName autodetect="false">smtp.${BASE_DOMAIN}</helloName>
+        <handlerchain coreHandlersPackage="com.linagora.tmail.smtp.TMailCmdHandlerLoader">
+            <handler class="com.linagora.tmail.smtp.TMailValidRcptHandler"/>
+        </handlerchain>
+    </smtpserver>
+</smtpservers>
+
+

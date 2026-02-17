@@ -1,4 +1,8 @@
 version: '3.8'
 
 include:
-  - cozy-stack/docker-compose.yml
+  - cozy_stack/docker-compose.yml
+  - meet_app/docker-compose.yml
+  - linshare_app/docker-compose.yml
+  - twake_db/docker-compose.yml
+  - twake_auth/docker-compose.yml

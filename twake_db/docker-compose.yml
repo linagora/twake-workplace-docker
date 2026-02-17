@@ -1,0 +1,219 @@
+services:
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: ldap
+    environment:
+      LDAP_DOMAIN: "${MAIL_DOMAIN}"
+      LDAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
+    restart: unless-stopped
+    #ports:
+      #- "389:389"
+    command: ["--copy-service", "--loglevel", "debug"]
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost", "-b", "${LDAP_BASE_DN}", "-D", "cn=admin,${LDAP_BASE_DN}", "-w", "admin"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+      
+      
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    #ports:
+      #- "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-db-postgres:/docker-entrypoint-initdb.d/
+      - ./postgres/scripts:/scripts/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    labels:
+      - "traefik.enable=false"  
+    networks:
+      - twake-network
+
+  valkey:
+    image: bitnamilegacy/valkey
+    container_name: visio-valkey
+    environment:
+      VALKEY_PASSWORD: valkeypass
+    restart: unless-stopped
+    volumes:
+      - valkey_data:/bitnami/valkey/data
+    labels:
+      - "traefik.enable=false"
+    #ports:
+      #- "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "valkey-cli -a valkeypass ping | grep PONG || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - twake-network
+
+  couchdb:
+    image: couchdb:3.3.3
+    container_name: couchdb
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+    environment:
+      COUCHDB_USER: admin
+      COUCHDB_PASSWORD: password
+      COUCHDB_HOST: couchdb
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s  
+    #ports:
+      #- "5984:5984"  
+    networks:
+      - twake-network  
+      
+  mongodb:
+    image: mongo:6
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongoroot
+      MONGO_INITDB_ROOT_PASSWORD: password
+    networks:
+      - twake-network
+    labels:
+      - "traefik.enable=false"  
+    volumes:
+      - mongodb_data:/data/db
+    #ports:
+      #- "27017:27017"
+    command: [ "mongod", "--bind_ip", "0.0.0.0" ]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "'quit(db.runCommand({ ping: 1 }).ok ? 0 : 2)'",
+        ]
+      start_period: 40s
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+
+  rabbitmq:
+    image: rabbitmq:3.13.3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    networks:
+      - twake-network
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq  
+      - ./rabbitmq/entrypoint.sh:/etc/rabbitmq/rabbitmq-init.sh
+    #ports:
+      #- "15672:15672"  # Management UI
+      #- "5672:5672"    # AMQP port
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 3s
+      timeout: 30s
+      retries: 3
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    labels:
+      - "traefik.enable=false"  
+    entrypoint: ["/bin/bash", "/etc/rabbitmq/rabbitmq-init.sh"]  
+
+  cassandra:
+    image: bitnamilegacy/cassandra:4.1.7
+    container_name: cassandra
+    hostname: cassandra
+    restart: always
+    networks:
+      - twake-network
+    labels:
+      - "traefik.enable=false" 
+    environment:
+      CASSANDRA_USER: cassandra
+      CASSANDRA_PASSWORD: jK9mL2nP5qR8tW3vX
+      CASSANDRA_PASSWORD_SEEDER: yes
+      JAVA_TOOL_OPTIONS: -Dcassandra.skip_wait_for_gossip_to_settle=0
+      HEAP_NEWSIZE: 256M
+      MAX_HEAP_SIZE: 1024M
+ 
+    volumes:
+      - cassandra_data:/bitnami/cassandra
+    healthcheck:
+      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+
+  minio:
+    image: bitnamilegacy/minio:2025.2.7
+    container_name: minio
+    hostname: minio
+    restart: always
+    networks:
+      - twake-network
+    environment:
+      - MINIO_ROOT_USER=vW9xY2zA5bC8dE1fG4hJ3kL
+      - MINIO_ROOT_PASSWORD=hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+      - MINIO_SCHEME=http
+    volumes:
+      - minio_data:/bitnami/minio/data
+    labels:
+      - "traefik.enable=false"  
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5      
+            
+volumes:
+  postgres_data:
+    driver: local
+  ldap_data:
+    driver: local
+  couchdb_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  cassandra_data:
+    driver: local
+  minio_data:
+    driver: local  
+  valkey_data:
+    driver: local    
+
+
+
+networks:
+  twake-network:
+    external: true

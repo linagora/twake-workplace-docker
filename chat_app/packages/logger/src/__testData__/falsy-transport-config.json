@@ -1,0 +1,8 @@
+{
+  "logging": {
+    "log_level": "error",
+    "log_transports": [{
+      "type":"falsy"
+    }]
+  }
+}
