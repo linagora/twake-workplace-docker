@@ -20,12 +20,20 @@ if [ "$ACTION" = "up" ]; then
     exit 1
   fi
 
-  echo "Creating certs..."
-  ./generate-cert.sh
+  if [ ! -f "traefik/ssl/twake-server.pem" ] || [ ! -f "traefik/ssl/root-ca.crt" ]; then
+    echo "Creating certs..."
+    ./generate-cert.sh
+    CERTS_REGENERATED=true
+  fi
 fi
 
 
 sudo docker compose --env-file ../.env "$@"
+
+if [ "${CERTS_REGENERATED:-}" = "true" ]; then
+  echo "Certs were regenerated, restarting reverse-proxy..."
+  sudo docker compose --env-file ../.env restart reverse-proxy
+fi
 
 if [ "$ACTION" != "up" ]; then
   exit 0
