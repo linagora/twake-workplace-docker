@@ -1,5 +1,4 @@
 services:
-
   lemonldap:
     image: yadd/lemonldap-ng-full:2026-01-23
     platform: linux/amd64
@@ -24,10 +23,10 @@ services:
       - "oauthcallback.${BASE_DOMAIN}:172.27.0.100"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
 
     networks:
       - twake-network
@@ -53,11 +52,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s  
+      start_period: 20s
     networks:
       twake-network:
-        ipv4_address: 172.27.0.100 
-      
+        ipv4_address: 172.27.0.100
+
   twake-docker-socket:
     container_name: docker-socket
     image: tecnativa/docker-socket-proxy
@@ -76,9 +75,8 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - twake-network    
-        
-  
+      - twake-network
+
 networks:
   twake-network:
     external: true
