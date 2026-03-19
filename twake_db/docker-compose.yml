@@ -170,7 +170,8 @@ services:
       test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
       interval: 30s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 120s
 
 
   minio:

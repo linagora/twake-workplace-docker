@@ -12,7 +12,6 @@ REPOS=(
     ["twake_auth"]="${BASE_DIR}/twake_auth"
     ["cozy_stack"]="${BASE_DIR}/cozy_stack"
     ["onlyoffice_app"]="${BASE_DIR}/onlyoffice_app"
-    ["linshare_app"]="${BASE_DIR}/linshare_app"
     ["meet_app"]="${BASE_DIR}/meet_app"
     ["calendar_app"]="${BASE_DIR}/calendar_app"
     ["chat_app"]="${BASE_DIR}/chat_app"
@@ -20,8 +19,15 @@ REPOS=(
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "linshare_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
-STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "linshare_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
+STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+
+# Dependencies: containers that must be healthy before starting a repo
+declare -A REPO_DEPS
+REPO_DEPS=(
+    ["chat_app"]="lemonldap-ng"
+    ["tmail_app"]="lemonldap-ng"
+)
 
 show_help() {
     echo "Usage: $0 <up|down> [repo] [service] [docker-compose options]"
@@ -64,10 +70,40 @@ wait_for_repo_health() {
         fi
 
         echo "⏳ Waiting for container '$name'..."
+        local attempt=0
+        local max_attempts=40
         until [[ "$(sudo docker inspect -f '{{.State.Health.Status}}' "$c")" == "healthy" ]]; do
+            attempt=$((attempt + 1))
+            if [[ $attempt -ge $max_attempts ]]; then
+                echo "❌ Timeout waiting for '$name' to become healthy"
+                sudo docker logs "$c" --tail 20 2>&1 || true
+                exit 1
+            fi
             sleep 3
         done
         echo "✅ '$name' is healthy!"
+    done
+}
+
+# ----------------------------
+# Helper: check that required containers are healthy before starting a repo
+# ----------------------------
+check_deps() {
+    local repo=$1
+    local deps="${REPO_DEPS[$repo]}"
+    if [[ -z "$deps" ]]; then
+        return
+    fi
+
+    for dep in $deps; do
+        local status
+        status=$(sudo docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$dep" 2>/dev/null || true)
+
+        if [[ "$status" != "healthy" ]]; then
+            echo "❌ Dependency '$dep' is not healthy (status: ${status:-not found}). Cannot start '$repo'."
+            exit 1
+        fi
+        echo "✅ Dependency '$dep' is healthy"
     done
 }
 
@@ -88,6 +124,11 @@ run_repo() {
     fi
 
     echo "🚀 $action '$repo' ${service:+service '$service'} ..."
+
+    if [[ "$action" == "up" ]]; then
+        check_deps "$repo"
+    fi
+
     cd "$dir"
 
     # If repo has a custom wrapper script, use it

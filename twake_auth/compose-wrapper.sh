@@ -20,40 +20,58 @@ if [ "$ACTION" = "up" ]; then
     exit 1
   fi
 
-  echo "Creating certs..."
-  ./generate-cert.sh
+  if [ ! -f "traefik/ssl/twake-server.pem" ] || [ ! -f "traefik/ssl/root-ca.crt" ]; then
+    echo "Creating certs..."
+    ./generate-cert.sh
+    CERTS_REGENERATED=true
+  fi
 fi
 
 
 sudo docker compose --env-file ../.env "$@"
 
+if [ "${CERTS_REGENERATED:-}" = "true" ]; then
+  echo "Certs were regenerated, restarting reverse-proxy..."
+  sudo docker compose --env-file ../.env restart reverse-proxy
+fi
+
 if [ "$ACTION" != "up" ]; then
   exit 0
 fi
 
-while true; do
+echo "⏳ Waiting for LemonLDAP to be healthy (timeout 5 min)..."
+ELAPSED=0
+MAX_WAIT=300
+while [ "$ELAPSED" -lt "$MAX_WAIT" ]; do
   STATUS=$(sudo docker inspect \
     --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
     "lemonldap-ng" 2>/dev/null || echo "starting")
 
   case "$STATUS" in
     healthy)
-      echo "✔ Lemonldap is healthy"
+      echo "✔ LemonLDAP is healthy"
       break
       ;;
     unhealthy)
-      echo "❌ Lemonldap is unhealthy"
+      echo "❌ LemonLDAP is unhealthy. Check logs: docker logs lemonldap-ng"
       exit 1
       ;;
     ""|starting)
-      echo "… Lemonldap status: starting"
-      sleep 4
+      echo "… LemonLDAP status: starting (${ELAPSED}s / ${MAX_WAIT}s)"
+      sleep 5
+      ELAPSED=$((ELAPSED + 5))
       ;;
     *)
-      echo "… Lemonldap status: $STATUS"
-      sleep 4
+      echo "… LemonLDAP status: $STATUS (${ELAPSED}s / ${MAX_WAIT}s)"
+      sleep 5
+      ELAPSED=$((ELAPSED + 5))
       ;;
   esac
 done
+
+if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+  echo "❌ Timeout: LemonLDAP did not become healthy in ${MAX_WAIT}s. Check: docker logs lemonldap-ng"
+  exit 1
+fi
 
 sudo docker exec lemonldap-ng bash -c "/usr/share/lemonldap-ng/bin/rotateOidcKeys" || true

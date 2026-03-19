@@ -1,6 +1,7 @@
 services:
   livekit:
-#    image: livekit/livekit-server:v1.8.3
+    #    image: livekit/livekit-server:v1.8.3
+    platform: linux/amd64
     build:
       context: .
       dockerfile: Dockerfile.livekit
@@ -28,12 +29,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: visio-backend
+    platform: linux/amd64
     entrypoint: |
       /bin/sh -c "
        apk add --no-cache curl && \
        python manage.py migrate --no-input && \
        gunicorn -c /usr/local/etc/gunicorn/meet.py --forwarded-allow-ips="*" meet.wsgi:application --reload"
-    user: root   
+    user: root
     environment:
       DJANGO_CONFIGURATION: Development
       DJANGO_SETTINGS_MODULE: meet.settings
@@ -89,7 +91,7 @@ services:
     extra_hosts:
       - "auth.${BASE_DOMAIN}:172.27.0.100"
     #ports:
-    #- "8000:8000" 
+    #- "8000:8000"
     labels:
       - "traefik.enable=false"
     networks:
@@ -106,6 +108,7 @@ services:
   frontend:
     image: ghcr.io/cozy/meet-frontend:0.0.1
     container_name: visio-frontend
+    platform: linux/amd64
     depends_on:
       backend:
         condition: service_healthy
@@ -121,7 +124,7 @@ services:
       BASE_DOMAIN: ${BASE_DOMAIN}
     restart: always
     #ports:
-      #- "4433:443"
+    #- "4433:443"
     networks:
       - twake-network
     labels:

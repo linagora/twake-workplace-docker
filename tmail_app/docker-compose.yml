@@ -1,10 +1,8 @@
-
 networks:
   twake-network:
     external: true
 
 services:
-
   # ==================== Search Engine ====================
   opensearch:
     image: opensearchproject/opensearch:2.18.0
@@ -25,9 +23,10 @@ services:
     volumes:
       - opensearch_data:/usr/share/opensearch/data
     labels:
-      - "traefik.enable=false"  
+      - "traefik.enable=false"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -40,18 +39,18 @@ services:
     networks:
       - twake-network
     #ports:
-      #- "25:25"       # SMTP
-      #- "143:143"     # IMAP
-      #- "465:465"     # SMTPS
-      #- "587:587"     # SMTP Submission
-      #- "993:993"     # IMAPS
+    #- "25:25"       # SMTP
+    #- "143:143"     # IMAP
+    #- "465:465"     # SMTPS
+    #- "587:587"     # SMTP Submission
+    #- "993:993"     # IMAPS
     volumes:
       - ./config:/root/conf
       - ./extensions-jars:/root/extensions-jars
       - ./secrets:/root/secrets
     depends_on:
       opensearch:
-        condition: service_healthy  
+        condition: service_healthy
     labels:
       - "traefik.enable=true"
       # Define services explicitly (solves "too many services" error)
@@ -88,7 +87,7 @@ services:
       - "traefik.http.routers.mail-backend-jmap.middlewares=cors-headers@file"
       - "traefik.http.routers.mail-backend-jmap.priority=300"
       - "traefik.http.routers.mail-backend-jmap.service=tmail-jmap"
-      
+
       # WebFinger default (non-OpenID queries) → TMail Backend (priority 200)
       - "traefik.http.routers.mail-backend-webfinger.rule=Host(`jmap.${BASE_DOMAIN}`) && Path(`/.well-known/webfinger`)"
       - "traefik.http.routers.mail-backend-webfinger.entrypoints=websecure"
@@ -108,18 +107,22 @@ services:
       - "traefik.http.middlewares.lemonldap-host.headers.customRequestHeaders.Host=jmap.${BASE_DOMAIN}"
     environment:
       - JAVA_TOOL_OPTIONS=
-          -Xms2000m
-          -Xmx2000m
-          -XX:+AlwaysPreTouch
-          -XX:+ExitOnOutOfMemoryError
-          -Xlog:gc*:file=/root/gc.log
-          -XX:MaxGCPauseMillis=20
-          -XX:ParallelGCThreads=2
-          -Djames.protocols.mdc.hostname=false
-          -Dextra.props=/root/conf/jvm.properties
+        -Xms2000m
+        -Xmx2000m
+        -XX:+AlwaysPreTouch
+        -XX:+ExitOnOutOfMemoryError
+        -Xlog:gc*:file=/root/gc.log
+        -XX:MaxGCPauseMillis=20
+        -XX:ParallelGCThreads=2
+        -Djames.protocols.mdc.hostname=false
+        -Dextra.props=/root/conf/jvm.properties
 
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -s -o /dev/null 'http://localhost:8000/healthcheck?check=IMAPHealthCheck&check=Cassandra%20backend&check=RabbitMQ%20backend&strict'"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f -s -o /dev/null 'http://localhost:8000/healthcheck?check=IMAPHealthCheck&check=Cassandra%20backend&check=RabbitMQ%20backend&strict'",
+        ]
       interval: 60s
       timeout: 30s
       retries: 3
@@ -151,13 +154,12 @@ services:
     networks:
       - twake-network
     #ports:
-      #- "8081:80"  # Access UI on http://localhost:8081
+    #- "8081:80"  # Access UI on http://localhost:8081
     environment:
       - "PHPLDAPADMIN_HTTPS=false"
       - "PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT=never"
       - "PHPLDAPADMIN_TRUST_PROXY_SSL=true"
       - "PHPLDAPADMIN_LDAP_HOSTS=#PYTHON2BASH:[{ 'ldap' : [ { 'server' : [ { 'tls': False }, { 'port' : 389 } ] }, { 'login' : [ { 'bind_id' : 'cn=admin,${LDAP_BASE_DN}' } ] } ] }]"
-
 
 volumes:
   opensearch_data:

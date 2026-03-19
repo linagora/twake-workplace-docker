@@ -1,7 +1,7 @@
 services:
-
   lemonldap:
     image: yadd/lemonldap-ng-full:2026-01-23
+    platform: linux/amd64
     container_name: lemonldap-ng
     volumes:
       - ./config/lmConf-1.json:/var/lib/lemonldap-ng/conf/lmConf-1.json
@@ -13,23 +13,25 @@ services:
       - PORTAL=https://auth.${BASE_DOMAIN}
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.lemonldap-auth.rule=Host(`auth.${BASE_DOMAIN}`)"  
+      - "traefik.http.routers.lemonldap-auth.rule=Host(`auth.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.lemonldap-auth.entrypoints=websecure"
       - "traefik.http.services.lemonldap.loadbalancer.server.port=80"
-      - "traefik.http.routers.lemonldap-man.rule=Host(`manager.${BASE_DOMAIN}`)"  
+      - "traefik.http.routers.lemonldap-man.rule=Host(`manager.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.lemonldap-man.entrypoints=websecure"
     restart: unless-stopped
     extra_hosts:
       - "oauthcallback.${BASE_DOMAIN}:172.27.0.100"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
-      start_period: 60s
+      retries: 5
+      start_period: 120s
 
     networks:
       - twake-network
   reverse-proxy:
-    image: traefik:v2.6
+    image: traefik:v2.11
     container_name: reverse-proxy
     restart: unless-stopped
     ports:
@@ -50,11 +52,11 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s  
+      start_period: 20s
     networks:
       twake-network:
-        ipv4_address: 172.27.0.100 
-      
+        ipv4_address: 172.27.0.100
+
   twake-docker-socket:
     container_name: docker-socket
     image: tecnativa/docker-socket-proxy
@@ -62,9 +64,10 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - CONTAINERS=1  
-      - SYSTEM=1 
-      - EXEC=1  
+      - CONTAINERS=1
+      - SYSTEM=1
+      - EXEC=1
+      - VERSION=1
     healthcheck:
       test: ["CMD-SHELL", "pgrep haproxy"]
       interval: 30s
@@ -72,9 +75,8 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - twake-network    
-        
-  
+      - twake-network
+
 networks:
   twake-network:
     external: true

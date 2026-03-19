@@ -1,6 +1,7 @@
 services:
   tcalendar-frontend:
     image: linagora/twake-calendar-web:branch-master
+    platform: linux/amd64
     container_name: twake_calendar_frontend
     restart: unless-stopped
     depends_on:
@@ -12,13 +13,13 @@ services:
       - ./frontend/env.js:/usr/share/nginx/html/.env.js
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.newcalendar.rule=Host(`calendar-ng.${BASE_DOMAIN}`)" 
+      - "traefik.http.routers.newcalendar.rule=Host(`calendar-ng.${BASE_DOMAIN}`)"
       - "traefik.http.services.newcalendar.loadbalancer.server.port=80"
-      
 
   tcalendar-side-service:
     image: linagora/twake-calendar-side-service:branch-master
     container_name: tcalendar-side-service
+    platform: linux/amd64
     hostname: tcalendar-side-service.${BASE_DOMAIN}
     restart: unless-stopped
     networks:
@@ -38,7 +39,7 @@ services:
       - "traefik.http.middlewares.cors.headers.accesscontrolalloworiginlist=*"
       - "traefik.http.middlewares.cors.headers.accesscontrolallowmethods=GET,POST,PUT,DELETE,OPTIONS,PATCH,PROPFIND,REPORT,ACL"
       - "traefik.http.middlewares.cors.headers.accesscontrolallowheaders=Authorization,Content-Type,Depth,If-Match,If-None-Match"
-      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=1728000"    
+      - "traefik.http.middlewares.cors.headers.accesscontrolmaxage=1728000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthcheck"]
       interval: 30s
@@ -52,6 +53,7 @@ services:
     image: linagora/esn-frontend-calendar:govmu-02
     hostname: calendar.${BASE_DOMAIN}
     restart: unless-stopped
+    platform: linux/amd64
     depends_on:
       tcalendar-side-service:
         condition: service_healthy
@@ -63,13 +65,14 @@ services:
       - twake-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fecalendar.rule=Host(`calendar.${BASE_DOMAIN}`)" 
+      - "traefik.http.routers.fecalendar.rule=Host(`calendar.${BASE_DOMAIN}`)"
       - "traefik.http.services.fecalendar.loadbalancer.server.port=80"
-      
+
   fe-excal:
     image: linagora/esn-frontend-calendar-public:main
     hostname: excal.${BASE_DOMAIN}
     restart: unless-stopped
+    platform: linux/amd64
     depends_on:
       tcalendar-side-service:
         condition: service_healthy
@@ -81,13 +84,14 @@ services:
       - twake-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.feexcal.rule=Host(`excal.${BASE_DOMAIN}`)" 
+      - "traefik.http.routers.feexcal.rule=Host(`excal.${BASE_DOMAIN}`)"
       - "traefik.http.services.feexcal.loadbalancer.server.port=80"
 
   fe-contacts:
     image: linagora/esn-frontend-contacts:17-01-2025
     hostname: contacts.${BASE_DOMAIN}
     restart: unless-stopped
+    platform: linux/amd64
     depends_on:
       tcalendar-side-service:
         condition: service_healthy
@@ -99,13 +103,14 @@ services:
       - twake-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.fecontacts.rule=Host(`contacts.${BASE_DOMAIN}`)" 
+      - "traefik.http.routers.fecontacts.rule=Host(`contacts.${BASE_DOMAIN}`)"
       - "traefik.http.services.fecontacts.loadbalancer.server.port=80"
-      
+
   fe-account:
     image: linagora/esn-frontend-account:main
     hostname: account.${BASE_DOMAIN}
     restart: unless-stopped
+    platform: linux/amd64
     depends_on:
       tcalendar-side-service:
         condition: service_healthy
@@ -117,12 +122,13 @@ services:
       - twake-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.feaccount.rule=Host(`account.${BASE_DOMAIN}`)" 
+      - "traefik.http.routers.feaccount.rule=Host(`account.${BASE_DOMAIN}`)"
       - "traefik.http.services.feaccount.loadbalancer.server.port=80"
 
   sabre_dav:
     image: linagora/esn-sabre:sabre-4_7_0-09-01-2026
     container_name: sabre_dav
+    platform: linux/amd64
     hostname: sabre-dav.${BASE_DOMAIN}
     restart: unless-stopped
     networks:
@@ -142,13 +148,11 @@ services:
       - SABRE_IMPERSONATION_ENABLED=true
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.sabredav.rule=Host(`sabre-dav.${BASE_DOMAIN}`)"  
-      - "traefik.http.services.sabredav.loadbalancer.server.port=80"  
+      - "traefik.http.routers.sabredav.rule=Host(`sabre-dav.${BASE_DOMAIN}`)"
+      - "traefik.http.services.sabredav.loadbalancer.server.port=80"
     volumes:
       - ./conf-side-service/jwt_publickey:/var/www/config/esn.key.pub
-
 
 networks:
   twake-network:
     external: true
-

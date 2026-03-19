@@ -13,11 +13,14 @@ services:
     image: matrixdotorg/synapse:v1.119.0
     restart: unless-stopped
     user: "root"
+    entrypoint: ["/bin/sh", "-c", "update-ca-certificates && exec /start.py"]
     depends_on:
       - synapse-init
     env_file:
       - path: ./synapse/.env
         required: true
+    environment:
+      - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
     volumes:
       - ./synapse:/data
       - ./synapse/homeserver-postgres.yaml:/data/homeserver.yaml
