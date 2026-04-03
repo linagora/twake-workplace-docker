@@ -14,16 +14,35 @@ export function getCozyDomain() {
 }
 
 export async function initAuth() {
-  // Try silent OIDC iframe flow first
+  // Check URL param ?dev_user=user1
+  const params = new URLSearchParams(window.location.search)
+  const devUser = params.get('dev_user')
+  if (devUser) {
+    oidcToken = `dev-${devUser}`
+    localStorage.setItem('twake_dev_token', oidcToken)
+    return
+  }
+
+  // Check localStorage dev token
+  const stored = localStorage.getItem('twake_dev_token')
+  if (stored) { oidcToken = stored; return }
+
+  // Auto-detect user from Cozy domain (e.g., user1-token-manager.twake.local → user1)
+  const hostname = window.location.hostname
+  const match = hostname.match(/^([^-]+)-token-manager\./)
+  if (match) {
+    oidcToken = `dev-${match[1]}`
+    localStorage.setItem('twake_dev_token', oidcToken)
+    return
+  }
+
+  // Try silent OIDC iframe flow (may be blocked by CSP in Cozy)
   try {
     const token = await silentAuthorize()
     if (token) { oidcToken = token; return }
   } catch (_) {
-    // silent flow failed, fall through to dev token
+    // silent flow failed
   }
-  // Fall back to dev token
-  const devToken = getDevToken()
-  if (devToken) oidcToken = devToken
 }
 
 export function silentAuthorize() {
