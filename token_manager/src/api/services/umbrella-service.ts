@@ -97,7 +97,7 @@ export class UmbrellaService {
     })
 
     if (!record) {
-      return
+      throw new Error('Umbrella token not found')
     }
 
     await this.prisma.umbrellaToken.update({

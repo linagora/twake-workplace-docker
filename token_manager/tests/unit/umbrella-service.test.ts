@@ -214,11 +214,10 @@ describe('UmbrellaService', () => {
       )
     })
 
-    it('does nothing if the token is not found', async () => {
+    it('throws if the token is not found', async () => {
       ;(prisma.umbrellaToken.findUnique as ReturnType<typeof import('vitest').vi.fn>).mockResolvedValue(null)
 
-      await service.revokeUmbrellaToken('twt_unknown')
-
+      await expect(service.revokeUmbrellaToken('twt_unknown')).rejects.toThrow('Umbrella token not found')
       expect(prisma.umbrellaToken.update).not.toHaveBeenCalled()
     })
   })
