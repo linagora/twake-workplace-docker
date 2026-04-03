@@ -81,14 +81,18 @@ export default function TokenList({ tokens, onRefresh, onRevoke }: Props) {
           </tr>
         </thead>
         <tbody>
-          {visible.map(token => {
-            const label = SERVICE_LABELS[token.service] ?? token.service
+          {visible.map((token, idx) => {
             const isService = token.type !== 'umbrella'
+            const label = isService
+              ? (SERVICE_LABELS[token.service] ?? token.service)
+              : (token.scopes ?? []).map(s => SERVICE_LABELS[s] ?? s).join(', ') || token.service
             const statusColors = getStatusColor(token.status)
-            const displayToken = token.service ? maskToken(token.service) : '—'
+            const displayToken = isService
+              ? maskToken(token.service)
+              : (token.scopes ? maskToken(token.scopes.join(',')) : '—')
 
             return (
-              <tr key={token.service} style={{ transition: 'background 0.1s' }}>
+              <tr key={`${token.type}-${token.id ?? token.service}-${idx}`} style={{ transition: 'background 0.1s' }}>
                 <td style={tdStyle}>
                   <span style={{ fontWeight: 500, color: '#1a1a2e' }}>{label}</span>
                 </td>
