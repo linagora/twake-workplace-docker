@@ -5,10 +5,10 @@ import { apiFetch } from '@/lib/api'
 import { authHeaders, getCurrentUserEmail } from '@/lib/auth'
 
 const SERVICES = [
-  { id: 'twake-mail', label: 'TMail JMAP' },
-  { id: 'twake-calendar', label: 'Calendar CalDAV' },
-  { id: 'twake-chat', label: 'Matrix Chat' },
-  { id: 'twake-drive', label: 'Cozy Drive' },
+  { id: 'twake-mail', label: 'TMail JMAP', endpoint: 'https://jmap.twake.local/jmap', scope: 'openid email profile', curlExample: (token: string) => `curl -sk -X POST https://jmap.twake.local/jmap \\\n  -H "Authorization: Bearer ${token}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:mail"],"methodCalls":[["Mailbox/get",{"accountId":"YOUR_ACCOUNT_ID","ids":null},"c1"]]}'` },
+  { id: 'twake-calendar', label: 'Calendar CalDAV', endpoint: 'https://tcalendar-side-service.twake.local', scope: 'openid email profile', curlExample: (token: string) => `curl -sk -X PROPFIND https://tcalendar-side-service.twake.local/dav/principals/ \\\n  -H "Authorization: Bearer ${token}" \\\n  -H "Depth: 0"` },
+  { id: 'twake-chat', label: 'Matrix Chat', endpoint: 'https://matrix.twake.local/_matrix/client/v3', scope: 'm.room.message', curlExample: (token: string) => `curl -sk https://matrix.twake.local/_matrix/client/v3/joined_rooms \\\n  -H "Authorization: Bearer ${token}"` },
+  { id: 'twake-drive', label: 'Cozy Drive', endpoint: 'https://user1.twake.local/files/', scope: 'io.cozy.files', curlExample: (token: string) => `curl -sk https://user1.twake.local/files/io.cozy.files.root-dir \\\n  -H "Authorization: Bearer ${token}" \\\n  -H "Accept: application/vnd.api+json"` },
 ]
 
 type Step = 'form' | 'display' | 'consent'
@@ -336,15 +336,45 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
               </div>
             )}
 
-            {/* Service / expiry info */}
-            <div style={{ display: 'flex', gap: 20, fontSize: 13, color: '#95a0b4' }}>
-              {result.service && (
-                <div><span style={{ fontWeight: 600, color: '#475569' }}>Service:</span> {result.service}</div>
-              )}
-              {result.expires_at && (
-                <div><span style={{ fontWeight: 600, color: '#475569' }}>Expires:</span> {new Date(result.expires_at).toLocaleDateString()}</div>
-              )}
-            </div>
+            {/* Service details */}
+            {(() => {
+              const svc = SERVICES.find(s => s.id === selectedService)
+              const curlCmd = svc?.curlExample?.(result.token ?? 'YOUR_TOKEN')
+              return (
+                <div style={{ marginTop: 4 }}>
+                  {/* Info grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: 13, color: '#95a0b4', marginBottom: 16 }}>
+                    {result.service && <div><span style={{ fontWeight: 600, color: '#475569' }}>Service:</span> {result.service}</div>}
+                    {result.expires_at && <div><span style={{ fontWeight: 600, color: '#475569' }}>Expires:</span> {new Date(result.expires_at).toLocaleDateString()}</div>}
+                    {svc?.endpoint && <div><span style={{ fontWeight: 600, color: '#475569' }}>Endpoint:</span> <code style={{ fontSize: 11 }}>{svc.endpoint}</code></div>}
+                    {svc?.scope && <div><span style={{ fontWeight: 600, color: '#475569' }}>OIDC Scope:</span> <code style={{ fontSize: 11 }}>{svc.scope}</code></div>}
+                  </div>
+
+                  {/* Curl example */}
+                  {curlCmd && (
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Example curl command</div>
+                      <div style={{ background: '#1e293b', borderRadius: 6, padding: '12px 14px', position: 'relative' }}>
+                        <pre style={{ margin: 0, fontSize: 11, color: '#e2e8f0', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.5 }}>
+                          {curlCmd}
+                        </pre>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(curlCmd) }}
+                          style={{
+                            position: 'absolute', top: 8, right: 8,
+                            background: '#334155', border: '1px solid #475569',
+                            color: '#e2e8f0', borderRadius: 4, padding: '3px 8px',
+                            fontSize: 11, cursor: 'pointer',
+                          }}
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </div>
           <div style={footerStyle}>
             <button style={primaryBtn} onClick={handleClose}>Done — I&apos;ve copied it</button>
