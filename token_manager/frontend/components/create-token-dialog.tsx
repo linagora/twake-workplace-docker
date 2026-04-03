@@ -28,6 +28,7 @@ interface CreateResult {
   expires_at?: string
   redirect_url?: string
   status?: string          // "consent_required" for 202
+  scopes?: string[]        // from umbrella token creation
 }
 
 export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
@@ -365,7 +366,7 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
             )}
 
             {displayTab === 'usage' && (() => {
-              const isUmbrella = tokenType === 'umbrella'
+              const isUmbrella = tokenType === 'umbrella' || result.token?.startsWith('twt_')
               const svcId = result.service ?? selectedService
               const svc = SERVICES.find(s => s.id === svcId)
               const proxyBase = 'https://token-manager-api.twake.local/api/v1/proxy'
@@ -375,12 +376,18 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
               // For service tokens: show direct curl
               let curlCmd: string
               if (isUmbrella) {
-                const firstScope = selectedScopes[0] ?? 'twake-mail'
-                const firstSvc = SERVICES.find(s => s.id === firstScope)
-                const path = firstScope === 'twake-mail' ? 'jmap' : firstScope === 'twake-calendar' ? 'dav/principals/' : firstScope === 'twake-chat' ? 'joined_rooms' : 'files/io.cozy.files.root-dir'
+                const scopes = result.scopes ?? selectedScopes
+                const firstScope = scopes[0] ?? 'twake-mail'
+                const pathMap: Record<string, string> = {
+                  'twake-mail': 'jmap',
+                  'twake-calendar': 'dav/principals/',
+                  'twake-chat': 'joined_rooms',
+                  'twake-drive': 'files/io.cozy.files.root-dir',
+                }
+                const path = pathMap[firstScope] ?? ''
                 curlCmd = `# Umbrella tokens must go through the Token Manager proxy\ncurl -sk ${proxyBase}/${firstScope}/${path} \\\n  -H "Authorization: Bearer ${tkn}"`
-                if (selectedScopes.length > 1) {
-                  curlCmd += `\n\n# Other services available with this token:\n${selectedScopes.slice(1).map(s => `# ${proxyBase}/${s}/...`).join('\n')}`
+                if (scopes.length > 1) {
+                  curlCmd += `\n\n# Other services available with this token:\n${scopes.slice(1).map(s => `# ${proxyBase}/${s}/...`).join('\n')}`
                 }
               } else {
                 curlCmd = svc?.curlExample?.(tkn).replace(/YOUR_ACCOUNT_ID/g, jmapAccountId || 'YOUR_ACCOUNT_ID') ?? ''
