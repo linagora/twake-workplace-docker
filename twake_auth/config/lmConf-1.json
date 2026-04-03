@@ -408,6 +408,11 @@
          "name" : "cn",
          "oidc_state" : "state",
          "preferred_username" : "uid"
+      },
+      "tokenmanager" : {
+         "email" : "mail",
+         "name" : "cn",
+         "preferred_username" : "uid"
       }
    },
    "oidcRPMetaDataMacros" : {
@@ -602,6 +607,19 @@
          "oidcRPMetaDataOptionsRequirePKCE" : 0,
          "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
          "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
+      },
+      "tokenmanager" : {
+         "oidcRPMetaDataOptionsAccessTokenClaims" : 1,
+         "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "token-manager",
+         "oidcRPMetaDataOptionsClientSecret" : "token-manager-secret",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://token-manager.twake.local/auth/callback"
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -616,7 +634,8 @@
       "cozy" : {},
       "james" : {},
       "linshare" : {},
-      "meet" : {}
+      "meet" : {},
+      "tokenmanager" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,
