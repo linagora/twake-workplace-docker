@@ -38,7 +38,15 @@ export async function umbrellaRoutes(app: FastifyInstance) {
     const tenant = (request as any).tenant as Tenant
     const { user: targetUser, scopes, name: tokenName } = request.body as { user: string; scopes: string[]; name?: string }
 
-    const result = await umbrellaService.createUmbrellaToken(targetUser ?? user.email, scopes, tenant.id, tokenName)
+    let result
+    try {
+      result = await umbrellaService.createUmbrellaToken(targetUser ?? user.email, scopes, tenant.id, tokenName)
+    } catch (err: any) {
+      if (err.message?.includes('already exists')) {
+        return reply.code(409).send({ error: 'duplicate_name', message: err.message })
+      }
+      throw err
+    }
 
     await prisma.auditLog.create({
       data: {

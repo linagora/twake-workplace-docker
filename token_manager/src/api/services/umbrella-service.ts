@@ -26,6 +26,16 @@ export class UmbrellaService {
     tenant: string,
     name?: string,
   ): Promise<UmbrellaTokenResult> {
+    // Validate unique name per user (if name provided)
+    if (name) {
+      const existing = await this.prisma.umbrellaToken.findFirst({
+        where: { tenantId: tenant, userId, name, revokedAt: null },
+      })
+      if (existing) {
+        throw new Error(`An active umbrella token named "${name}" already exists`)
+      }
+    }
+
     const rawToken = generateUmbrellaToken()
     const hashed = hashToken(rawToken)
     const expiresAt = new Date(Date.now() + DEFAULT_TTL_MS)
