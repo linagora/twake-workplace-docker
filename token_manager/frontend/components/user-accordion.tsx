@@ -27,6 +27,10 @@ export interface TokenData {
   status: string
   expires_at: string
   user?: string
+  type?: string
+  name?: string
+  scopes?: string[]
+  id?: string
 }
 
 interface Props {
@@ -122,15 +126,27 @@ export default function UserAccordion({
               <thead>
                 <tr style={{ color: '#95a0b4' }}>
                   <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>Service</th>
+                  <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>Type</th>
                   <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>Status</th>
                   <th style={{ textAlign: 'left', padding: '4px 8px', fontWeight: 600 }}>Expires</th>
                   <th style={{ textAlign: 'right', padding: '4px 8px', fontWeight: 600 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {userTokens.map(t => (
-                  <tr key={t.service} style={{ borderTop: '1px solid #f0f2f5' }}>
-                    <td style={{ padding: '8px 8px', fontFamily: 'monospace', color: '#1a1a2e' }}>{t.service}</td>
+                {userTokens.map((t, i) => {
+                  const isUmbrella = t.type === 'umbrella'
+                  return (
+                  <tr key={`${t.service}-${i}`} style={{ borderTop: '1px solid #f0f2f5' }}>
+                    <td style={{ padding: '8px 8px', fontFamily: 'monospace', color: '#1a1a2e' }}>{t.name ?? t.service}</td>
+                    <td style={{ padding: '8px 8px' }}>
+                      <span style={{
+                        background: isUmbrella ? '#dbeafe' : '#d1fae5',
+                        color: isUmbrella ? '#1e40af' : '#065f46',
+                        borderRadius: 20, padding: '2px 8px', fontSize: 11, fontWeight: 600,
+                      }}>
+                        {isUmbrella ? 'Umbrella' : 'Service'}
+                      </span>
+                    </td>
                     <td style={{ padding: '8px 8px' }}>
                       <span style={{
                         background: t.status === 'ACTIVE' ? '#e8f5e9' : '#fff3e0',
@@ -158,7 +174,8 @@ export default function UserAccordion({
                       </button>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           )}
