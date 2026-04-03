@@ -7,7 +7,7 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.cozy.rule=HostRegexp(`{subdomain:user3-home|user3|user3-drive|user3-linshare|user3-mail|user3-chat|user3-settings|user3-notes|user3-dataproxy|oauthcallback|user1-dataproxy|user1|user1-home|user1-chat|user1-linshare|user1-settings|user1-drive|user1-mail|user1-notes|user2|user2-home|user2-dataproxy|user2-settings|user2-chat|user2-linshare|user2-mail|user2-drive|user2-notes}.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.cozy.rule=HostRegexp(`{subdomain:user3-home|user3|user3-drive|user3-linshare|user3-mail|user3-chat|user3-settings|user3-notes|user3-dataproxy|oauthcallback|user1-dataproxy|user1|user1-home|user1-chat|user1-linshare|user1-settings|user1-drive|user1-mail|user1-notes|user2|user2-home|user2-dataproxy|user2-settings|user2-chat|user2-linshare|user2-mail|user2-drive|user2-notes|user1-token-manager|user2-token-manager|user3-token-manager}.${BASE_DOMAIN}`)"
       - "traefik.http.routers.cozy.entrypoints=websecure"
       - "traefik.http.routers.cozy.tls=true"
       - "traefik.http.services.cozy.loadbalancer.server.port=8080"
@@ -29,6 +29,7 @@ services:
       - ./config/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
       - ./config/cozy.yaml:/etc/cozy/cozy.yaml
       - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
+      - ../token_manager/frontend-cozy/build:/data/cozy-app/token-manager
       - ./config/create-shortcut.sh:/usr/local/bin/create-shortcut.sh
       #- ./config/change-features.sh:/usr/local/bin/change-features.sh
       #- ./config/example-features.json:/usr/local/bin/example-features.json
