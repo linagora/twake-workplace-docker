@@ -64,7 +64,8 @@ services:
     restart: "no"
 volumes:
   cozy-data:
-    driver: local
+    external: true
+    name: cozy_stack_cozy-data
 networks:
   twake-network:
     external: true
