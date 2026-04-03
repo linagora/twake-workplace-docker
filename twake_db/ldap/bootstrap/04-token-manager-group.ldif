@@ -1,0 +1,16 @@
+# ========================
+# Groups Organizational Unit
+# ========================
+dn: ou=groups,dc=twake,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+
+# ========================
+# Token Manager Admins Group
+# ========================
+dn: cn=token-manager-admins,ou=groups,dc=twake,dc=local
+objectClass: groupOfNames
+cn: token-manager-admins
+description: Administrative group for token manager service
+member: uid=user1,ou=users,dc=twake,dc=local
