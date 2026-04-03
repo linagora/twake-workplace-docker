@@ -11,6 +11,7 @@ import { authHook } from './middleware/auth.js'
 import { tenantHook } from './middleware/tenant.js'
 import { TokenService } from './services/token-service.js'
 import { UmbrellaService } from './services/umbrella-service.js'
+import { startRefreshScheduler } from './services/refresh-worker.js'
 import { CozyDriveConnector } from './connectors/cozy-drive.js'
 import { TmailConnector } from './connectors/tmail.js'
 import { CalendarConnector } from './connectors/calendar.js'
@@ -90,6 +91,9 @@ export async function buildApp() {
 
   // Proxy routes — separate scope, uses umbrella token auth (not standard OIDC auth)
   await app.register(proxyRoutes, { prefix: '/api/v1' })
+
+  // Start background token refresh scheduler
+  startRefreshScheduler(config.redis.url, config.refresh.cron, config.refresh.refresh_before_expiry_ms, prisma, connectors, encryptionKey)
 
   // OAuth callback — public, no auth
   app.get('/oauth/callback/cozy', async (request, reply) => {
