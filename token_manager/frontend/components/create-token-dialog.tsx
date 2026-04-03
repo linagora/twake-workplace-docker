@@ -21,10 +21,13 @@ interface Props {
 }
 
 interface CreateResult {
-  token?: string
+  token?: string           // normalized from access_token or umbrella_token
+  access_token?: string    // from POST /tokens
+  umbrella_token?: string  // from POST /umbrella-token
   service?: string
   expires_at?: string
   redirect_url?: string
+  status?: string          // "consent_required" for 202
 }
 
 export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
@@ -78,8 +81,14 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
           headers,
           body: JSON.stringify({ service: selectedService, user: email, name: name || undefined }),
         })
-        setResult(data)
-        setStep('display')
+        if (data.status === 'consent_required') {
+          setResult(data)
+          setStep('consent')
+        } else {
+          // Normalize: API returns access_token, we store as token
+          setResult({ ...data, token: data.access_token ?? data.token })
+          setStep('display')
+        }
       } else {
         const resp = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL ?? 'https://token-manager-api.twake.local'}/api/v1/umbrella-token`,
@@ -95,7 +104,8 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
           setStep('consent')
         } else if (resp.ok) {
           const data = await resp.json()
-          setResult(data)
+          // Normalize: umbrella API returns umbrella_token
+          setResult({ ...data, token: data.umbrella_token ?? data.token })
           setStep('display')
         } else {
           const text = await resp.text().catch(() => '')
