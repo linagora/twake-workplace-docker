@@ -1,0 +1,63 @@
+server:
+  port: 3100
+  host: 0.0.0.0
+
+database:
+  url: postgresql://postgres:postgres@postgres:5432/token_manager
+
+redis:
+  url: redis://:valkeypass@visio-valkey:6379
+
+oidc:
+  issuer: https://auth.${BASE_DOMAIN}
+  audience: token-manager
+
+refresh:
+  cron: "*/5 * * * *"
+  refresh_before_expiry: 15m
+  max_retries: 3
+
+services:
+  twake-drive:
+    auto_refresh: true
+    token_validity: 1h
+    refresh_token_validity: 30d
+    scopes:
+      - io.cozy.files
+    instance_url_pattern: "https://{username}-drive.${BASE_DOMAIN}"
+    auth_url_pattern: "https://{username}.${BASE_DOMAIN}"
+    oauth_redirect_uri: "https://token-manager-api.${BASE_DOMAIN}/oauth/callback/cozy"
+
+  twake-mail:
+    auto_refresh: true
+    token_validity: 1h
+    scopes:
+      - openid
+      - email
+      - profile
+    instance_url: "https://jmap.${BASE_DOMAIN}"
+    client_id: james
+    client_secret: james
+    oauth_redirect_uri: "https://token-manager-api.${BASE_DOMAIN}/oauth/callback/oidc"
+
+  twake-calendar:
+    auto_refresh: true
+    token_validity: 8h
+    refresh_token_validity: 90d
+    scopes:
+      - openid
+      - email
+      - profile
+    instance_url: "https://tcalendar-side-service.${BASE_DOMAIN}"
+    client_id: openpaas
+    client_secret: openpaas
+    oauth_redirect_uri: "https://token-manager-api.${BASE_DOMAIN}/oauth/callback/oidc"
+
+  twake-chat:
+    auto_refresh: true
+    token_validity: 24h
+    refresh_token_validity: 365d
+    scopes:
+      - "m.room.message"
+    instance_url: "https://matrix.${BASE_DOMAIN}"
+    oauth_redirect_uri: "https://token-manager-api.${BASE_DOMAIN}/oauth/callback/matrix"

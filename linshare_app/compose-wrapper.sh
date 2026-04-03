@@ -23,7 +23,7 @@ if [ "$ACTION" = "up" ]; then
 fi
 
 # Always call compose
-sudo docker compose --env-file ../.env "$@"
+sudo docker compose -p twake-linshare --env-file ../.env "$@"
 
 # 🚨 Everything below is UP-only
 if [ "$ACTION" != "up" ]; then

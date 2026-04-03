@@ -23,7 +23,6 @@ services:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
     volumes:
       - ./synapse:/data
-      - ./synapse/homeserver-postgres.yaml:/data/homeserver.yaml
       - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
     networks:
       - twake-network

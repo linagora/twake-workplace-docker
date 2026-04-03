@@ -21,4 +21,4 @@ fi
 
 
 # Pass all arguments to docker compose
-sudo docker compose --env-file ../.env "$@"
+sudo docker compose -p twake-drive --env-file ../.env "$@"

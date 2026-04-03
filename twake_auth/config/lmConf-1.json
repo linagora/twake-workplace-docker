@@ -408,6 +408,11 @@
          "name" : "cn",
          "oidc_state" : "state",
          "preferred_username" : "uid"
+      },
+      "tokenmanager" : {
+         "email" : "mail",
+         "name" : "cn",
+         "preferred_username" : "uid"
       }
    },
    "oidcRPMetaDataMacros" : {
@@ -425,7 +430,7 @@
          "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
          "oidcRPMetaDataOptionsAllowOffline" : 0,
-         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 1,
          "oidcRPMetaDataOptionsAuthMethod" : "",
          "oidcRPMetaDataOptionsAuthRequiredForAuthorize" : 0,
          "oidcRPMetaDataOptionsAuthnRequireNonce" : 0,
@@ -443,7 +448,7 @@
          "oidcRPMetaDataOptionsNoJwtHeader" : 0,
          "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://calendar.twake.local/calendar https://contacts.twake.local/contacts https://account.twake.local/account https://calendar-ng.twake.local?logout=1",
          "oidcRPMetaDataOptionsPublic" : 1,
-         "oidcRPMetaDataOptionsRedirectUris" : "https://calendar.twake.local/calendar/auth/oidc/callback https://contacts.twake.local/contacts/auth/oidc/callback https://account.twake.local/account/auth/oidc/callback https://calendar-ng.twake.local/callback",
+         "oidcRPMetaDataOptionsRedirectUris" : "https://calendar.twake.local/calendar/auth/oidc/callback https://contacts.twake.local/contacts/auth/oidc/callback https://account.twake.local/account/auth/oidc/callback https://calendar-ng.twake.local/callback https://token-manager-api.twake.local/oauth/callback/oidc",
          "oidcRPMetaDataOptionsRefreshToken" : 0,
          "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 1,
@@ -487,8 +492,8 @@
          "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
          "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
-         "oidcRPMetaDataOptionsAllowOffline" : 0,
-         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 1,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 1,
          "oidcRPMetaDataOptionsAuthRequiredForAuthorize" : 0,
          "oidcRPMetaDataOptionsAuthnRequireNonce" : 0,
          "oidcRPMetaDataOptionsAuthnRequireState" : 0,
@@ -507,7 +512,7 @@
          "oidcRPMetaDataOptionsPostLogoutRedirectUris": "https://user2-home.twake.local/",
          "oidcRPMetaDataOptionsPublic": 0,
          "oidcRPMetaDataOptionsRedirectUris" : "https://oauthcallback.twake.local/oidc/redirect",
-         "oidcRPMetaDataOptionsRefreshToken" : 0,
+         "oidcRPMetaDataOptionsRefreshToken" : 1,
          "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 0,
          "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
@@ -519,7 +524,7 @@
          "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS512",
          "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
          "oidcRPMetaDataOptionsAllowOffline" : 1,
-         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 1,
          "oidcRPMetaDataOptionsAuthnLevel" : 1,
          "oidcRPMetaDataOptionsBypassConsent" : 1,
          "oidcRPMetaDataOptionsClientID" : "james",
@@ -534,7 +539,7 @@
          "oidcRPMetaDataOptionsOfflineSessionExpiration" : 2592000,
          "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://mail.twake.local/logout-callback.html",
          "oidcRPMetaDataOptionsPublic" : 1,
-         "oidcRPMetaDataOptionsRedirectUris" : "https://mail.twake.local/login-callback.html",
+         "oidcRPMetaDataOptionsRedirectUris" : "https://mail.twake.local/login-callback.html https://token-manager-api.twake.local/oauth/callback/oidc",
          "oidcRPMetaDataOptionsRefreshToken" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 1,
          "oidcRPMetaDataOptionsUserInfoSignAlg" : ""
@@ -602,6 +607,19 @@
          "oidcRPMetaDataOptionsRequirePKCE" : 0,
          "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
          "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
+      },
+      "tokenmanager" : {
+         "oidcRPMetaDataOptionsAccessTokenClaims" : 1,
+         "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "token-manager",
+         "oidcRPMetaDataOptionsClientSecret" : "token-manager-secret",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://token-manager.twake.local/auth/callback"
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -616,7 +634,8 @@
       "cozy" : {},
       "james" : {},
       "linshare" : {},
-      "meet" : {}
+      "meet" : {},
+      "tokenmanager" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

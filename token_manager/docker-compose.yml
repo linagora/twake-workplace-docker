@@ -1,0 +1,66 @@
+services:
+  token-manager-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: token-manager-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/token_manager
+      REDIS_URL: redis://:valkeypass@visio-valkey:6379
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY}
+      OIDC_ISSUER: https://auth.${BASE_DOMAIN}
+      BASE_DOMAIN: ${BASE_DOMAIN}
+      CONFIG_PATH: /app/config/config.yaml
+      NODE_EXTRA_CA_CERTS: /usr/local/share/ca-certificates/root-ca.crt
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+      - "jmap.${BASE_DOMAIN}:172.27.0.100"
+      - "matrix.${BASE_DOMAIN}:172.27.0.100"
+      - "tcalendar-side-service.${BASE_DOMAIN}:172.27.0.100"
+      - "user1.${BASE_DOMAIN}:172.27.0.100"
+      - "user2.${BASE_DOMAIN}:172.27.0.100"
+      - "user3.${BASE_DOMAIN}:172.27.0.100"
+      - "user1-drive.${BASE_DOMAIN}:172.27.0.100"
+      - "user2-drive.${BASE_DOMAIN}:172.27.0.100"
+      - "user3-drive.${BASE_DOMAIN}:172.27.0.100"
+      - "token-manager-api.${BASE_DOMAIN}:172.27.0.100"
+    volumes:
+      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
+      - ./config:/app/config:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.token-manager-api.rule=Host(`token-manager-api.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.token-manager-api.entrypoints=websecure"
+      - "traefik.http.routers.token-manager-api.tls=true"
+      - "traefik.http.services.token-manager-api.loadbalancer.server.port=3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3100/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - twake-network
+
+  token-manager-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: token-manager-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: https://token-manager-api.${BASE_DOMAIN}
+      BASE_DOMAIN: ${BASE_DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.token-manager-frontend.rule=Host(`token-manager.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.token-manager-frontend.entrypoints=websecure"
+      - "traefik.http.routers.token-manager-frontend.tls=true"
+      - "traefik.http.services.token-manager-frontend.loadbalancer.server.port=3000"
+    networks:
+      - twake-network
+
+networks:
+  twake-network:
+    external: true
