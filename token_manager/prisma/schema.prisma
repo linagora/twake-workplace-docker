@@ -1,0 +1,76 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum TokenStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  REFRESH_FAILED
+}
+
+model Tenant {
+  id        String           @id @default(cuid())
+  domain    String           @unique
+  name      String
+  config    Json
+  tokens    ServiceToken[]
+  umbrella  UmbrellaToken[]
+  createdAt DateTime         @default(now())
+}
+
+model ServiceToken {
+  id            String      @id @default(cuid())
+  tenantId      String
+  userId        String
+  service       String
+  instanceUrl   String
+  accessToken   String
+  refreshToken  String?
+  expiresAt     DateTime
+  autoRefresh   Boolean     @default(true)
+  grantedBy     String
+  grantedAt     DateTime    @default(now())
+  lastUsedAt    DateTime?
+  lastRefreshAt DateTime?
+  status        TokenStatus @default(ACTIVE)
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, userId, service])
+  @@index([expiresAt])
+  @@index([tenantId, status])
+}
+
+model UmbrellaToken {
+  id        String    @id @default(cuid())
+  tenantId  String
+  userId    String
+  token     String    @unique
+  scopes    String[]
+  expiresAt DateTime
+  issuedAt  DateTime  @default(now())
+  revokedAt DateTime?
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+
+  @@index([token])
+  @@index([tenantId, userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  service   String?
+  action    String
+  details   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, userId])
+  @@index([createdAt])
+}
