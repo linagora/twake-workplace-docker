@@ -1,5 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
+
+# macOS ships bash 3.x which doesn't support associative arrays (declare -A).
+# Re-exec under zsh (available by default on macOS) if needed.
+if [ -z "$ZSH_VERSION" ] && [ -z "$BASH_VERSION" -o "${BASH_VERSINFO:-0}" -lt 4 ] 2>/dev/null; then
+    if command -v zsh >/dev/null 2>&1; then
+        exec zsh "$0" "$@"
+    else
+        echo "❌ This script requires bash 4+ or zsh. Please install one of them."
+        exit 1
+    fi
+fi
+
+# ----------------------------
+# Detect whether sudo is needed for docker
+# ----------------------------
+if docker info &>/dev/null; then
+    SUDO=""
+else
+    SUDO="sudo"
+fi
+export SUDO
 
 # ----------------------------
 # Configuration: paths to repos
@@ -29,15 +50,17 @@ REPO_DEPS=(
     ["tmail_app"]="lemonldap-ng"
 )
 
+SCRIPT_NAME="${0##*/}"
+
 show_help() {
-    echo "Usage: $0 <up|down> [repo] [service] [docker-compose options]"
+    echo "Usage: $SCRIPT_NAME <up|down> [repo] [service] [docker-compose options]"
     echo
     echo "Examples:"
-    echo "  $0 up -d                        Start all repos in order"
-    echo "  $0 up twake_db                  Start only the twake_db repo"
-    echo "  $0 up twake_auth lemonldap      Start only the lemonldap service in twake_auth"
-    echo "  $0 down                         Stop all repos in reverse order"
-    echo "  $0 down cozy_stack              Stop only cozy_stack"
+    echo "  $SCRIPT_NAME up -d                        Start all repos in order"
+    echo "  $SCRIPT_NAME up twake_db                  Start only the twake_db repo"
+    echo "  $SCRIPT_NAME up twake_auth lemonldap      Start only the lemonldap service in twake_auth"
+    echo "  $SCRIPT_NAME down                         Stop all repos in reverse order"
+    echo "  $SCRIPT_NAME down cozy_stack              Stop only cozy_stack"
 }
 
 # ----------------------------
@@ -46,14 +69,16 @@ show_help() {
 wait_for_repo_health() {
     echo "⏳ Waiting for all containers in repo '$1' to be healthy..."
 
-    containers=$(sudo docker compose --env-file ../.env ps -q)
-    if [[ -z "$containers" ]]; then
+    local containers_raw
+    containers_raw=$($SUDO docker compose --env-file ../.env ps -q)
+    if [[ -z "$containers_raw" ]]; then
         echo "⚠️ No containers found for $1"
         return
     fi
 
-    for c in $containers; do
-        name=$(sudo docker inspect --format '{{.Name}}' "$c" | cut -d/ -f2)
+    echo "$containers_raw" | while read -r c; do
+        [[ -z "$c" ]] && continue
+        name=$($SUDO docker inspect --format '{{.Name}}' "$c" | cut -d/ -f2)
 
         # 👉 Skip patcher container
         if [[ "$name" == patcher-* ]]; then
@@ -62,9 +87,9 @@ wait_for_repo_health() {
         fi
 
         # Check if container has healthcheck
-        status=$(sudo docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$c")
+        health_status=$($SUDO docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$c")
 
-        if [[ -z "$status" ]]; then
+        if [[ -z "$health_status" ]]; then
             echo "ℹ️ Container '$name' has no healthcheck, skipping..."
             continue
         fi
@@ -72,11 +97,11 @@ wait_for_repo_health() {
         echo "⏳ Waiting for container '$name'..."
         local attempt=0
         local max_attempts=40
-        until [[ "$(sudo docker inspect -f '{{.State.Health.Status}}' "$c")" == "healthy" ]]; do
+        until [[ "$($SUDO docker inspect -f '{{.State.Health.Status}}' "$c")" == "healthy" ]]; do
             attempt=$((attempt + 1))
             if [[ $attempt -ge $max_attempts ]]; then
                 echo "❌ Timeout waiting for '$name' to become healthy"
-                sudo docker logs "$c" --tail 20 2>&1 || true
+                $SUDO docker logs "$c" --tail 20 2>&1 || true
                 exit 1
             fi
             sleep 3
@@ -96,11 +121,11 @@ check_deps() {
     fi
 
     for dep in $deps; do
-        local status
-        status=$(sudo docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$dep" 2>/dev/null || true)
+        local health_status
+        health_status=$($SUDO docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$dep" 2>/dev/null || true)
 
-        if [[ "$status" != "healthy" ]]; then
-            echo "❌ Dependency '$dep' is not healthy (status: ${status:-not found}). Cannot start '$repo'."
+        if [[ "$health_status" != "healthy" ]]; then
+            echo "❌ Dependency '$dep' is not healthy (status: ${health_status:-not found}). Cannot start '$repo'."
             exit 1
         fi
         echo "✅ Dependency '$dep' is healthy"
@@ -140,9 +165,9 @@ run_repo() {
       fi
     else
       if [[ -n "$service" ]]; then
-        sudo docker compose --env-file ../.env "$action" "${options[@]}" "$service"
+        $SUDO docker compose --env-file ../.env "$action" "${options[@]}" "$service"
       else
-        sudo docker compose --env-file ../.env "$action" "${options[@]}"
+        $SUDO docker compose --env-file ../.env "$action" "${options[@]}"
       fi
     fi
 

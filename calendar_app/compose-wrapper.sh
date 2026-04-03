@@ -3,6 +3,11 @@
 
 set -e
 
+# Detect whether sudo is needed for docker (on macOS Docker Desktop, it's not)
+if [ -z "$SUDO" ]; then
+  if docker info &>/dev/null; then SUDO=""; else SUDO="sudo"; fi
+fi
+
 ACTION="$1"
 
 # Load environment variables
@@ -45,7 +50,7 @@ fi
 
 
 # Pass all arguments to docker compose
-sudo docker compose --env-file ../.env "$@"
+${SUDO} docker compose --env-file ../.env "$@"
 
 # 🚨 Everything below is UP-only
 if [ "$ACTION" != "up" ]; then
@@ -59,14 +64,14 @@ CA_FILE="/usr/local/share/ca-certificates/root-ca.crt"
 echo "⏳ Waiting for $CONTAINER to start..."
 
 # Wait indefinitely until container is running
-until [ "$(sudo docker inspect -f '{{.State.Status}}' "$CONTAINER" 2>/dev/null || echo "missing")" = "running" ]; do
+until [ "$(${SUDO} docker inspect -f '{{.State.Status}}' "$CONTAINER" 2>/dev/null || echo "missing")" = "running" ]; do
   sleep 7
 done
 
 echo "✔ $CONTAINER is running, importing CA..."
 
 # Idempotent import: only adds if alias does not exist
-sudo docker exec "$CONTAINER" bash -c "
+${SUDO} docker exec "$CONTAINER" bash -c "
   keytool -list -keystore \$JAVA_HOME/lib/security/cacerts \
     -storepass changeit -alias $CA_ALIAS >/dev/null 2>&1 || \
   keytool -importcert -trustcacerts \
@@ -78,4 +83,4 @@ sudo docker exec "$CONTAINER" bash -c "
 "
 
 echo "▶ Restarting $CONTAINER to apply changes..."
-sudo docker restart "$CONTAINER"
+${SUDO} docker restart "$CONTAINER"

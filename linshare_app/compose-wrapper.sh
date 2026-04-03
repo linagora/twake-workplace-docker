@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 
+# Detect whether sudo is needed for docker (on macOS Docker Desktop, it's not)
+if [ -z "$SUDO" ]; then
+  if docker info &>/dev/null; then SUDO=""; else SUDO="sudo"; fi
+fi
+
 ACTION="$1"
 
 set -a
@@ -23,7 +28,7 @@ if [ "$ACTION" = "up" ]; then
 fi
 
 # Always call compose
-sudo docker compose --env-file ../.env "$@"
+${SUDO} docker compose --env-file ../.env "$@"
 
 # 🚨 Everything below is UP-only
 if [ "$ACTION" != "up" ]; then
@@ -34,7 +39,7 @@ fi
 echo "⏳ Waiting for backend container to become healthy..."
 
 while true; do
-  STATUS=$(sudo docker inspect \
+  STATUS=$(${SUDO} docker inspect \
     --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
     "$BACKEND_CONTAINER" 2>/dev/null || echo "starting")
 

@@ -2,6 +2,11 @@
 # compose-wrapper.sh
 set -e
 
+# Detect whether sudo is needed for docker (on macOS Docker Desktop, it's not)
+if [ -z "$SUDO" ]; then
+  if docker info &>/dev/null; then SUDO=""; else SUDO="sudo"; fi
+fi
+
 ACTION="$1"
 
 # Load environment variables
@@ -28,11 +33,11 @@ if [ "$ACTION" = "up" ]; then
 fi
 
 
-sudo docker compose --env-file ../.env "$@"
+${SUDO} docker compose --env-file ../.env "$@"
 
 if [ "${CERTS_REGENERATED:-}" = "true" ]; then
   echo "Certs were regenerated, restarting reverse-proxy..."
-  sudo docker compose --env-file ../.env restart reverse-proxy
+  ${SUDO} docker compose --env-file ../.env restart reverse-proxy
 fi
 
 if [ "$ACTION" != "up" ]; then
@@ -43,7 +48,7 @@ echo "⏳ Waiting for LemonLDAP to be healthy (timeout 5 min)..."
 ELAPSED=0
 MAX_WAIT=300
 while [ "$ELAPSED" -lt "$MAX_WAIT" ]; do
-  STATUS=$(sudo docker inspect \
+  STATUS=$(${SUDO} docker inspect \
     --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
     "lemonldap-ng" 2>/dev/null || echo "starting")
 
@@ -74,4 +79,4 @@ if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
   exit 1
 fi
 
-sudo docker exec lemonldap-ng bash -c "/usr/share/lemonldap-ng/bin/rotateOidcKeys" || true
+${SUDO} docker exec lemonldap-ng bash -c "/usr/share/lemonldap-ng/bin/rotateOidcKeys" || true

@@ -2,6 +2,11 @@
 # compose-wrapper.sh
 set -e
 
+# Detect whether sudo is needed for docker (on macOS Docker Desktop, it's not)
+if [ -z "$SUDO" ]; then
+  if docker info &>/dev/null; then SUDO=""; else SUDO="sudo"; fi
+fi
+
 ACTION="$1"
 # Load environment variables
 set -a
@@ -21,4 +26,4 @@ fi
 
 
 # Pass all arguments to docker compose
-sudo docker compose --env-file ../.env "$@"
+${SUDO} docker compose --env-file ../.env "$@"
