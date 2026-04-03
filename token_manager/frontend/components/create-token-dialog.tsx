@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { apiFetch } from '@/lib/api'
 import { authHeaders, getCurrentUserEmail } from '@/lib/auth'
 
@@ -38,6 +38,22 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [displayTab, setDisplayTab] = useState<'token' | 'usage'>('token')
+  const [jmapAccountId, setJmapAccountId] = useState('')
+
+  // Compute JMAP accountId (SHA-256 of email) when entering display step
+  useEffect(() => {
+    if (step === 'display') {
+      const email = getCurrentUserEmail()
+      if (email && typeof crypto !== 'undefined' && crypto.subtle) {
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(email))
+          .then(buf => {
+            const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+            setJmapAccountId(hash)
+          })
+          .catch(() => setJmapAccountId(email))
+      }
+    }
+  }, [step])
   const [error, setError] = useState('')
   const [result, setResult] = useState<CreateResult>({})
   const [copied, setCopied] = useState(false)
@@ -350,9 +366,7 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
             {displayTab === 'usage' && (() => {
               const svcId = result.service ?? selectedService
               const svc = SERVICES.find(s => s.id === svcId)
-              const userEmail = getCurrentUserEmail()
-              const accountId = Array.from(new TextEncoder().encode(userEmail)).map(b => b.toString(16).padStart(2, '0')).join('')
-              const curlCmd = svc?.curlExample?.(result.token ?? 'YOUR_TOKEN').replace(/YOUR_ACCOUNT_ID/g, accountId)
+              const curlCmd = svc?.curlExample?.(result.token ?? 'YOUR_TOKEN').replace(/YOUR_ACCOUNT_ID/g, jmapAccountId || 'YOUR_ACCOUNT_ID')
               return (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: 12, color: '#95a0b4', marginBottom: 16 }}>
