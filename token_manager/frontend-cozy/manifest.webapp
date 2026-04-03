@@ -1,0 +1,17 @@
+{
+  "name": "Token Manager",
+  "name_prefix": "Twake",
+  "slug": "token-manager",
+  "icon": "icon.svg",
+  "categories": ["cozy"],
+  "version": "0.2.0",
+  "licence": "AGPL-3.0",
+  "permissions": {
+    "apps": { "type": "io.cozy.apps" },
+    "settings": { "type": "io.cozy.settings" },
+    "permissions": { "type": "io.cozy.permissions" }
+  },
+  "routes": {
+    "/": { "folder": "/", "index": "index.html", "public": false }
+  }
+}
