@@ -2,7 +2,7 @@
 
 export interface Token {
   service: string
-  userId: string
+  user: string
   status: string
   expires_at: string
   granted_by?: string
@@ -64,8 +64,8 @@ export default function TokenTable({ tokens, onRevoke, onRefresh }: TokenTablePr
         </thead>
         <tbody className="divide-y divide-gray-100">
           {tokens.map((token) => (
-            <tr key={`${token.service}:${token.userId}`} className="hover:bg-gray-50">
-              <td className="px-4 py-3 text-gray-700">{token.userId}</td>
+            <tr key={`${token.service}:${token.user}`} className="hover:bg-gray-50">
+              <td className="px-4 py-3 text-gray-700">{token.user}</td>
               <td className="px-4 py-3 font-mono text-gray-700">{token.service}</td>
               <td className="px-4 py-3">{statusBadge(token.status, token.expires_at)}</td>
               <td className="px-4 py-3 text-gray-500">
@@ -74,13 +74,13 @@ export default function TokenTable({ tokens, onRevoke, onRefresh }: TokenTablePr
               <td className="px-4 py-3 text-right">
                 <div className="flex justify-end gap-2">
                   <button
-                    onClick={() => onRefresh(token.service, token.userId)}
+                    onClick={() => onRefresh(token.service, token.user)}
                     className="rounded px-2.5 py-1 text-xs font-medium text-indigo-600 border border-indigo-200 hover:bg-indigo-50 transition-colors"
                   >
                     Refresh
                   </button>
                   <button
-                    onClick={() => onRevoke(token.service, token.userId)}
+                    onClick={() => onRevoke(token.service, token.user)}
                     className="rounded px-2.5 py-1 text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
                   >
                     Revoke

@@ -200,7 +200,17 @@ export async function tokenRoutes(app: FastifyInstance) {
       return
     }
 
-    return prisma.serviceToken.findMany({ where: { tenantId: tenant.id } })
+    const tokens = await prisma.serviceToken.findMany({ where: { tenantId: tenant.id } })
+    return tokens.map((t: any) => ({
+      user: t.userId,
+      service: t.service,
+      status: t.status,
+      expires_at: t.expiresAt?.toISOString?.() ?? t.expiresAt,
+      instance_url: t.instanceUrl,
+      granted_by: t.grantedBy,
+      granted_at: t.grantedAt?.toISOString?.() ?? t.grantedAt,
+      auto_refresh: t.autoRefresh,
+    }))
   })
 
   // GET /admin/config — View refresh config (admin only)
