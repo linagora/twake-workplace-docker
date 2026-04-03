@@ -37,6 +37,7 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
   const [selectedScopes, setSelectedScopes] = useState<string[]>([])
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [displayTab, setDisplayTab] = useState<'token' | 'usage'>('token')
   const [error, setError] = useState('')
   const [result, setResult] = useState<CreateResult>({})
   const [copied, setCopied] = useState(false)
@@ -146,7 +147,7 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
   const dialogStyle: React.CSSProperties = {
     background: '#ffffff',
     borderRadius: 12,
-    width: 520,
+    width: 680,
     maxWidth: '95vw',
     maxHeight: '90vh',
     overflowY: 'auto',
@@ -303,76 +304,78 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
             <span style={{ fontSize: 17, fontWeight: 700, color: '#1a1a2e' }}>Token Created</span>
           </div>
           <div style={bodyStyle}>
-            {/* Success icon */}
-            <div style={{ textAlign: 'center', marginBottom: 20 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: '#d1fae5', fontSize: 28 }}>
-                ✓
-              </div>
-            </div>
-
             {/* Warning */}
-            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '12px 14px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 16 }}>⚠️</span>
-              <span style={{ fontSize: 13, color: '#92400e', fontWeight: 500 }}>
-                Copy this token now. It won&apos;t be shown again.
-              </span>
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 8, padding: '10px 14px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <span style={{ fontSize: 14 }}>⚠️</span>
+              <span style={{ fontSize: 13, color: '#92400e', fontWeight: 500 }}>Copy this token now. It won&apos;t be shown again.</span>
             </div>
 
-            {/* Token block */}
-            {result.token && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Your token</div>
-                <div style={{ background: '#f8fafc', border: '1px solid #e8ecf0', borderRadius: 6, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <code style={{ fontFamily: 'monospace', fontSize: 13, color: '#1a1a2e', flex: 1, wordBreak: 'break-all' }}>
-                    {result.token}
-                  </code>
-                  <button
-                    onClick={handleCopy}
-                    style={{ ...secondaryBtn, padding: '6px 14px', fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}
-                  >
-                    {copied ? 'Copied!' : 'Copy'}
-                  </button>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid #e8ecf0', marginBottom: 16 }}>
+              {(['token', 'usage'] as const).map(tab => (
+                <button key={tab} onClick={() => setDisplayTab(tab)} style={{
+                  padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  background: 'none', border: 'none', borderBottom: displayTab === tab ? '2px solid #297EF2' : '2px solid transparent',
+                  color: displayTab === tab ? '#297EF2' : '#95a0b4', marginBottom: -2,
+                }}>
+                  {tab === 'token' ? '🔑 Token' : '📋 Usage'}
+                </button>
+              ))}
+            </div>
+
+            {displayTab === 'token' && (
+              <>
+                {/* Token block */}
+                {result.token && (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Your token</div>
+                    <div style={{ background: '#f8fafc', border: '1px solid #e8ecf0', borderRadius: 6, padding: '10px 12px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <code style={{ fontFamily: 'monospace', fontSize: 12, color: '#1a1a2e', flex: 1, wordBreak: 'break-all', lineHeight: 1.4 }}>
+                        {result.token}
+                      </code>
+                      <button onClick={handleCopy} style={{ ...secondaryBtn, padding: '5px 12px', fontSize: 11, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {copied ? '✓ Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {/* Info grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', fontSize: 12, color: '#95a0b4' }}>
+                  {result.service && <div><span style={{ fontWeight: 600, color: '#475569' }}>Service:</span> {result.service}</div>}
+                  {result.expires_at && <div><span style={{ fontWeight: 600, color: '#475569' }}>Expires:</span> {new Date(result.expires_at).toLocaleDateString()}</div>}
                 </div>
-              </div>
+              </>
             )}
 
-            {/* Service details */}
-            {(() => {
-              const svc = SERVICES.find(s => s.id === selectedService)
-              const curlCmd = svc?.curlExample?.(result.token ?? 'YOUR_TOKEN')
+            {displayTab === 'usage' && (() => {
+              const svcId = result.service ?? selectedService
+              const svc = SERVICES.find(s => s.id === svcId)
+              const userEmail = getCurrentUserEmail()
+              const accountId = Array.from(new TextEncoder().encode(userEmail)).map(b => b.toString(16).padStart(2, '0')).join('')
+              const curlCmd = svc?.curlExample?.(result.token ?? 'YOUR_TOKEN').replace(/YOUR_ACCOUNT_ID/g, accountId)
               return (
-                <div style={{ marginTop: 4 }}>
-                  {/* Info grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: 13, color: '#95a0b4', marginBottom: 16 }}>
-                    {result.service && <div><span style={{ fontWeight: 600, color: '#475569' }}>Service:</span> {result.service}</div>}
-                    {result.expires_at && <div><span style={{ fontWeight: 600, color: '#475569' }}>Expires:</span> {new Date(result.expires_at).toLocaleDateString()}</div>}
-                    {svc?.endpoint && <div><span style={{ fontWeight: 600, color: '#475569' }}>Endpoint:</span> <code style={{ fontSize: 11 }}>{svc.endpoint}</code></div>}
-                    {svc?.scope && <div><span style={{ fontWeight: 600, color: '#475569' }}>OIDC Scope:</span> <code style={{ fontSize: 11 }}>{svc.scope}</code></div>}
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 16px', fontSize: 12, color: '#95a0b4', marginBottom: 16 }}>
+                    {svc?.endpoint && <div><span style={{ fontWeight: 600, color: '#475569' }}>Endpoint:</span><br/><code style={{ fontSize: 11 }}>{svc.endpoint}</code></div>}
+                    {svc?.scope && <div><span style={{ fontWeight: 600, color: '#475569' }}>OIDC Scope:</span><br/><code style={{ fontSize: 11 }}>{svc.scope}</code></div>}
                   </div>
-
-                  {/* Curl example */}
                   {curlCmd && (
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Example curl command</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Example curl command</div>
                       <div style={{ background: '#1e293b', borderRadius: 6, padding: '12px 14px', position: 'relative' }}>
-                        <pre style={{ margin: 0, fontSize: 11, color: '#e2e8f0', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.5 }}>
-                          {curlCmd}
+                        <pre style={{ margin: 0, fontSize: 11, color: '#e2e8f0', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}>
+{curlCmd}
                         </pre>
-                        <button
-                          onClick={() => { navigator.clipboard.writeText(curlCmd) }}
-                          style={{
-                            position: 'absolute', top: 8, right: 8,
-                            background: '#334155', border: '1px solid #475569',
-                            color: '#e2e8f0', borderRadius: 4, padding: '3px 8px',
-                            fontSize: 11, cursor: 'pointer',
-                          }}
-                        >
+                        <button onClick={() => { navigator.clipboard.writeText(curlCmd ?? '') }} style={{
+                          position: 'absolute', top: 8, right: 8, background: '#334155', border: '1px solid #475569',
+                          color: '#e2e8f0', borderRadius: 4, padding: '3px 8px', fontSize: 11, cursor: 'pointer',
+                        }}>
                           Copy
                         </button>
                       </div>
                     </div>
                   )}
-                </div>
+                </>
               )
             })()}
           </div>
