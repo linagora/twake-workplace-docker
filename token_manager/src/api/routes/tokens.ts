@@ -221,7 +221,7 @@ export async function tokenRoutes(app: FastifyInstance) {
 
     await prisma.tenant.update({
       where: { id: tenant.id },
-      data: { config: { ...(tenant.config as object), ...body } },
+      data: { config: { ...(tenant.config as Record<string, unknown>), ...body } as any },
     })
 
     return { status: 'updated' }

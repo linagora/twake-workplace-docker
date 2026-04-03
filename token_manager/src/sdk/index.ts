@@ -95,7 +95,7 @@ export class TwakeTokenManager {
     const response = await fetch(url, options)
 
     if (response.status === 202) {
-      const data = await response.json()
+      const data = await response.json() as Record<string, any>
       if (data.status === 'consent_required') {
         throw new ConsentRequiredError(data.redirect_url, data.service)
       }
@@ -109,7 +109,7 @@ export class TwakeTokenManager {
     if (!response.ok) {
       let errorData: { error?: string; message?: string; service?: string } = {}
       try {
-        errorData = await response.json()
+        errorData = await response.json() as { error?: string; message?: string; service?: string }
       } catch {
         // ignore parse errors
       }

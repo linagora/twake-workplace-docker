@@ -1,11 +1,18 @@
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+COPY prisma ./prisma/
+RUN npm ci && npx prisma generate
+COPY src ./src
+COPY tsconfig.json ./
+RUN npm run build:api
+
 FROM node:18-alpine
 WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 RUN npm ci --omit=dev && npx prisma generate
-COPY src ./src
-COPY tsconfig.json ./
+COPY --from=builder /app/dist ./dist
 COPY config ./config
-RUN npm run build:api
 EXPOSE 3100
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/api/server.js"]
