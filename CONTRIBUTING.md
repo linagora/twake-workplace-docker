@@ -48,12 +48,12 @@ Feature requests are welcome. Please open an issue describing:
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-- `feat:` -- A new feature
-- `fix:` -- A bug fix
-- `doc:` -- Documentation changes
-- `refactor:` -- Code refactoring without functional changes
-- `chore:` -- Maintenance tasks (CI, dependencies, etc.)
-- `test:` -- Adding or updating tests
+- `feat:`: A new feature
+- `fix:`: A bug fix
+- `doc:`: Documentation changes
+- `refactor:`: Code refactoring without functional changes
+- `chore:`: Maintenance tasks (CI, dependencies, etc.)
+- `test:`: Adding or updating tests
 
 ## Code Style
 

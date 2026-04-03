@@ -1,6 +1,6 @@
 # Twake.AI Kickstart
 
-Get started quickly with [Twake.ai](https://twake.ai), the open-source Digital Workplace that brings together all the tools your team needs: messaging, email, file sharing, collaborative document editing, calendar, video conferencing, and a personal cloud -- all unified behind a single sign-on.
+[Twake.ai](https://twake.ai) is an open-source Digital Workplace developed by [LINAGORA](https://linagora.com). It brings together all the tools your team needs in a single platform: messaging, email, file sharing, collaborative document editing, calendar, video conferencing, and a personal cloud, all unified behind a single sign-on.
 
 **Twake.AI Kickstart** provides a ready-to-run Docker Compose infrastructure to deploy a complete Twake.ai instance on your local machine or development server. It is designed to help developers, sysadmins, and evaluators get hands-on experience with the platform in minutes.
 
@@ -19,15 +19,15 @@ Get started quickly with [Twake.ai](https://twake.ai), the open-source Digital W
 
 ## Features
 
-- **Chat** -- Real-time messaging powered by Matrix/Synapse
-- **Email** -- Full JMAP email via TMail
-- **File Sharing** -- Secure file transfer and storage with LinShare
-- **Document Editing** -- Collaborative editing with OnlyOffice
-- **Calendar** -- Shared calendaring
-- **Video Conferencing** -- WebRTC meetings with LiveKit
-- **Personal Cloud** -- Individual workspace powered by Cozy Stack
-- **Single Sign-On** -- Unified authentication with LemonLDAP::NG
-- **Reverse Proxy** -- Automatic routing and SSL via Traefik
+- **Chat**: Real-time messaging powered by Matrix/Synapse
+- **Email**: Full JMAP email via TMail
+- **File Sharing**: Secure file transfer and storage with LinShare
+- **Document Editing**: Collaborative editing with OnlyOffice
+- **Calendar**: Shared calendaring
+- **Video Conferencing**: WebRTC meetings with LiveKit
+- **Personal Cloud**: Individual workspace powered by Cozy Stack
+- **Single Sign-On**: Unified authentication with LemonLDAP::NG
+- **Reverse Proxy**: Automatic routing and SSL via Traefik
 
 ## Architecture Overview
 
@@ -37,58 +37,58 @@ The stack is split into modular components, each managed via its own Docker Comp
 
 Centralized data storage services used by other components.
 
-- **PostgreSQL** -- Main relational database for LinShare and Meet
-- **MongoDB** -- Document store for LinShare
-- **CouchDB** -- Database for Cozy Stack
-- **OpenLDAP** -- Directory service for user management
-- **Valkey (Redis)** -- In-memory data store
+- **PostgreSQL**: Main relational database for LinShare and Meet
+- **MongoDB**: Document store for LinShare
+- **CouchDB**: Database for Cozy Stack
+- **OpenLDAP**: Directory service for user management
+- **Valkey (Redis)**: In-memory data store
 
 ### 2. Authentication & Proxy Layer (`twake_auth`)
 
 Handles entry points and security.
 
-- **Traefik** -- Reverse proxy with routing via `twake-network` and SSL management
-- **LemonLDAP::NG** -- Web Single Sign-On (SSO) and OIDC provider
-- **Docker Socket Proxy** -- Securely exposes the Docker socket to Traefik
+- **Traefik**: Reverse proxy with routing via `twake-network` and SSL management
+- **LemonLDAP::NG**: Web Single Sign-On (SSO) and OIDC provider
+- **Docker Socket Proxy**: Securely exposes the Docker socket to Traefik
 
 ### 3. Meet Application (`meet_app`)
 
 Video conferencing component.
 
-- **LiveKit** -- Real-time video and audio server
-- **Django Backend** -- APIs and logic for meetings
-- **Frontend** -- Web interface for video calls
+- **LiveKit**: Real-time video and audio server
+- **Django Backend**: APIs and logic for meetings
+- **Frontend**: Web interface for video calls
 
 ### 4. LinShare Application (`linshare_app`)
 
 Secure file sharing and storage.
 
-- **Backend** -- Tomcat-based server
-- **UI User** -- Web interface for general users
-- **UI Admin** -- Administration web interface
-- **UI Upload Request** -- Interface for external upload requests
-- **ClamAV** -- Antivirus scanning for uploaded files
+- **Backend**: Tomcat-based server
+- **UI User**: Web interface for general users
+- **UI Admin**: Administration web interface
+- **UI Upload Request**: Interface for external upload requests
+- **ClamAV**: Antivirus scanning for uploaded files
 
 ### 5. Cozy Stack (`cozy_stack`)
 
-- **Cozy Stack** -- Personal cloud platform server
+- **Cozy Stack**: Personal cloud platform server
 
 ### 6. OnlyOffice Application (`onlyoffice_app`)
 
-- **OnlyOffice** -- Document editing and collaboration server
+- **OnlyOffice**: Document editing and collaboration server
 
 ### 7. Calendar Application (`calendar_app`)
 
-- **Calendar** -- Shared calendar service
+- **Calendar**: Shared calendar service
 
 ### 8. TMail Application (`tmail_app`)
 
-- **TMail** -- JMAP email service
+- **TMail**: JMAP email service
 
 ### 9. Chat Application (`chat_app`)
 
-- **Matrix Synapse** -- Federated messaging server
-- **Tom Server** -- Identity and vault server
+- **Matrix Synapse**: Federated messaging server
+- **Tom Server**: Identity and vault server
 
 ### Component Structure
 
@@ -101,6 +101,7 @@ Each component is defined as a separate Docker Compose project and includes:
 
 - **Docker** and **Docker Compose** (v2+) installed
 - At least **8 GB of RAM** available for Docker
+- About **20 GB of free disk space** for Docker images (~30 container images across all services)
 - Ports **80** and **443** available on the host
 
 ## Quick Start
@@ -145,7 +146,7 @@ Open your browser and navigate to one of the test workspaces (see [Test Credenti
 ## Configuration
 
 - The root `.env` file defines `BASE_DOMAIN`, `LDAP_BASE_DN`, and `MAIL_DOMAIN`. The default domain is `twake.local`.
-- Each component's `compose-wrapper.sh` uses `envsubst` to generate configuration from `.template` files -- no hardcoded domains.
+- Each component's `compose-wrapper.sh` uses `envsubst` to generate configuration from `.template` files: no hardcoded domains.
 - SSL certificates are stored in `twake_auth/traefik/ssl/`.
 - To log in to the Linagora Docker registry (required for LinShare images), authenticate before starting services.
 
@@ -223,9 +224,9 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ## License
 
-This project is licensed under the **GNU Affero General Public License v3.0** -- see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU Affero General Public License v3.0**: see the [LICENSE](LICENSE) file for details.
 
 ## Links
 
-- [Twake.ai](https://twake.ai) -- Official website
-- [Linagora](https://linagora.com) -- Company behind Twake.ai
+- [Twake.ai](https://twake.ai): Official website
+- [Linagora](https://linagora.com): Company behind Twake.ai
