@@ -1,73 +1,27 @@
 import React from 'react'
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-
-// AppLayout will be created in Task 4 — placeholder for now
-function AppLayout({ children }) {
-  return <div className="app-layout">{children}</div>
-}
-
-// Page placeholders — actual components created in Task 5
-const TokensPage = () => <div>Page: Tokens</div>
-const DashboardPage = () => <div>Page: Dashboard</div>
-const AuditPage = () => <div>Page: Audit</div>
-const AdminUsersPage = () => <div>Page: Admin Users</div>
-const AdminAuditPage = () => <div>Page: Admin Audit</div>
-const AdminConfigPage = () => <div>Page: Admin Config</div>
+import AppLayout from './components/app-layout'
+import TokensPage from './pages/TokensPage'
+import DashboardPage from './pages/DashboardPage'
+import AuditPage from './pages/AuditPage'
+import AdminUsersPage from './pages/AdminUsersPage'
+import AdminAuditPage from './pages/AdminAuditPage'
+import AdminConfigPage from './pages/AdminConfigPage'
 
 export default function App() {
   return (
     <HashRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/tokens" replace />} />
-        <Route
-          path="/tokens"
-          element={
-            <AppLayout>
-              <TokensPage />
-            </AppLayout>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <AppLayout>
-              <DashboardPage />
-            </AppLayout>
-          }
-        />
-        <Route
-          path="/audit"
-          element={
-            <AppLayout>
-              <AuditPage />
-            </AppLayout>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <AppLayout>
-              <AdminUsersPage />
-            </AppLayout>
-          }
-        />
-        <Route
-          path="/admin/audit"
-          element={
-            <AppLayout>
-              <AdminAuditPage />
-            </AppLayout>
-          }
-        />
-        <Route
-          path="/admin/config"
-          element={
-            <AppLayout>
-              <AdminConfigPage />
-            </AppLayout>
-          }
-        />
-      </Routes>
+      <AppLayout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/tokens" replace />} />
+          <Route path="/tokens" element={<TokensPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/audit" element={<AuditPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/audit" element={<AdminAuditPage />} />
+          <Route path="/admin/config" element={<AdminConfigPage />} />
+        </Routes>
+      </AppLayout>
     </HashRouter>
   )
 }
