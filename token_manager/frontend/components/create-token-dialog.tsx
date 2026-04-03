@@ -378,16 +378,18 @@ export default function CreateTokenDialog({ open, onClose, onCreated }: Props) {
               if (isUmbrella) {
                 const scopes = result.scopes ?? selectedScopes
                 const firstScope = scopes[0] ?? 'twake-mail'
-                const pathMap: Record<string, string> = {
-                  'twake-mail': 'jmap',
-                  'twake-calendar': 'dav/principals/',
-                  'twake-chat': 'joined_rooms',
-                  'twake-drive': 'files/io.cozy.files.root-dir',
+                const curlExamples: Record<string, string> = {
+                  'twake-mail': `curl -sk -X POST ${proxyBase}/twake-mail/jmap \\\n  -H "Authorization: Bearer ${tkn}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:mail"],"methodCalls":[["Mailbox/get",{"accountId":"${jmapAccountId || 'YOUR_ACCOUNT_ID'}","ids":null},"c1"]]}'`,
+                  'twake-calendar': `curl -sk -X PROPFIND ${proxyBase}/twake-calendar/dav/principals/ \\\n  -H "Authorization: Bearer ${tkn}" \\\n  -H "Depth: 0"`,
+                  'twake-chat': `curl -sk ${proxyBase}/twake-chat/joined_rooms \\\n  -H "Authorization: Bearer ${tkn}"`,
+                  'twake-drive': `curl -sk ${proxyBase}/twake-drive/files/io.cozy.files.root-dir \\\n  -H "Authorization: Bearer ${tkn}" \\\n  -H "Accept: application/vnd.api+json"`,
                 }
-                const path = pathMap[firstScope] ?? ''
-                curlCmd = `# Umbrella tokens must go through the Token Manager proxy\ncurl -sk ${proxyBase}/${firstScope}/${path} \\\n  -H "Authorization: Bearer ${tkn}"`
+                curlCmd = `# Umbrella tokens go through the Token Manager proxy\n${curlExamples[firstScope] ?? `curl -sk ${proxyBase}/${firstScope}/ \\\n  -H "Authorization: Bearer ${tkn}"`}`
                 if (scopes.length > 1) {
-                  curlCmd += `\n\n# Other services available with this token:\n${scopes.slice(1).map(s => `# ${proxyBase}/${s}/...`).join('\n')}`
+                  curlCmd += `\n\n# Other services available with this token:`
+                  for (const s of scopes.slice(1)) {
+                    curlCmd += `\n# ${SERVICES.find(x => x.id === s)?.label ?? s}:\n# ${curlExamples[s]?.split('\n')[0] ?? `${proxyBase}/${s}/...`}`
+                  }
                 }
               } else {
                 curlCmd = svc?.curlExample?.(tkn).replace(/YOUR_ACCOUNT_ID/g, jmapAccountId || 'YOUR_ACCOUNT_ID') ?? ''
