@@ -1,18 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Main orange rounded square -->
-  <rect x="10" y="10" width="44" height="44" rx="12" fill="#F29B1F"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <!-- Main orange rounded square - fills the viewBox -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#F29B1F"/>
 
-  <!-- API label (slightly lowered) -->
-  <rect x="16" y="20" width="32" height="10" rx="5" fill="#FFF6EA"/>
-  <text x="32" y="27.8" text-anchor="middle"
+  <!-- API label -->
+  <rect x="10" y="14" width="44" height="14" rx="7" fill="#FFF6EA"/>
+  <text x="32" y="24.5" text-anchor="middle"
         font-family="Arial, Helvetica, sans-serif"
-        font-size="8" font-weight="700" letter-spacing="1"
+        font-size="11" font-weight="700" letter-spacing="1.5"
         fill="#C96A00">API</text>
 
   <!-- Key -->
-  <circle cx="26" cy="38" r="6" fill="#FFFFFF"/>
-  <circle cx="26" cy="38" r="2.5" fill="#F29B1F"/>
-  <rect x="30" y="36.5" width="14" height="3" rx="1.2" fill="#FFFFFF"/>
-  <rect x="38" y="38" width="3" height="4" rx="0.8" fill="#FFFFFF"/>
-  <rect x="34" y="38" width="3" height="3" rx="0.8" fill="#FFFFFF"/>
+  <circle cx="22" cy="42" r="8" fill="#FFFFFF"/>
+  <circle cx="22" cy="42" r="3.5" fill="#F29B1F"/>
+  <rect x="28" y="40" width="20" height="4" rx="1.5" fill="#FFFFFF"/>
+  <rect x="40" y="42.5" width="4" height="5.5" rx="1" fill="#FFFFFF"/>
+  <rect x="34" y="42.5" width="4" height="4" rx="1" fill="#FFFFFF"/>
 </svg>
