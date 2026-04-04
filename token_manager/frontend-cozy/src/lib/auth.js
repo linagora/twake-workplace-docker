@@ -5,16 +5,64 @@ let oidcToken = null
 
 export function getCozyToken() {
   const el = document.querySelector('[data-cozy-token]')
-  return el ? el.getAttribute('data-cozy-token') : null
+  const token = el ? el.getAttribute('data-cozy-token') : null
+  // If token is the raw placeholder (not replaced by Cozy Stack), return null
+  if (!token || token === '{{.Token}}') return null
+  return token
 }
 
 export function getCozyDomain() {
   const el = document.querySelector('[data-cozy-domain]')
-  return el ? el.getAttribute('data-cozy-domain') : null
+  const domain = el ? el.getAttribute('data-cozy-domain') : null
+  if (!domain || domain === '{{.Domain}}') return null
+  return domain
 }
 
 export async function initAuth() {
-  // Check URL param ?dev_user=user1
+  // 1. Check if we're inside Cozy Stack (real token injected)
+  const cozyToken = getCozyToken()
+  if (cozyToken) {
+    // We have a real Cozy session — try to get an OIDC token via redirect
+    // Check if we already have an OIDC token in sessionStorage (from a previous redirect)
+    const storedOidc = sessionStorage.getItem('oidc_access_token')
+    if (storedOidc) {
+      oidcToken = storedOidc
+      return
+    }
+
+    // Check if URL has an authorization code (returning from SSO redirect)
+    const hash = window.location.hash
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const state = params.get('state')
+    if (code && state) {
+      const savedState = sessionStorage.getItem('oidc_state')
+      if (state === savedState) {
+        try {
+          const token = await exchangeCode(code)
+          oidcToken = token
+          sessionStorage.setItem('oidc_access_token', token)
+          sessionStorage.removeItem('oidc_state')
+          // Clean URL
+          window.history.replaceState({}, '', window.location.pathname + '#/tokens')
+          return
+        } catch (e) {
+          console.error('OIDC code exchange failed:', e)
+        }
+      }
+    }
+
+    // No OIDC token yet — extract user from Cozy domain and use dev-token
+    // as intermediate solution while SSO redirect is being set up
+    const domain = getCozyDomain()
+    if (domain) {
+      const username = domain.split('.')[0] // user1.twake.local → user1
+      oidcToken = `dev-${username}`
+      return
+    }
+  }
+
+  // 2. Not inside Cozy Stack (dev mode / standalone) — use dev-token
   const params = new URLSearchParams(window.location.search)
   const devUser = params.get('dev_user')
   if (devUser) {
@@ -23,77 +71,12 @@ export async function initAuth() {
     return
   }
 
-  // Check localStorage dev token
   const stored = localStorage.getItem('twake_dev_token')
   if (stored) { oidcToken = stored; return }
-
-  // Auto-detect user from Cozy domain (e.g., user1-token-manager.twake.local → user1)
-  const hostname = window.location.hostname
-  const match = hostname.match(/^([^-]+)-token-manager\./)
-  if (match) {
-    oidcToken = `dev-${match[1]}`
-    localStorage.setItem('twake_dev_token', oidcToken)
-    return
-  }
-
-  // Try silent OIDC iframe flow (may be blocked by CSP in Cozy)
-  try {
-    const token = await silentAuthorize()
-    if (token) { oidcToken = token; return }
-  } catch (_) {
-    // silent flow failed
-  }
 }
 
-export function silentAuthorize() {
-  return new Promise((resolve, reject) => {
-    const state = crypto.randomUUID()
-    const nonce = crypto.randomUUID()
-    const redirectUri = `${window.location.origin}/auth/silent-callback`
-
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: CLIENT_ID,
-      redirect_uri: redirectUri,
-      scope: 'openid email profile',
-      state,
-      nonce,
-      prompt: 'none',
-    })
-
-    const iframe = document.createElement('iframe')
-    iframe.style.display = 'none'
-    iframe.src = `${OIDC_ISSUER}/oauth2/authorize?${params}`
-
-    const timeout = setTimeout(() => {
-      document.body.removeChild(iframe)
-      reject(new Error('Silent OIDC flow timed out'))
-    }, 10000)
-
-    window.addEventListener('message', async function handler(event) {
-      if (event.origin !== window.location.origin) return
-      if (!event.data || event.data.type !== 'oidc_silent_callback') return
-      window.removeEventListener('message', handler)
-      clearTimeout(timeout)
-      document.body.removeChild(iframe)
-
-      if (event.data.error) { reject(new Error(event.data.error)); return }
-      if (event.data.state !== state) { reject(new Error('State mismatch')); return }
-
-      try {
-        const token = await exchangeCode(event.data.code, redirectUri)
-        resolve(token)
-      } catch (err) {
-        reject(err)
-      }
-    })
-
-    document.body.appendChild(iframe)
-  })
-}
-
-export async function exchangeCode(code, redirectUri) {
-  const redirectUriToUse = redirectUri || `${window.location.origin}/auth/callback`
+async function exchangeCode(code) {
+  const redirectUri = `${window.location.origin}/`
   const response = await fetch(`${OIDC_ISSUER}/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -101,7 +84,7 @@ export async function exchangeCode(code, redirectUri) {
       grant_type: 'authorization_code',
       code,
       client_id: CLIENT_ID,
-      redirect_uri: redirectUriToUse,
+      redirect_uri: redirectUri,
     }),
   })
   if (!response.ok) throw new Error(`Token exchange failed: ${response.status}`)
@@ -109,31 +92,28 @@ export async function exchangeCode(code, redirectUri) {
   return data.access_token
 }
 
-export function getOidcToken() { return oidcToken ?? getDevToken() }
-export function isAuthenticated() { return getOidcToken() !== null }
+export function getOidcToken() { return oidcToken }
+export function isAuthenticated() { return oidcToken !== null }
 
 export function authHeaders() {
-  const token = getOidcToken()
-  if (!token) return {}
-  return { Authorization: `Bearer ${token}` }
+  if (!oidcToken) return {}
+  return { Authorization: `Bearer ${oidcToken}` }
 }
 
 export function getCurrentUserEmail() {
-  const token = getOidcToken()
-  if (!token) return ''
-  if (token.startsWith('dev-')) return `${token.slice(4)}@twake.local`
+  if (!oidcToken) return ''
+  if (oidcToken.startsWith('dev-')) return `${oidcToken.slice(4)}@twake.local`
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = JSON.parse(atob(oidcToken.split('.')[1]))
     return payload.email ?? `${payload.sub}@twake.local`
   } catch { return '' }
 }
 
 export function isAdmin() {
-  const token = getOidcToken()
-  if (!token) return false
-  if (token.startsWith('dev-')) return token === 'dev-user1'
+  if (!oidcToken) return false
+  if (oidcToken.startsWith('dev-')) return oidcToken === 'dev-user1'
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
+    const payload = JSON.parse(atob(oidcToken.split('.')[1]))
     return (payload.groups ?? []).some(g => g.includes('token-manager-admins'))
   } catch { return false }
 }
@@ -141,7 +121,7 @@ export function isAdmin() {
 export function loginRedirect() {
   const state = crypto.randomUUID()
   sessionStorage.setItem('oidc_state', state)
-  const redirectUri = `${window.location.origin}/auth/callback`
+  const redirectUri = `${window.location.origin}/`
   window.location.href = `${OIDC_ISSUER}/oauth2/authorize?${new URLSearchParams({
     response_type: 'code',
     client_id: CLIENT_ID,
@@ -153,13 +133,7 @@ export function loginRedirect() {
 
 export function logout() {
   oidcToken = null
+  sessionStorage.removeItem('oidc_access_token')
   localStorage.removeItem('twake_dev_token')
   window.location.href = '#/tokens'
-}
-
-function getDevToken() {
-  const params = new URLSearchParams(window.location.search)
-  const devUser = params.get('dev_user')
-  if (devUser) { localStorage.setItem('twake_dev_token', `dev-${devUser}`); return `dev-${devUser}` }
-  return localStorage.getItem('twake_dev_token')
 }

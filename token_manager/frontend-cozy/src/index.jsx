@@ -17,11 +17,12 @@ async function main() {
         appName: 'Token Manager',
         appNamePrefix: 'Twake',
         appSlug: 'token-manager',
-        cozyURL: cozyDomain ? `https://${cozyDomain}` : window.location.origin,
+        cozyURL: cozyDomain ? `https://${cozyDomain}` : `https://${window.location.hostname.replace('-token-manager', '')}`,
         token: cozyToken,
         lang: cozyLocale,
         iconPath: '/icon.svg',
         isPublic: false,
+        appEditor: 'Linagora',
       })
     } catch (e) {
       console.warn('cozy-bar init error:', e)
