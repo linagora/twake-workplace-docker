@@ -12,16 +12,20 @@ async function main() {
 
   // Init cozy-bar if available
   if (window.cozy && window.cozy.bar) {
-    window.cozy.bar.init({
-      appName: 'Token Manager',
-      appNamePrefix: 'Twake',
-      appSlug: 'token-manager',
-      cozyURL: cozyDomain ? `https://${cozyDomain}` : window.location.origin,
-      token: cozyToken,
-      lang: cozyLocale,
-      iconPath: '/icon.svg',
-      replaceTitleOnMobile: true,
-    })
+    try {
+      await window.cozy.bar.init({
+        appName: 'Token Manager',
+        appNamePrefix: 'Twake',
+        appSlug: 'token-manager',
+        cozyURL: cozyDomain ? `https://${cozyDomain}` : window.location.origin,
+        token: cozyToken,
+        lang: cozyLocale,
+        iconPath: '/icon.svg',
+        isPublic: false,
+      })
+    } catch (e) {
+      console.warn('cozy-bar init error:', e)
+    }
   }
 
   // Init auth (silent OIDC or dev-token fallback)
