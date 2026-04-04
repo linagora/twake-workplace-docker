@@ -2,7 +2,7 @@
   "name": "Token Manager",
   "name_prefix": "Twake",
   "slug": "token-manager",
-  "icon": "icon.png",
+  "icon": "icon.svg",
   "categories": ["cozy"],
   "version": "0.2.0",
   "licence": "AGPL-3.0",

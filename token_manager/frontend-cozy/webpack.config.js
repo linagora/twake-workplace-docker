@@ -31,7 +31,7 @@ module.exports = (env, argv) => {
       ...(isProd ? [new MiniCssExtractPlugin({ filename: 'app.[contenthash:8].css' })] : []),
       new CopyPlugin({ patterns: [
         { from: 'manifest.webapp', to: '.' },
-        { from: 'src/targets/browser/icon.png', to: '.', noErrorOnMissing: true },
+        { from: 'src/targets/browser/icon.svg', to: '.', noErrorOnMissing: true },
       ] }),
     ],
     devServer: { port: 3300, historyApiFallback: true },
