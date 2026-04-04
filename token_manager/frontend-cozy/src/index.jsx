@@ -14,11 +14,13 @@ async function main() {
   if (window.cozy && window.cozy.bar) {
     window.cozy.bar.init({
       appName: 'Token Manager',
-      appEditor: 'Twake',
-      cozyToken,
-      cozyDomain,
+      appNamePrefix: 'Twake',
+      appSlug: 'token-manager',
+      cozyURL: cozyDomain ? `https://${cozyDomain}` : window.location.origin,
+      token: cozyToken,
       lang: cozyLocale,
-      iconPath: 'icon.svg',
+      iconPath: '/icon.svg',
+      replaceTitleOnMobile: true,
     })
   }
 
