@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Twake Token Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {{.ThemeCSS}}
+  {{.CozyClientJS}}
+  {{.CozyBar}}
+</head>
+<body>
+  <div role="application"
+       data-cozy-token="{{.Token}}"
+       data-cozy-domain="{{.Domain}}"
+       data-cozy-locale="{{.Locale}}"
+       data-cozy-app-name="Token Manager"
+       data-cozy-app-name-prefix="Twake"
+       data-cozy-app-slug="token-manager"
+       data-cozy-icon-path="/icon.svg"
+       data-cozy-app-editor="Linagora">
+  </div>
+</body>
+</html>

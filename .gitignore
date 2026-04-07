@@ -1,18 +1,18 @@
 # Ignore database data
 twake_db/ldap/bootstrap/users.ldif
 twake_auth/config/lmConf-1.json
-tmail_app/config/domainlist.xml
-tmail_app/config/jmap.properties
-tmail_app/config/mailetcontainer.xml
-tmail_app/config/smtpserver.xml
-tmail_app/config/usersrepository.xml
-tmail_app/config/webadmin.properties
-tmail_app/tmail-web-conf/.env
-meet_app/config/nginx.conf
+mail_app/config/domainlist.xml
+mail_app/config/jmap.properties
+mail_app/config/mailetcontainer.xml
+mail_app/config/smtpserver.xml
+mail_app/config/usersrepository.xml
+mail_app/config/webadmin.properties
+mail_app/tmail-web-conf/.env
+visio_app/config/nginx.conf
 linshare_app/config/backend/linshare.extra.properties
 linshare_app/config/user-ui/config.js
-cozy-stack/config/cozy.yaml
-chat_app/synapse/homeserver-postgres.yaml
+drive_app/config/cozy.yaml
+chat_app/synapse/homeserver.yaml
 chat_app/synapse/wellknownclient.conf
 chat_app/synapse/wellknownserver.conf
 chat_app/synapse/.env
@@ -22,3 +22,4 @@ calendar_app/frontend/account/openpaas.js
 calendar_app/frontend/calendar/openpaas.js
 calendar_app/frontend/contacts/openpaas.js
 calendar_app/frontend/env.js
+token_manager/config/config.yaml

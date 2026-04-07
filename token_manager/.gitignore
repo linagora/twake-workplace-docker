@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.next/
+config/config.yaml
+*.env.local
+.env

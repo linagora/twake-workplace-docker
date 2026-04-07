@@ -1,0 +1,39 @@
+{
+  "name": "twake-token-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:api": "tsc -p tsconfig.json",
+    "build:frontend": "cd frontend && next build",
+    "dev": "tsx watch src/api/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:all": "vitest run && vitest run --config vitest.integration.config.ts",
+    "lint": "tsc --noEmit",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "cli": "tsx src/cli/index.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.0",
+    "@fastify/http-proxy": "^11.0.0",
+    "@prisma/client": "^6.0.0",
+    "bullmq": "^5.0.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^13.0.0",
+    "fastify": "^5.0.0",
+    "jose": "^6.0.0",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "prisma": "^6.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0",
+    "vitest-mock-extended": "^2.0.0"
+  }
+}

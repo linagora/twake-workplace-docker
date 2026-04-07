@@ -28,11 +28,11 @@ if [ "$ACTION" = "up" ]; then
 fi
 
 
-sudo docker compose --env-file ../.env "$@"
+sudo docker compose -p twake-auth --env-file ../.env "$@"
 
 if [ "${CERTS_REGENERATED:-}" = "true" ]; then
   echo "Certs were regenerated, restarting reverse-proxy..."
-  sudo docker compose --env-file ../.env restart reverse-proxy
+  sudo docker compose -p twake-auth --env-file ../.env restart reverse-proxy
 fi
 
 if [ "$ACTION" != "up" ]; then

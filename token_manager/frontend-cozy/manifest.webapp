@@ -1,0 +1,37 @@
+{
+  "name": "Token Manager",
+  "name_prefix": "Twake",
+  "slug": "token-manager",
+  "icon": "icon.svg",
+  "categories": ["cozy"],
+  "version": "0.2.0",
+  "licence": "AGPL-3.0",
+  "permissions": {
+    "apps": {
+      "type": "io.cozy.apps",
+      "description": "Required by the cozy-bar to display the icons of the apps",
+      "verbs": ["GET"]
+    },
+    "settings": {
+      "type": "io.cozy.settings",
+      "description": "Required by the cozy-bar to display Claudy and know which applications are coming soon",
+      "verbs": ["GET"]
+    },
+    "permissions": {
+      "type": "io.cozy.permissions"
+    },
+    "contacts": {
+      "type": "io.cozy.contacts",
+      "description": "Required to display user avatar",
+      "verbs": ["GET"]
+    },
+    "oauth": {
+      "type": "io.cozy.oauth.clients",
+      "description": "Required to display the cozy-desktop banner",
+      "verbs": ["GET"]
+    }
+  },
+  "routes": {
+    "/": { "folder": "/", "index": "index.html", "public": false }
+  }
+}
