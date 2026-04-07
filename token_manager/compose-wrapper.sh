@@ -3,8 +3,21 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
-if [ -f config/config.yaml.template ]; then
-  envsubst < config/config.yaml.template > config/config.yaml
+ACTION="$1"
+
+# Load environment variables
+set -a
+source ../.env
+set +a
+
+if [ "$ACTION" = "up" ]; then
+  echo "Processing configuration..."
+  envsubst '$BASE_DOMAIN' < config/config.yaml.template > config/config.yaml
+
+  if [ ! -f "config/config.yaml" ]; then
+    echo "Failed to create configuration file"
+    exit 1
+  fi
 fi
 
-sudo docker compose --env-file ../.env "$@"
+sudo docker compose -p twake-token-manager --env-file ../.env "$@"

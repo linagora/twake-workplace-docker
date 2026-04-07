@@ -25,6 +25,7 @@ get_project_name() {
         calendar_app)   echo "twake-calendar" ;;
         chat_app)       echo "twake-chat" ;;
         mail_app)       echo "twake-mail" ;;
+        token_manager)  echo "twake-token-manager" ;;
         *)              echo "" ;;
     esac
 }

@@ -22,3 +22,4 @@ calendar_app/frontend/account/openpaas.js
 calendar_app/frontend/calendar/openpaas.js
 calendar_app/frontend/contacts/openpaas.js
 calendar_app/frontend/env.js
+token_manager/config/config.yaml
