@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import TokenList from '../components/token-list'
-import CreateTokenDialog, { SERVICES, PROXY } from '../components/create-token-dialog'
+import CreateTokenDialog, { SERVICES, PROXY, stripComments } from '../components/create-token-dialog'
 import { apiFetch } from '../lib/api'
 import { authHeaders, getCurrentUserEmail } from '../lib/auth'
 
@@ -97,9 +97,15 @@ export default function TokensPage() {
           headers: authHeaders(),
         })
       }
+      // Remove locally first for instant UI feedback
+      setTokens(prev => prev.filter(t => {
+        if (tokenType === 'umbrella') return t.id !== tokenId
+        return t.service !== service || t.type === 'umbrella'
+      }))
       await fetchTokens()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to revoke token')
+      await fetchTokens() // Refresh on error too
     }
   }
 
@@ -227,7 +233,7 @@ export default function TokensPage() {
                     <pre style={{ margin: 0, fontSize: 11, color: '#e2e8f0', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}>
 {curlCmd}
                     </pre>
-                    <button onClick={() => { navigator.clipboard.writeText(curlCmd); setConsentCurlCopied(true); setTimeout(() => setConsentCurlCopied(false), 2000) }} style={{
+                    <button onClick={() => { navigator.clipboard.writeText(stripComments(curlCmd)); setConsentCurlCopied(true); setTimeout(() => setConsentCurlCopied(false), 2000) }} style={{
                       position: 'absolute', top: 8, right: 8, background: consentCurlCopied ? '#16a34a' : '#334155',
                       border: '1px solid #475569', color: '#e2e8f0', borderRadius: 4, padding: '4px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                     }}>

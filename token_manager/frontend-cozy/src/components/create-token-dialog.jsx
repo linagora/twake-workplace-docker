@@ -4,6 +4,10 @@ import { authHeaders, getCurrentUserEmail } from '../lib/auth'
 
 export const PROXY = 'https://token-manager-api.twake.local/api/v1/proxy'
 
+export function stripComments(cmd) {
+  return cmd.split('\n').filter(l => !l.startsWith('#')).join('\n').trim()
+}
+
 export const SERVICES = [
   { id: 'twake-mail', label: 'TMail JMAP', endpoint: 'https://jmap.twake.local/jmap', scope: 'openid email profile',
     curlExample: (token, aid) => `# List mailboxes (Inbox, Sent, etc.)\ncurl -sk -X POST ${PROXY}/twake-mail/jmap \\\n  -H "Authorization: Bearer ${token}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"using":["urn:ietf:params:jmap:core","urn:ietf:params:jmap:mail"],"methodCalls":[["Mailbox/get",{"accountId":"${aid}","ids":null},"c1"]]}'` },
@@ -401,7 +405,7 @@ export default function CreateTokenDialog({ open, onClose, onCreated, existingTo
                       <pre id="curl-example-code" style={{ margin: 0, fontSize: 11, color: '#e2e8f0', fontFamily: 'monospace', whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.6 }}>
 {curlCmd}
                       </pre>
-                      <button onClick={() => { navigator.clipboard.writeText(curlCmd) }} style={{
+                      <button onClick={() => { navigator.clipboard.writeText(stripComments(curlCmd)) }} style={{
                         position: 'absolute', top: 8, right: 8, background: '#334155', border: '1px solid #475569',
                         color: '#e2e8f0', borderRadius: 4, padding: '3px 8px', fontSize: 11, cursor: 'pointer',
                       }}>
