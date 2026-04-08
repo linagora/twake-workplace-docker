@@ -3,7 +3,7 @@ services:
     backend-linshare:
         container_name: linshare_backend
         restart: on-failure
-        image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-backend:6.5.3
+        image: linagora/linshare-backend:6.5
         volumes:
             - linshare_data:/var/lib/linshare
             - ./config/backend/log4j.properties:/etc/linshare/log4j.properties
@@ -54,7 +54,7 @@ services:
     ui-user:
         container_name: linshare_ui-user
         restart: on-failure
-        image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-ui-user:6.5.3
+        image: linagora/linshare-ui-user:6.5.4-SNAPSHOT
         healthcheck:
             test: ["CMD", "curl", "-s", "-f", "http://localhost/linshare/"]
             interval: 30s
@@ -83,7 +83,7 @@ services:
     ui-admin:
         container_name: linshare_ui-admin
         restart: on-failure
-        image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-ui-admin:6.5.3
+        image: linagora/linshare-ui-admin:6.5.3
         healthcheck:
             test: ["CMD", "curl", "-s", "-f", "http://localhost/linshare/"]
             interval: 30s
@@ -103,7 +103,7 @@ services:
             - twake-network
     ui-upload-request:
       container_name: linshare_ui-upload-request
-      image: docker-registry.linagora.com:5000/linshare-snapshots/linshare-ui-upload-request:6.5.3
+      image: linagora/linshare-ui-upload-request:6.5.3
       environment:
         - EXTERNAL_URL=upload-request-linshare.${BASE_DOMAIN}
         - TOMCAT_URL=backend-linshare
