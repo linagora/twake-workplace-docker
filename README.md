@@ -20,7 +20,7 @@
 ## Features
 
 - **Chat**: Real-time messaging powered by Matrix/Synapse
-- **Email**: Full JMAP email via TMail
+- **Email**: Full JMAP email via [Twake Mail](https://twake-mail.com/)
 - **File Sharing**: Secure file transfer and storage with LinShare
 - **Document Editing**: Collaborative editing with OnlyOffice
 - **Calendar**: Shared calendaring
