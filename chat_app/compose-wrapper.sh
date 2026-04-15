@@ -17,6 +17,9 @@ envsubst '$BASE_DOMAIN' < ./synapse/wellknownclient.conf.template > ./synapse/we
 envsubst '$BASE_DOMAIN' < ./synapse/wellknownserver.conf.template > ./synapse/wellknownserver.conf
 envsubst '$BASE_DOMAIN' < ./chat/config.json.template > ./chat/config.json
 
+# Ensure homeserver.yaml has the generated content (avoids empty file issue with overlapping volume mounts)
+cp ./synapse/homeserver-postgres.yaml ./synapse/homeserver.yaml
+
 # Check if file was created
 if [ ! -f "./synapse/.env" ]; then
     echo "Failed to create configuration file"
@@ -49,4 +52,4 @@ if [ "$ACTION" != "up" ]; then
   exit 0
 fi
 
-sudo docker exec -it chat_app-synapse-1 update-ca-certificates
+sudo docker exec chat_app-synapse-1 update-ca-certificates
