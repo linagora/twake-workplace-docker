@@ -19,8 +19,8 @@ REPOS=(
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
-STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app")
+STOP_ORDER=("onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 # Dependencies: containers that must be healthy before starting a repo
 declare -A REPO_DEPS
