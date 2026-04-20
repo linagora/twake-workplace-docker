@@ -149,8 +149,6 @@ Open your browser and navigate to one of the test workspaces (see [Test Credenti
 
 The root `.env` file defines `BASE_DOMAIN`, `LDAP_BASE_DN`, and `MAIL_DOMAIN`. Each component's `compose-wrapper.sh` uses `envsubst` to regenerate its configuration from `.template` files whenever it starts, so no domain is hardcoded. SSL certificates are stored in `twake_auth/traefik/ssl/`.
 
-To pull LinShare images, you must be authenticated to the Linagora Docker registry before starting services.
-
 Two deployment modes are supported:
 
 - [**Local development**](#local-development-no-public-dns): uses `twake.local` with `/etc/hosts` entries and a self-signed CA. This is what the [Quick Start](#quick-start) walks through.
