@@ -13,6 +13,14 @@ dn: ou=organizations,${LDAP_BASE_DN}
 objectClass: organizationalUnit
 ou: organizations
 
+dn: ou=positions,${LDAP_BASE_DN}
+objectClass: organizationalUnit
+ou: positions
+
+dn: ou=devices,${LDAP_BASE_DN}
+objectClass: organizationalUnit
+ou: devices
+
 
 # ========================
 # Admin user

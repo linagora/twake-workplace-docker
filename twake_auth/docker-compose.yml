@@ -49,24 +49,33 @@ services:
       DM_LDAP_PWD: admin
       DM_MAIL_DOMAIN: ${MAIL_DOMAIN}
 
-      # Plugins (canonical names from ldap-rest docs)
+      # Plugins (canonical names from ldap-rest 0.3.0 source).
+      # Note: SCIM lives at plugins/scim/scim.js, so the loader needs
+      # core/scim/scim (not core/scim despite what some docs say).
       DM_PLUGINS: >-
-        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organization;core/twake/james;core/twake/calendarResources
+        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organization;core/scim/scim;core/twake/james;core/twake/calendarResources
 
       # auth/token — two named tokens.
       # Syntax: <token>:<name>, comma-separated (logged as "user: <name>" on each request).
       # Clients send: Authorization: Bearer <token>
       DM_AUTH_TOKENS: ${LDAP_REST_ADMIN_TOKEN}:admin,${LDAP_REST_APP_TOKEN}:app
 
-      # flatGeneric: load Twake and SCIM entity schemas
+      # flatGeneric: only schemas with an `entity` block are valid here.
+      # users + positions cover the Twake user/position entities;
+      # groups are managed by core/ldap/groups, organizations by
+      # core/ldap/organization, SCIM by core/scim/scim.
       DM_LDAP_FLAT_SCHEMA: >-
-        /app/node_modules/ldap-rest/static/schemas/twake/users.json,/app/node_modules/ldap-rest/static/schemas/twake/organizations.json,/app/node_modules/ldap-rest/static/schemas/twake/positions.json,/app/node_modules/ldap-rest/static/schemas/twake/devices.json,/app/node_modules/ldap-rest/static/schemas/scim/User.json,/app/node_modules/ldap-rest/static/schemas/scim/Group.json
+        /app/node_modules/ldap-rest/static/schemas/twake/users.json,/app/node_modules/ldap-rest/static/schemas/twake/positions.json
 
       # ldap/groups
       DM_LDAP_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
 
       # ldap/organization
       DM_LDAP_TOP_ORGANIZATION: ou=organizations,${LDAP_BASE_DN}
+
+      # scim — SCIM 2.0 endpoint at /scim/v2/*
+      DM_SCIM_USER_BASE: ou=users,${LDAP_BASE_DN}
+      DM_SCIM_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
 
       # twake/james — TODO: token to be provided so the plugin can drive James
       DM_JAMES_WEBADMIN_URL: http://tmail-backend:8000
