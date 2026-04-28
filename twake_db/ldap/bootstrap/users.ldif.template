@@ -1,9 +1,17 @@
 # ========================
-# Organizational Unit
+# Organizational Units
 # ========================
 dn: ou=users,${LDAP_BASE_DN}
 objectClass: organizationalUnit
 ou: users
+
+dn: ou=groups,${LDAP_BASE_DN}
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=organizations,${LDAP_BASE_DN}
+objectClass: organizationalUnit
+ou: organizations
 
 
 # ========================

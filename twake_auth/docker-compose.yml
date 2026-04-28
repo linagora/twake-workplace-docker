@@ -32,6 +32,64 @@ services:
 
     networks:
       - twake-network
+
+  ldap-rest:
+    image: yadd/ldap-rest:0.3.0
+    container_name: ldap-rest
+    restart: unless-stopped
+    environment:
+      DM_PORT: "8081"
+      DM_LOG_LEVEL: notice
+      DM_API_PREFIX: /api
+
+      # LDAP backend (osixia/openldap from twake_db)
+      DM_LDAP_URL: ldap://ldap:389
+      DM_LDAP_BASE: ${LDAP_BASE_DN}
+      DM_LDAP_DN: cn=admin,${LDAP_BASE_DN}
+      DM_LDAP_PWD: admin
+      DM_MAIL_DOMAIN: ${MAIL_DOMAIN}
+
+      # Plugins (canonical names from ldap-rest docs)
+      DM_PLUGINS: >-
+        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organization;core/twake/james;core/twake/calendarResources
+
+      # auth/token — two named tokens.
+      # Syntax: <token>:<name>, comma-separated (logged as "user: <name>" on each request).
+      # Clients send: Authorization: Bearer <token>
+      DM_AUTH_TOKENS: ${LDAP_REST_ADMIN_TOKEN}:admin,${LDAP_REST_APP_TOKEN}:app
+
+      # flatGeneric: load Twake and SCIM entity schemas
+      DM_LDAP_FLAT_SCHEMA: >-
+        /app/node_modules/ldap-rest/static/schemas/twake/users.json,/app/node_modules/ldap-rest/static/schemas/twake/organizations.json,/app/node_modules/ldap-rest/static/schemas/twake/positions.json,/app/node_modules/ldap-rest/static/schemas/twake/devices.json,/app/node_modules/ldap-rest/static/schemas/scim/User.json,/app/node_modules/ldap-rest/static/schemas/scim/Group.json
+
+      # ldap/groups
+      DM_LDAP_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
+
+      # ldap/organization
+      DM_LDAP_TOP_ORGANIZATION: ou=organizations,${LDAP_BASE_DN}
+
+      # twake/james — TODO: token to be provided so the plugin can drive James
+      DM_JAMES_WEBADMIN_URL: http://tmail-backend:8000
+      DM_JAMES_WEBADMIN_TOKEN: ""
+
+      # twake/calendarResources — TODO: token to be provided
+      DM_CALENDAR_WEBADMIN_URL: http://tcalendar-side-service:8080
+      DM_CALENDAR_WEBADMIN_TOKEN: ""
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ldap-rest.rule=Host(`ldap-rest.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.ldap-rest.entrypoints=websecure"
+      - "traefik.http.routers.ldap-rest.tls=true"
+      - "traefik.http.services.ldap-rest.loadbalancer.server.port=8081"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - twake-network
+
   reverse-proxy:
     image: traefik:v2.11
     container_name: reverse-proxy
