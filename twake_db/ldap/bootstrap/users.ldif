@@ -1,9 +1,25 @@
 # ========================
-# Organizational Unit
+# Organizational Units
 # ========================
 dn: ou=users,dc=twake,dc=local
 objectClass: organizationalUnit
 ou: users
+
+dn: ou=groups,dc=twake,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+dn: ou=organizations,dc=twake,dc=local
+objectClass: organizationalUnit
+ou: organizations
+
+dn: ou=positions,dc=twake,dc=local
+objectClass: organizationalUnit
+ou: positions
+
+dn: ou=devices,dc=twake,dc=local
+objectClass: organizationalUnit
+ou: devices
 
 
 # ========================
