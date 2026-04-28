@@ -22,11 +22,13 @@ services:
     extra_hosts:
       - "oauthcallback.${BASE_DOMAIN}:172.27.0.100"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
+      test:
+        - CMD-SHELL
+        - curl -fs -H "Host: auth.${BASE_DOMAIN}" http://localhost/.well-known/openid-configuration | grep -q jwks_uri
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
     networks:
       - twake-network

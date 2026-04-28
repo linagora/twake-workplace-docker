@@ -22,11 +22,22 @@ REPOS=(
 START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
 STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
-# Dependencies: containers that must be healthy before starting a repo
+# Dependencies: containers that must be healthy before starting a repo.
+# Apps gated on lemonldap-ng:
+#   - chat_app: Synapse loads OIDC discovery (.well-known) at boot and refuses
+#     to start if the IdP is unreachable.
+#   - cozy_stack: confidential client (IDCOZY) with disable_password_authentication=true,
+#     so OIDC is the only login path.
+#   - meet_app: confidential client (visio) — exchanges code with client_secret server-side.
+#   - tmail_app, calendar_app: public clients with lazy introspection, gated as a
+#     precaution so the first login is never racing the IdP startup.
 declare -A REPO_DEPS
 REPO_DEPS=(
     ["chat_app"]="lemonldap-ng"
+    ["cozy_stack"]="lemonldap-ng"
+    ["meet_app"]="lemonldap-ng"
     ["tmail_app"]="lemonldap-ng"
+    ["calendar_app"]="lemonldap-ng"
 )
 
 show_help() {
