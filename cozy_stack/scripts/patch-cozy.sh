@@ -96,7 +96,9 @@ for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
 
   cozy-stack feature flags --domain "\$DOMAIN" \
     '{"apps.hidden": ["dataproxy", "settings"]}'
-  
+  cozy-stack feature flags --domain "\$DOMAIN" \
+    '{"cozy.hide-sharing-cozy-to-cozy": "true"}'
+
   cozy-stack feature flags --domain "\$DOMAIN" \
     '{"cozy.search.enabled": "true"}' 
   
