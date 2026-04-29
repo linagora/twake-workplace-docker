@@ -7,7 +7,8 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.cozy.rule=HostRegexp(`{subdomain:user3-home|user3|user3-drive|user3-linshare|user3-mail|user3-chat|user3-settings|user3-notes|user3-dataproxy|oauthcallback|user1-dataproxy|user1|user1-home|user1-chat|user1-linshare|user1-settings|user1-drive|user1-mail|user1-notes|user2|user2-home|user2-dataproxy|user2-settings|user2-chat|user2-linshare|user2-mail|user2-drive|user2-notes}.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.cozy.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.cozy.priority=1"
       - "traefik.http.routers.cozy.entrypoints=websecure"
       - "traefik.http.routers.cozy.tls=true"
       - "traefik.http.services.cozy.loadbalancer.server.port=8080"
