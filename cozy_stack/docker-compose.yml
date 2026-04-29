@@ -22,9 +22,6 @@ services:
       OUTBOX_SECRET: secret
     extra_hosts:
       - "auth.${BASE_DOMAIN}:172.27.0.100"
-      - "user1.${BASE_DOMAIN}:172.27.0.100"
-      - "user2.${BASE_DOMAIN}:172.27.0.100"
-      - "user3.${BASE_DOMAIN}:172.27.0.100"
     volumes:
       - cozy-data:/var/lib/cozy/
       - ./config/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh

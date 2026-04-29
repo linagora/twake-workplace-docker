@@ -209,6 +209,10 @@ jobs:
     # push:     false
     # sms:      false
     # sendmail: false
+    share-group:     false
+    share-replicate: false
+    share-track:     false
+    share-upload:    false
 
   # Sets the default duration of jobs database documents to keep
   defaultDurationToKeep: "2W" # Keep 2 weeks
