@@ -6,7 +6,6 @@ services:
       LDAP_DOMAIN: "${MAIL_DOMAIN}"
       LDAP_ADMIN_PASSWORD: admin
     volumes:
-      - ldap_data:/var/lib/ldap
       - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
     restart: unless-stopped
     #ports:
