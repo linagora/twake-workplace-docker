@@ -142,6 +142,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DECLARE_EXCHANGES: "${RABBITMQ_DECLARE_EXCHANGES}"
     labels:
       - "traefik.enable=false"  
     entrypoint: ["/bin/bash", "/etc/rabbitmq/rabbitmq-init.sh"]  
