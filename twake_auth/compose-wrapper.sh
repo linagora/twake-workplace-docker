@@ -20,7 +20,8 @@ if [ "$ACTION" = "up" ]; then
     exit 1
   fi
 
-  if [ ! -f "traefik/ssl/twake-server.pem" ] || [ ! -f "traefik/ssl/root-ca.crt" ]; then
+  if [ "${CERT_MODE:-self-signed}" = "letsencrypt" ] || \
+     [ ! -f "traefik/ssl/twake-server.pem" ] || [ ! -f "traefik/ssl/root-ca.crt" ]; then
     echo "Creating certs..."
     ./generate-cert.sh
     CERTS_REGENERATED=true
