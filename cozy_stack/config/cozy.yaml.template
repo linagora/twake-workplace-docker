@@ -50,6 +50,7 @@ admin:
   # stack config passwd` command. this file should be located in the same path
   # as the configuration file.
   secret_filename: cozy-admin-passphrase
+  # default passphrase : admin
 
 # vault contains keyfiles informations
 # See https://docs.cozy.io/en/cozy-stack/cli/cozy-stack_config_gen-keys/
@@ -574,11 +575,14 @@ contexts:
       trusted_domains: []
 
 rabbitmq:
-  enabled: false
-  url: amqp://guest:guest@localhost:5672/
-  tls:
-    # root_ca: /etc/ssl/certs/ca.pem
-    insecure_skip_validation: false
+  enabled: true
+  nodes:
+    default:
+      enabled: true
+      url: amqp://guest:guest@rabbitmq:5672/
+      tls:
+        # root_ca: /etc/ssl/certs/ca.pem
+        insecure_skip_validation: false
   exchanges:
     - name: auth
       kind: topic
@@ -587,12 +591,26 @@ rabbitmq:
       dlx_name: auth.dlx
       dlq_name: auth.dlq
       queues:
-        - name: user.password.updated
+        - name: stack.user.created
           declare: true
           declare_dlx: true
           declare_dlq: true
           prefetch: 8
           delivery_limit: 5
           bindings:
-            - password.changed
-
+            - user.created
+    - name: b2b
+      kind: topic
+      durable: true
+      declare_exchange: true
+      dlx_name: b2b.dlx
+      dlq_name: b2b.dlq
+      queues:
+        - name: stack.user.lifecycle.queue
+          declare: true
+          declare_dlx: true
+          declare_dlq: true
+          prefetch: 8
+          delivery_limit: 5
+          bindings:
+            - domain.user.deleted
