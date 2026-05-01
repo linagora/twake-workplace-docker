@@ -34,7 +34,12 @@ services:
       - twake-network
 
   ldap-rest:
-    image: yadd/ldap-rest:0.3.1
+    # Built locally from PR linagora/ldap-rest#63 (cozyProvision plugin)
+    # until ldap-rest 0.3.2 is released. Once published, swap back to
+    #   image: yadd/ldap-rest:0.3.2
+    # and delete twake_auth/ldap-rest/.
+    build:
+      context: ./ldap-rest
     container_name: ldap-rest
     restart: unless-stopped
     environment:
@@ -52,8 +57,9 @@ services:
       # Plugins (canonical names from ldap-rest 0.3.0 source).
       # Note: SCIM lives at plugins/scim/scim.js, so the loader needs
       # core/scim/scim (not core/scim despite what some docs say).
+      # core/twake/cozyProvision is the patched plugin from #63.
       DM_PLUGINS: >-
-        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organization;core/scim/scim;core/twake/james;core/twake/calendarResources
+        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organization;core/scim/scim;core/twake/james;core/twake/calendarResources;core/twake/cozyProvision
 
       # auth/token — two named tokens.
       # Syntax: <token>:<name>, comma-separated (logged as "user: <name>" on each request).
@@ -84,6 +90,18 @@ services:
       # twake/calendarResources — TODO: token to be provided
       DM_CALENDAR_WEBADMIN_URL: http://tcalendar-side-service:8080
       DM_CALENDAR_WEBADMIN_TOKEN: ""
+
+      # twake/cozyProvision — provisions cozy instances + publishes auth/b2b
+      # lifecycle events on RabbitMQ. The cozy-stack admin API lives on its
+      # private port (6060) on the `cozyt` container; rabbitmq + the auth
+      # / b2b exchanges are declared at boot by
+      # twake_db/rabbitmq/entrypoint.sh.
+      DM_COZY_ADMIN_URL: http://cozyt:6060
+      DM_COZY_ADMIN_USER: admin
+      DM_COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE}
+      DM_COZY_ORG_ID: ${COZY_ORG_ID}
+      DM_COZY_ORG_DOMAIN: ${BASE_DOMAIN}
+      DM_RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ldap-rest.rule=Host(`ldap-rest.${BASE_DOMAIN}`)"
@@ -91,7 +109,15 @@ services:
       - "traefik.http.routers.ldap-rest.tls=true"
       - "traefik.http.services.ldap-rest.loadbalancer.server.port=8081"
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/api/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8081/api/health",
+        ]
       interval: 10s
       timeout: 5s
       retries: 30
