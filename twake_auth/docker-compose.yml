@@ -34,7 +34,7 @@ services:
       - twake-network
 
   ldap-rest:
-    image: yadd/ldap-rest:0.3.0
+    image: yadd/ldap-rest:0.3.1
     container_name: ldap-rest
     restart: unless-stopped
     environment:
