@@ -7,7 +7,7 @@ if [ "${CERT_MODE:-self-signed}" = "letsencrypt" ]; then
     LE_DIR="/etc/letsencrypt/live/${BASE_DOMAIN}"
     if [ ! -d "$LE_DIR" ]; then
         echo "ERROR: Let's Encrypt certs not found at ${LE_DIR}"
-        echo "Run certbot first: certbot certonly --standalone -d *.${BASE_DOMAIN}"
+        echo "Run certbot first: certbot certonly --manual -d '*.${BASE_DOMAIN}' -d '${BASE_DOMAIN}'"
         exit 1
     fi
     echo "▶ Copying Let's Encrypt certs for ${BASE_DOMAIN}"

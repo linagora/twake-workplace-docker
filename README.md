@@ -42,6 +42,7 @@ Centralized data storage services used by other components.
 - **CouchDB**: Database for Cozy Stack
 - **OpenLDAP**: Directory service for user management
 - **Valkey (Redis)**: In-memory data store
+- **RabbitMQ**: Message broker for inter-service events
 
 ### 2. Authentication & Proxy Layer (`twake_auth`)
 
@@ -129,6 +130,8 @@ Add the following entries to your `/etc/hosts` file:
 
 ### 3. Trust the self-signed CA certificate
 
+> **This step applies to local development only (self-signed mode).** If you are deploying with a Let's Encrypt certificate, skip this step — your browser already trusts Let's Encrypt.
+
 This setup uses a self-signed Certificate Authority. You **must** add it to your OS and browser trust store to avoid TLS errors and broken iframes.
 
 The certificate is located at: [`twake_auth/traefik/ssl/root-ca.pem`](twake_auth/traefik/ssl/root-ca.pem)
@@ -147,7 +150,16 @@ Open your browser and navigate to one of the test workspaces (see [Test Credenti
 
 ## Configuration
 
-The root `.env` file defines `BASE_DOMAIN`, `LDAP_BASE_DN`, and `MAIL_DOMAIN`. Each component's `compose-wrapper.sh` uses `envsubst` to regenerate its configuration from `.template` files whenever it starts, so no domain is hardcoded. SSL certificates are stored in `twake_auth/traefik/ssl/`.
+The root `.env` file is the single place to configure the stack. Key variables:
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `BASE_DOMAIN` | `twake.local` | Domain used for all service subdomains |
+| `LDAP_BASE_DN` | `dc=twake,dc=local` | LDAP base DN (must match `BASE_DOMAIN`) |
+| `MAIL_DOMAIN` | `twake.local` | Domain used for email addresses |
+| `CERT_MODE` | `self-signed` | Certificate mode: `self-signed` or `letsencrypt` |
+
+Each component's `compose-wrapper.sh` uses `envsubst` to regenerate its configuration from `.template` files on every start, so no domain value is hardcoded. SSL certificates are stored in `twake_auth/traefik/ssl/`.
 
 Two deployment modes are supported:
 
@@ -164,50 +176,60 @@ Use this mode when deploying on a server reachable from the Internet, with a dom
 
 #### 1. DNS
 
-Create a **wildcard record** `*.mydomain.fr` (A and/or AAAA) pointing to the public IP of the host running this stack. Make sure **TCP ports 80 and 443** are reachable from the Internet (firewall / security group / NAT).
+Create a **wildcard A record** `*.mydomain.fr` pointing to the public IP of the host running this stack. Make sure **TCP port 443** is reachable from the Internet (firewall / security group / NAT).
 
 #### 2. Update `.env`
-
-Replace every occurrence of the local domain with your public domain:
 
 ```env
 BASE_DOMAIN=mydomain.fr
 LDAP_BASE_DN=dc=mydomain,dc=fr
 MAIL_DOMAIN=mydomain.fr
+CERT_MODE=letsencrypt
 ```
 
-#### 3. Obtain a wildcard certificate via certbot (DNS-01)
+#### 3. Obtain a wildcard certificate (DNS-01 challenge)
 
-A wildcard certificate for `*.mydomain.fr` requires the **DNS-01** challenge. Install the certbot plugin matching your DNS provider (e.g. `python3-certbot-dns-cloudflare`, `…-ovh`, `…-route53`) and run:
+Wildcard certificates (`*.mydomain.fr`) require the **DNS-01** challenge — HTTP-01 will not work. Install the certbot plugin for your DNS provider (e.g. `python3-certbot-dns-cloudflare`, `python3-certbot-dns-ovh`, `python3-certbot-dns-route53`) and run:
 
 ```bash
-sudo certbot certonly \
-  --dns-<provider> \
-  --dns-<provider>-credentials /path/to/credentials.ini \
+# Example for OVH (replace with your provider's plugin name and credentials path)
+sudo certbot certonly --manual \
   -d "*.mydomain.fr" \
   -d "mydomain.fr"
 ```
 
-See the [certbot DNS plugins documentation](https://eff-certbot.readthedocs.io/en/latest/using.html#dns-plugins) for provider-specific instructions.
+See the [certbot DNS plugins documentation](https://eff-certbot.readthedocs.io/en/latest/using.html#dns-plugins) for provider-specific setup.
 
-#### 4. Install the certificate
+Alternatively, you can use [acme.sh](https://github.com/acmesh-official/acme.sh) with any supported DNS API.
 
-Copy the Let's Encrypt files into Traefik's SSL directory, overwriting the placeholders:
+Once issued, certbot stores the certificates at `/etc/letsencrypt/live/mydomain.fr/`.
+
+#### 4. Start the stack
 
 ```bash
-sudo cp /etc/letsencrypt/live/mydomain.fr/fullchain.pem \
-        twake_auth/traefik/ssl/twake-server-fullchain.pem
-sudo cp /etc/letsencrypt/live/mydomain.fr/privkey.pem \
-        twake_auth/traefik/ssl/twake-server.key
+./wrapper.sh up -d
 ```
 
-> ⚠️ **Do not run `twake_auth/generate-cert.sh` in this mode.** It would overwrite the certificate you just installed.
->
-> The `twake_auth/compose-wrapper.sh` script auto-runs `generate-cert.sh` when `traefik/ssl/twake-server.pem` or `traefik/ssl/root-ca.crt` are missing. As long as those two files already exist on disk (they are committed in the repo), regeneration will be skipped: do **not** delete them. A proper flag to disable cert generation in public DNS mode will be added later.
+`twake_auth/compose-wrapper.sh` detects `CERT_MODE=letsencrypt` and automatically copies the Let's Encrypt certificates from `/etc/letsencrypt/live/mydomain.fr/` into `twake_auth/traefik/ssl/`, then restarts the reverse proxy. No manual file copying is needed.
 
-Renew the certificate periodically (certbot typically installs a systemd timer) and re-run the copy above, then restart Traefik: `docker restart reverse-proxy`.
+> **Skip [Quick Start step 3](#3-trust-the-self-signed-ca-certificate)** — with a valid Let's Encrypt certificate your browser trusts it automatically.
 
-With a valid Let's Encrypt certificate, you do not need to trust a custom CA in your browser: [Quick Start step 3](#3-trust-the-self-signed-ca-certificate) can be skipped.
+#### 5. Certificate renewal
+
+Certbot installs a systemd timer that auto-renews certificates before they expire. After each renewal, re-copy the updated certificates into Traefik by running:
+
+```bash
+cd twake_auth && ./compose-wrapper.sh up -d
+```
+
+This re-copies the renewed certificates and restarts Traefik automatically.
+
+To automate this, add a certbot post-renewal hook at `/etc/letsencrypt/renewal-hooks/post/restart-traefik.sh`:
+
+```bash
+#!/bin/bash
+cd /path/to/twake-workplace-docker/twake_auth && ./compose-wrapper.sh up -d
+```
 
 ## Deployment Instructions
 
@@ -273,8 +295,10 @@ docker ps
 
 ## Troubleshooting
 
-- **Iframes not loading in Cozy Stack**: Make sure the self-signed CA certificate is trusted by both your OS and your browser.
-- **Services failing to start**: Check that the `twake-network` Docker network exists and that no other service is using ports 80/443.
+- **Iframes not loading in Cozy Stack**: Make sure the self-signed CA certificate is trusted by both your OS and your browser (local mode only).
+- **TLS errors in browser (local mode)**: The self-signed CA at `twake_auth/traefik/ssl/root-ca.pem` must be added to your system trust store and browser. Simply trusting it in the browser is not enough for some iframes.
+- **`generate-cert.sh` fails with "Let's Encrypt certs not found"**: Run certbot first to issue the wildcard certificate before starting the stack. Check that `/etc/letsencrypt/live/<BASE_DOMAIN>/` exists and is readable.
+- **Services failing to start**: Check that the `twake-network` Docker network exists (`docker network ls`) and that no other service is using ports 80/443.
 - **Health check failures**: Some services (chat, tmail) depend on LemonLDAP::NG being healthy. Wait for it to be ready before starting dependent services, or use `./wrapper.sh` which handles ordering automatically.
 
 ## Contributing
