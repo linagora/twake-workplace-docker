@@ -109,6 +109,11 @@ services:
       - "traefik.http.routers.ldap-rest.tls=true"
       - "traefik.http.services.ldap-rest.loadbalancer.server.port=8081"
     healthcheck:
+      # ldap-rest has no public /health endpoint and `core/auth/token` runs
+      # before every route, so an unauthenticated probe spams the logs with
+      # "Missing or invalid Authorization header" 401s. Hit a real SCIM
+      # endpoint with the admin Bearer token instead — proves the listener
+      # is up, auth is wired, and the SCIM plugin loaded.
       test:
         [
           "CMD",
@@ -116,7 +121,8 @@ services:
           "--quiet",
           "--tries=1",
           "--spider",
-          "http://localhost:8081/api/health",
+          "--header=Authorization: Bearer ${LDAP_REST_ADMIN_TOKEN}",
+          "http://localhost:8081/scim/v2/ServiceProviderConfig",
         ]
       interval: 10s
       timeout: 5s

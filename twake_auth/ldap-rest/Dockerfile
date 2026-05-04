@@ -10,7 +10,7 @@
 # `image: yadd/ldap-rest:0.3.2`.
 
 ARG LDAP_REST_REPO=https://github.com/linagora/ldap-rest.git
-ARG LDAP_REST_REF=feat/twake-cozy-provision
+ARG LDAP_REST_REF=master
 
 # ---------- builder: clone the patched ldap-rest branch and pack it ----------
 FROM node:22-alpine AS builder
