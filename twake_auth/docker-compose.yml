@@ -34,12 +34,7 @@ services:
       - twake-network
 
   ldap-rest:
-    # Built locally from PR linagora/ldap-rest#63 (cozyProvision plugin)
-    # until ldap-rest 0.3.2 is released. Once published, swap back to
-    #   image: yadd/ldap-rest:0.3.2
-    # and delete twake_auth/ldap-rest/.
-    build:
-      context: ./ldap-rest
+    image: yadd/ldap-rest:0.3.2
     container_name: ldap-rest
     restart: unless-stopped
     environment:
