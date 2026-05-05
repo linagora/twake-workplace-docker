@@ -34,7 +34,7 @@ services:
       - twake-network
 
   ldap-rest:
-    image: yadd/ldap-rest:0.3.2
+    image: yadd/ldap-rest:0.3.4
     container_name: ldap-rest
     restart: unless-stopped
     environment:
@@ -49,12 +49,13 @@ services:
       DM_LDAP_PWD: admin
       DM_MAIL_DOMAIN: ${MAIL_DOMAIN}
 
-      # Plugins (canonical names from ldap-rest 0.3.0 source).
-      # Note: SCIM lives at plugins/scim/scim.js, so the loader needs
+      # Plugins. SCIM lives at plugins/scim/scim.js, so the loader needs
       # core/scim/scim (not core/scim despite what some docs say).
-      # core/twake/cozyProvision is the patched plugin from #63.
+      # core/twake/james + core/twake/calendarResources are intentionally
+      # left out for now — they need webadmin tokens that aren't wired in
+      # this PR; add them in a follow-up once those backends are reachable.
       DM_PLUGINS: >-
-        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organization;core/scim/scim;core/twake/james;core/twake/calendarResources;core/twake/cozyProvision
+        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organizations;core/scim/scim;core/twake/cozyProvision
 
       # auth/token — two named tokens.
       # Syntax: <token>:<name>, comma-separated (logged as "user: <name>" on each request).
@@ -64,38 +65,35 @@ services:
       # flatGeneric: only schemas with an `entity` block are valid here.
       # users + positions cover the Twake user/position entities;
       # groups are managed by core/ldap/groups, organizations by
-      # core/ldap/organization, SCIM by core/scim/scim.
+      # core/ldap/organizations, SCIM by core/scim/scim.
       DM_LDAP_FLAT_SCHEMA: >-
         /app/node_modules/ldap-rest/static/schemas/twake/users.json,/app/node_modules/ldap-rest/static/schemas/twake/positions.json
 
       # ldap/groups
       DM_LDAP_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
 
-      # ldap/organization
+      # ldap/organizations
       DM_LDAP_TOP_ORGANIZATION: ou=organizations,${LDAP_BASE_DN}
 
       # scim — SCIM 2.0 endpoint at /scim/v2/*
       DM_SCIM_USER_BASE: ou=users,${LDAP_BASE_DN}
       DM_SCIM_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
 
-      # twake/james — TODO: token to be provided so the plugin can drive James
-      DM_JAMES_WEBADMIN_URL: http://tmail-backend:8000
-      DM_JAMES_WEBADMIN_TOKEN: ""
-
-      # twake/calendarResources — TODO: token to be provided
-      DM_CALENDAR_WEBADMIN_URL: http://tcalendar-side-service:8080
-      DM_CALENDAR_WEBADMIN_TOKEN: ""
-
       # twake/cozyProvision — provisions cozy instances + publishes auth/b2b
       # lifecycle events on RabbitMQ. The cozy-stack admin API lives on its
       # private port (6060) on the `cozyt` container; rabbitmq + the auth
       # / b2b exchanges are declared at boot by
       # twake_db/rabbitmq/entrypoint.sh.
+      # ContextName must match an `authentication.<name>` block in
+      # cozy.yaml so per-context settings (forced OIDC, etc.) apply.
+      # Apps is the autoinstall list passed to POST /instances.
       DM_COZY_ADMIN_URL: http://cozyt:6060
       DM_COZY_ADMIN_USER: admin
       DM_COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE}
       DM_COZY_ORG_ID: ${COZY_ORG_ID}
       DM_COZY_ORG_DOMAIN: ${BASE_DOMAIN}
+      DM_COZY_CONTEXT_NAME: default
+      DM_COZY_APPS: home,drive,settings,notes,dataproxy
       DM_RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
     labels:
       - "traefik.enable=true"
