@@ -92,8 +92,8 @@ services:
       DM_COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE}
       DM_COZY_ORG_ID: ${COZY_ORG_ID}
       DM_COZY_ORG_DOMAIN: ${BASE_DOMAIN}
-      DM_COZY_CONTEXT_NAME: default
-      DM_COZY_APPS: home,drive,settings,notes,dataproxy
+      DM_COZY_CONTEXT_NAME: ${COZY_CONTEXT_NAME}
+      DM_COZY_APPS: ${COZY_APPS}
       DM_RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
     labels:
       - "traefik.enable=true"
