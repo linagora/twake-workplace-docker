@@ -1,0 +1,27 @@
+[
+  {
+    "userName": "alice",
+    "givenName": "Alice",
+    "familyName": "Doe",
+    "email": "alice@example.org"
+  },
+  {
+    "userName": "bob",
+    "givenName": "Bob",
+    "familyName": "Smith",
+    "email": "bob@example.org",
+    "displayName": "Bob S.",
+    "title": "Engineer",
+    "preferredLanguage": "fr",
+    "phoneNumbers": [{ "value": "+33600000000", "primary": true }]
+  },
+  {
+    "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+    "userName": "carol",
+    "name": { "givenName": "Carol", "familyName": "White" },
+    "emails": [
+      { "value": "carol@example.org", "primary": true }
+    ],
+    "active": true
+  }
+]
