@@ -7,6 +7,7 @@ services:
       LDAP_ADMIN_PASSWORD: admin
     volumes:
       - ./ldap/bootstrap:/container/service/slapd/assets/config/bootstrap/ldif/custom
+      - ./ldap/schema:/container/service/slapd/assets/config/bootstrap/schema/custom
     restart: unless-stopped
     #ports:
       #- "389:389"

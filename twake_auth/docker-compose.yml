@@ -32,6 +32,98 @@ services:
 
     networks:
       - twake-network
+
+  ldap-rest:
+    image: yadd/ldap-rest:0.3.4
+    container_name: ldap-rest
+    restart: unless-stopped
+    environment:
+      DM_PORT: "8081"
+      DM_LOG_LEVEL: notice
+      DM_API_PREFIX: /api
+
+      # LDAP backend (osixia/openldap from twake_db)
+      DM_LDAP_URL: ldap://ldap:389
+      DM_LDAP_BASE: ${LDAP_BASE_DN}
+      DM_LDAP_DN: cn=admin,${LDAP_BASE_DN}
+      DM_LDAP_PWD: admin
+      DM_MAIL_DOMAIN: ${MAIL_DOMAIN}
+
+      # Plugins. SCIM lives at plugins/scim/scim.js, so the loader needs
+      # core/scim/scim (not core/scim despite what some docs say).
+      # core/twake/james + core/twake/calendarResources are intentionally
+      # left out for now — they need webadmin tokens that aren't wired in
+      # this PR; add them in a follow-up once those backends are reachable.
+      DM_PLUGINS: >-
+        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organizations;core/scim/scim;core/twake/cozyProvision
+
+      # auth/token — two named tokens.
+      # Syntax: <token>:<name>, comma-separated (logged as "user: <name>" on each request).
+      # Clients send: Authorization: Bearer <token>
+      DM_AUTH_TOKENS: ${LDAP_REST_ADMIN_TOKEN}:admin,${LDAP_REST_APP_TOKEN}:app
+
+      # flatGeneric: only schemas with an `entity` block are valid here.
+      # users + positions cover the Twake user/position entities;
+      # groups are managed by core/ldap/groups, organizations by
+      # core/ldap/organizations, SCIM by core/scim/scim.
+      DM_LDAP_FLAT_SCHEMA: >-
+        /app/node_modules/ldap-rest/static/schemas/twake/users.json,/app/node_modules/ldap-rest/static/schemas/twake/positions.json
+
+      # ldap/groups
+      DM_LDAP_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
+
+      # ldap/organizations
+      DM_LDAP_TOP_ORGANIZATION: ou=organizations,${LDAP_BASE_DN}
+
+      # scim — SCIM 2.0 endpoint at /scim/v2/*
+      DM_SCIM_USER_BASE: ou=users,${LDAP_BASE_DN}
+      DM_SCIM_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
+
+      # twake/cozyProvision — provisions cozy instances + publishes auth/b2b
+      # lifecycle events on RabbitMQ. The cozy-stack admin API lives on its
+      # private port (6060) on the `cozyt` container; rabbitmq + the auth
+      # / b2b exchanges are declared at boot by
+      # twake_db/rabbitmq/entrypoint.sh.
+      # ContextName must match an `authentication.<name>` block in
+      # cozy.yaml so per-context settings (forced OIDC, etc.) apply.
+      # Apps is the autoinstall list passed to POST /instances.
+      DM_COZY_ADMIN_URL: http://cozyt:6060
+      DM_COZY_ADMIN_USER: admin
+      DM_COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE}
+      DM_COZY_ORG_ID: ${COZY_ORG_ID}
+      DM_COZY_ORG_DOMAIN: ${BASE_DOMAIN}
+      DM_COZY_CONTEXT_NAME: ${COZY_CONTEXT_NAME}
+      DM_COZY_APPS: ${COZY_APPS}
+      DM_RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ldap-rest.rule=Host(`ldap-rest.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.ldap-rest.entrypoints=websecure"
+      - "traefik.http.routers.ldap-rest.tls=true"
+      - "traefik.http.services.ldap-rest.loadbalancer.server.port=8081"
+    healthcheck:
+      # ldap-rest has no public /health endpoint and `core/auth/token` runs
+      # before every route, so an unauthenticated probe spams the logs with
+      # "Missing or invalid Authorization header" 401s. Hit a real SCIM
+      # endpoint with the admin Bearer token instead — proves the listener
+      # is up, auth is wired, and the SCIM plugin loaded.
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "--header=Authorization: Bearer ${LDAP_REST_ADMIN_TOKEN}",
+          "http://localhost:8081/scim/v2/ServiceProviderConfig",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks:
+      - twake-network
+
   reverse-proxy:
     image: traefik:v2.11
     container_name: reverse-proxy

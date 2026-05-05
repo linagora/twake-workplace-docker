@@ -17,7 +17,7 @@ services:
       COUCHDB_USER: admin
       BASE_DOMAIN: ${BASE_DOMAIN}
       COUCHDB_PASSWORD: password
-      COZY_ADMIN_PASSPHRASE: admin
+      COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE:-admin}
       INBOX_SECRET: secret
       OUTBOX_SECRET: secret
     extra_hosts:
