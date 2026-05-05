@@ -9,16 +9,80 @@ set -a
 source ../.env
 set +a
 
-if [ "$ACTION" = "up" ]; then
+# render_lmconf — produce twake_auth/config/lmConf-1.json from the right
+# template based on AUTH_MODE. Called directly when ACTION=render (so
+# operators can iterate on .env without restarting the stack), and as the
+# first step of ACTION=up.
+render_lmconf() {
   echo "Processing LemonLDAP configuration..."
-  envsubst '$BASE_DOMAIN $LDAP_BASE_DN' \
-    < ./config/lmConf-1.json.template \
-    > config/lmConf-1.json
+
+  # Pick template based on AUTH_MODE.
+  #   LDAP            (default) — internal LDAP backend handles login + attrs
+  #   OpenIDConnect   — external SSO handles login, LDAP still serves attrs
+  AUTH_MODE="${AUTH_MODE:-LDAP}"
+  case "$AUTH_MODE" in
+    LDAP)
+      TEMPLATE=./config/lmConf-1.json.ldap.template
+      ENVSUBST_VARS='$BASE_DOMAIN $LDAP_BASE_DN'
+      ;;
+    OpenIDConnect)
+      TEMPLATE=./config/lmConf-1.json.oidc.template
+      # Only structural fields go through envsubst. Client credentials are
+      # spliced in with jq below so JSON-meaningful chars in OIDC_CLIENT_*
+      # (quotes, backslashes, dollars) don't corrupt the rendered file.
+      ENVSUBST_VARS='$BASE_DOMAIN $LDAP_BASE_DN $OIDC_OP_NAME'
+      : "${OIDC_OP_NAME:?OIDC_OP_NAME required when AUTH_MODE=OpenIDConnect}"
+      : "${OIDC_OP_DISCOVERY_URL:?OIDC_OP_DISCOVERY_URL required when AUTH_MODE=OpenIDConnect}"
+      : "${OIDC_CLIENT_ID:?OIDC_CLIENT_ID required when AUTH_MODE=OpenIDConnect}"
+      : "${OIDC_CLIENT_SECRET:?OIDC_CLIENT_SECRET required when AUTH_MODE=OpenIDConnect}"
+      ;;
+    *)
+      echo "Unknown AUTH_MODE: $AUTH_MODE (expected LDAP or OpenIDConnect)"
+      exit 1
+      ;;
+  esac
+
+  envsubst "$ENVSUBST_VARS" < "$TEMPLATE" > config/lmConf-1.json
 
   if [ ! -f "config/lmConf-1.json" ]; then
     echo "Failed to create configuration file"
     exit 1
   fi
+
+  # OpenIDConnect: fetch the OP discovery document and splice it into
+  # oidcOPMetaDataJSON.<OP_NAME>. Lemonldap-ng expects that field to be a
+  # JSON-encoded *string* (the discovery doc serialised), so we use jq to
+  # do the encoding correctly regardless of what the OP returns.
+  if [ "$AUTH_MODE" = "OpenIDConnect" ]; then
+    echo "Fetching OIDC discovery document from $OIDC_OP_DISCOVERY_URL..."
+    if ! DISCOVERY=$(curl -fsSL "$OIDC_OP_DISCOVERY_URL"); then
+      echo "❌ Failed to fetch $OIDC_OP_DISCOVERY_URL — check network reachability and the URL." >&2
+      exit 1
+    fi
+    if ! echo "$DISCOVERY" | jq -e . >/dev/null 2>&1; then
+      echo "❌ Response from $OIDC_OP_DISCOVERY_URL is not valid JSON." >&2
+      exit 1
+    fi
+    jq --arg op "$OIDC_OP_NAME" \
+       --argjson disc "$DISCOVERY" \
+       --arg cid "$OIDC_CLIENT_ID" \
+       --arg csecret "$OIDC_CLIENT_SECRET" \
+       '.oidcOPMetaDataJSON[$op] = ($disc | tostring)
+        | .oidcOPMetaDataOptions[$op].oidcOPMetaDataOptionsClientID = $cid
+        | .oidcOPMetaDataOptions[$op].oidcOPMetaDataOptionsClientSecret = $csecret' \
+       config/lmConf-1.json > config/lmConf-1.json.tmp
+    mv config/lmConf-1.json.tmp config/lmConf-1.json
+  fi
+  echo "✔ config/lmConf-1.json generated (AUTH_MODE=$AUTH_MODE)"
+}
+
+if [ "$ACTION" = "render" ]; then
+  render_lmconf
+  exit 0
+fi
+
+if [ "$ACTION" = "up" ]; then
+  render_lmconf
 
   if [ "${CERT_MODE:-self-signed}" = "letsencrypt" ] || \
      [ ! -f "traefik/ssl/twake-server.pem" ] || [ ! -f "traefik/ssl/root-ca.crt" ]; then
