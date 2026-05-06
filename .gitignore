@@ -1,7 +1,6 @@
 # Ignore database data
 twake_db/ldap/bootstrap/users.ldif
 twake_auth/config/lmConf-1.json
-twake_auth/config/dnsmasq.conf
 tmail_app/config/domainlist.xml
 tmail_app/config/jmap.properties
 tmail_app/config/mailetcontainer.xml
