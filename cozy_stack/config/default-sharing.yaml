@@ -1,0 +1,11 @@
+# Default cozy-to-cozy sharing trust policy for the `default` context.
+# Spliced into cozy.yaml at render time. To override for a specific
+# deployment, copy this file to `default-sharing.local.yaml` (gitignored)
+# and edit. The wrapper uses the `.local.yaml` if it exists, otherwise
+# this file.
+#
+# `${BASE_DOMAIN}` is substituted by the wrapper at render time.
+auto_accept_trusted: true
+auto_accept_trusted_contacts: true
+trusted_domains:
+  - ${BASE_DOMAIN}

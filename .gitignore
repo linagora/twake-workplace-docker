@@ -11,7 +11,8 @@ tmail_app/tmail-web-conf/.env
 meet_app/config/nginx.conf
 linshare_app/config/backend/linshare.extra.properties
 linshare_app/config/user-ui/config.js
-cozy-stack/config/cozy.yaml
+cozy_stack/config/cozy.yaml
+cozy_stack/config/*.local.yaml
 chat_app/synapse/homeserver-postgres.yaml
 chat_app/synapse/wellknownclient.conf
 chat_app/synapse/wellknownserver.conf
