@@ -1,0 +1,63 @@
+# Default feature flags for the cozy `default` context. Spliced into
+# cozy.yaml at render time. To override for a specific deployment, copy
+# this file to `default-flags.local.yaml` (gitignored) and edit. The
+# wrapper uses the `.local.yaml` if it exists, otherwise this file.
+#
+# Each entry is a list of `{ratio, value}` pairs (the weighted-flag shape
+# cozy-stack expects).
+apps.hidden:
+  - ratio: 1
+    value:
+      - dataproxy
+      - mespapiers
+cozy.hide-sharing-cozy-to-cozy:
+  - ratio: 1
+    value: true
+cozy.search.enabled:
+  - ratio: 1
+    value: true
+drive.default-updated-at-sort.enabled:
+  - ratio: 1
+    value: false
+drive.doubleclick.enabled:
+  - ratio: 1
+    value: true
+drive.folder-personalization.enabled:
+  - ratio: 1
+    value: true
+drive.highlight-new-items.enabled:
+  - ratio: 1
+    value: true
+drive.keyboard-shortcuts.enabled:
+  - ratio: 1
+    value: true
+drive.shared-drive.enabled:
+  - ratio: 1
+    value: false
+drive.twake-creation-from-public-sharing.disabled:
+  - ratio: 1
+    value: true
+drive.update-favicon.enabled:
+  - ratio: 1
+    value: true
+drive.virtualization.enabled:
+  - ratio: 1
+    value: true
+home.wallpaper-personalization.enabled:
+  - ratio: 1
+    value: true
+settings.partial-desktop-sync.show-synced-folders-selection:
+  - ratio: 1
+    value: false
+sharing.auto-open-settings.enabled:
+  - ratio: 1
+    value: true
+sharing.data-toggle.enabled:
+  - ratio: 1
+    value: true
+sharing.generate-link-button.enabled:
+  - ratio: 1
+    value: true
+ui.theme-twake.enabled:
+  - ratio: 1
+    value: true
