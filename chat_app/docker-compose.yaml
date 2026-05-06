@@ -4,7 +4,7 @@ services:
     image: busybox
     volumes:
       - ./synapse:/data
-    command: sh -c "chown -R 991:991 /data/media_store && chmod -R u+rwX /data/media_store"
+    command: sh -c "chown -R 991:991 /data && chmod -R u+rwX /data"
     restart: "no"
     networks:
       - twake-network
