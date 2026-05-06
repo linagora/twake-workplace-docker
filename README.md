@@ -310,6 +310,7 @@ Deeper operational notes live in [`docs/`](docs/README.md):
 - [`scim-import.md`](docs/scim-import.md): bulk-importing users via SCIM, end-to-end verification
 - [`external-oidc.md`](docs/external-oidc.md): plugging in an external OpenID Connect provider
 - [`cozy-defaults.md`](docs/cozy-defaults.md): cozy default context settings (passphrase bypass, feature flags, sharing trust)
+- [`cookbook.md`](docs/cookbook.md): day-to-day commands for listing state, cleaning up, inspecting RabbitMQ, and debugging
 
 Bulk user provisioning script: [`scripts/scim-import-users.sh`](scripts/scim-import-users.sh) (see [`scripts/README.md`](scripts/README.md)).
 
