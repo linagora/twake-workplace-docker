@@ -2,6 +2,15 @@
 # compose-wrapper.sh
 set -e
 
+command -v jq >/dev/null || {
+  echo "ERR: jq is required by this wrapper. Install: sudo apt-get install -y jq (Debian/Ubuntu) or equivalent." >&2
+  exit 1
+}
+command -v envsubst >/dev/null || {
+  echo "ERR: envsubst is required by this wrapper. Install: sudo apt-get install -y gettext-base (Debian/Ubuntu) or equivalent." >&2
+  exit 1
+}
+
 ACTION="$1"
 
 # Load environment variables
