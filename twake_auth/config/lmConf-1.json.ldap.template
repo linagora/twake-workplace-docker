@@ -129,7 +129,7 @@
    "cfgAuthorIP" : "172.27.0.100 (maybe 172.27.0.1)",
    "cfgDate" : 1769696804,
    "cfgLog" : "",
-   "cfgNum" : "2",
+   "cfgNum" : "1",
    "cfgVersion" : "2.21.2",
    "checkDevOpsCheckSessionAttributes" : 1,
    "checkDevOpsDisplayNormalizedHeaders" : 1,

@@ -11,6 +11,13 @@ services:
       - LOGLEVEL=debug
       - PROTECTION=none
       - PORTAL=https://auth.${BASE_DOMAIN}
+      # External OIDC client credentials. Spliced into lmConf-1.json at
+      # render time by the wrapper (via jq, so JSON-meaningful chars in the
+      # secret don't corrupt the rendered file). Kept here for reference /
+      # future use by plugins that honour %SERVERENV:%. Harmless when
+      # AUTH_MODE=LDAP.
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.lemonldap-auth.rule=Host(`auth.${BASE_DOMAIN}`)"
@@ -34,7 +41,7 @@ services:
       - twake-network
 
   ldap-rest:
-    image: yadd/ldap-rest:0.3.4
+    image: kferjani/ldap-rest:0.3.4-poc-oidc-id
     container_name: ldap-rest
     restart: unless-stopped
     environment:
