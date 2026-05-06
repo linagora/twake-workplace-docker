@@ -22,6 +22,9 @@ drive.default-updated-at-sort.enabled:
 drive.doubleclick.enabled:
   - ratio: 1
     value: true
+drive.federated-shared-folder.enabled:
+  - ratio: 1
+    value: true
 drive.folder-personalization.enabled:
   - ratio: 1
     value: true
