@@ -52,7 +52,7 @@ fi
 
 [[ -f "$ENV_FILE" ]] || { echo "ERR: .env not found at $ENV_FILE" >&2; exit 1; }
 [[ -f "$INPUT" ]]    || { echo "ERR: input file not found: $INPUT" >&2; exit 1; }
-command -v jq >/dev/null || { echo "ERR: jq is required" >&2; exit 1; }
+command -v jq >/dev/null || { echo "ERR: jq is required. Install: sudo apt-get install -y jq (Debian/Ubuntu) or equivalent." >&2; exit 1; }
 
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
@@ -62,6 +62,29 @@ set -a; source "$ENV_FILE"; set +a
 HOST="${LDAP_REST_HOST:-https://ldap-rest.${BASE_DOMAIN}}"
 
 count=$(jq 'length' "$INPUT")
+
+# userName becomes the cozy instance subdomain. Stricter than cozy-stack's own
+# check because underscores, dots, and uppercase break traefik / lemonldap
+# elsewhere in the stack.
+slug_re='^[a-z0-9](([a-z0-9-]*[a-z0-9])?)$'
+invalid=()
+i=0
+while IFS= read -r uname; do
+  if [[ -z "$uname" ]]; then
+    invalid+=("entry #$i: missing userName")
+  elif (( ${#uname} > 63 )); then
+    invalid+=("$uname: longer than 63 chars")
+  elif ! [[ "$uname" =~ $slug_re ]]; then
+    invalid+=("$uname: not a valid DNS label (lowercase letters, digits, hyphens; no leading/trailing hyphen)")
+  fi
+  i=$((i + 1))
+done < <(jq -r '.[].userName // ""' "$INPUT")
+if (( ${#invalid[@]} > 0 )); then
+  echo "ERR: invalid userName(s), nothing imported:" >&2
+  printf '  - %s\n' "${invalid[@]}" >&2
+  exit 1
+fi
+
 echo "→ Importing $count user(s) from $INPUT"
 echo "  target: $HOST/scim/v2/Users"
 [[ $DRY_RUN -eq 1 ]] && echo "  (dry-run: no requests will be sent)"

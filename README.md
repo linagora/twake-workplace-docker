@@ -14,6 +14,7 @@
 - [Deployment Instructions](#deployment-instructions)
 - [Test Credentials](#test-credentials)
 - [Troubleshooting](#troubleshooting)
+- [Operator documentation](#operator-documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -300,6 +301,16 @@ docker ps
 - **`generate-cert.sh` fails with "Let's Encrypt certs not found"**: Run certbot first to issue the wildcard certificate before starting the stack. Check that `/etc/letsencrypt/live/<BASE_DOMAIN>/` exists and is readable.
 - **Services failing to start**: Check that the `twake-network` Docker network exists (`docker network ls`) and that no other service is using ports 80/443.
 - **Health check failures**: Some services (chat, tmail) depend on LemonLDAP::NG being healthy. Wait for it to be ready before starting dependent services, or use `./wrapper.sh` which handles ordering automatically.
+
+## Operator documentation
+
+Deeper operational notes live in [`docs/`](docs/README.md):
+
+- [`operations.md`](docs/operations.md): host prerequisites, boot ordering, version floors
+- [`scim-import.md`](docs/scim-import.md): bulk-importing users via SCIM, end-to-end verification
+- [`external-oidc.md`](docs/external-oidc.md): plugging in an external OpenID Connect provider
+
+Bulk user provisioning script: [`scripts/scim-import-users.sh`](scripts/scim-import-users.sh) (see [`scripts/README.md`](scripts/README.md)).
 
 ## Contributing
 

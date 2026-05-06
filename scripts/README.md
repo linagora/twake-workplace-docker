@@ -32,7 +32,9 @@ Each entry in the JSON array can be either:
 - a **shorthand** with the common keys (`userName`, `givenName`, `familyName`, `email`, `active`), plus any extra top-level SCIM attributes (`displayName`, `phoneNumbers`, `title`, custom extension URNs, …) which get merged onto the synthesized body, or
 - a **full SCIM User** (anything with a `schemas` field), passed through verbatim.
 
-See `scripts/users.example.json` for a worked example covering both modes. `userName` is the only field that is always required — it becomes the cozy instance subdomain (`<userName>.${BASE_DOMAIN}`).
+See `scripts/users.example.json` for a worked example covering both modes. `userName` is required and must be a valid DNS label (lowercase letters, digits, hyphens, ≤63 chars, no leading or trailing hyphen) since it becomes the cozy instance subdomain `<userName>.${BASE_DOMAIN}`. The script validates every entry before sending and aborts the batch if any are invalid.
+
+For an end-to-end walkthrough including how to verify the import landed in LDAP, cozy, and RabbitMQ, see [`docs/scim-import.md`](../docs/scim-import.md).
 
 ### Verifying a run
 
