@@ -49,6 +49,11 @@ if [ "$ACTION" = "up" ] || [ "$ACTION" = "render" ]; then
   splice '__DEFAULT_FLAGS__'   "$flags_file"   6
   splice '__DEFAULT_SHARING__' "$sharing_file" 6
 
+  # cozy-stack runs inside the container as a non-root uid (3552). The bind-
+  # mounted config has to be readable by it regardless of the host operator's
+  # umask, so force a sane mode after the splice.
+  chmod 644 config/cozy.yaml
+
   if [ "$ACTION" = "render" ]; then exit 0; fi
 fi
 
