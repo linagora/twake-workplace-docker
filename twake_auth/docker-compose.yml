@@ -41,7 +41,7 @@ services:
       - twake-network
 
   ldap-rest:
-    image: kferjani/ldap-rest:0.3.4-poc-oidc-id
+    image: yadd/ldap-rest:latest
     container_name: ldap-rest
     restart: unless-stopped
     environment:
