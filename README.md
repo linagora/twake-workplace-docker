@@ -312,7 +312,7 @@ Deeper operational notes live in [`docs/`](docs/README.md):
 - [`cozy-defaults.md`](docs/cozy-defaults.md): cozy default context settings (passphrase bypass, feature flags, sharing trust)
 - [`cookbook.md`](docs/cookbook.md): day-to-day commands for listing state, cleaning up, inspecting RabbitMQ, and debugging
 
-Bulk user provisioning script: [`scripts/scim-import-users.sh`](scripts/scim-import-users.sh) (see [`scripts/README.md`](scripts/README.md)).
+Operator CLI: [`scripts/twake`](scripts/twake) wraps preflight checks, SCIM user lifecycle, drift reporting, and RabbitMQ tapping behind a single entry point with per-subcommand `--help`. See [`scripts/README.md`](scripts/README.md).
 
 ## Contributing
 

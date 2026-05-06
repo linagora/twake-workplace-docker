@@ -1,5 +1,7 @@
 # Operations
 
+`scripts/twake preflight` automates a sanity check across most of the items below — tooling, UFW forward policy, `ip_forward`, wildcard DNS, hairpin reachability. Run it once on a fresh host before `./wrapper.sh up`, and again any time the stack misbehaves in a way that smells like infrastructure.
+
 ## Host prerequisites
 
 - **`jq`** and **`envsubst`** on the host (the auth wrapper uses both, the SCIM import script uses `jq`). The wrappers fail fast with a clear install hint if either is missing. On Debian/Ubuntu: `sudo apt-get install -y jq gettext-base`.
