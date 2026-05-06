@@ -85,13 +85,21 @@ render_lmconf() {
   echo "✔ config/lmConf-1.json generated (AUTH_MODE=$AUTH_MODE)"
 }
 
+render_dnsmasq() {
+  echo "Processing dnsmasq configuration..."
+  envsubst '$BASE_DOMAIN' < ./config/dnsmasq.conf.template > config/dnsmasq.conf
+  echo "✔ config/dnsmasq.conf generated"
+}
+
 if [ "$ACTION" = "render" ]; then
   render_lmconf
+  render_dnsmasq
   exit 0
 fi
 
 if [ "$ACTION" = "up" ]; then
   render_lmconf
+  render_dnsmasq
 
   if [ "${CERT_MODE:-self-signed}" = "letsencrypt" ] || \
      [ ! -f "traefik/ssl/twake-server.pem" ] || [ ! -f "traefik/ssl/root-ca.crt" ]; then

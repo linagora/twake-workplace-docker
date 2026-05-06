@@ -158,6 +158,26 @@ services:
       twake-network:
         ipv4_address: 172.27.0.100
 
+  dns:
+    container_name: stack-dns
+    build:
+      context: .
+      dockerfile: Dockerfile.dnsmasq
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./config/dnsmasq.conf:/etc/dnsmasq.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep dnsmasq"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      twake-network:
+        ipv4_address: 172.27.0.53
+
   twake-docker-socket:
     container_name: docker-socket
     image: tecnativa/docker-socket-proxy

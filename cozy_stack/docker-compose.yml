@@ -20,6 +20,11 @@ services:
       COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE:-admin}
       INBOX_SECRET: secret
       OUTBOX_SECRET: secret
+    # Use the in-network dnsmasq (twake_auth/dns) to resolve any subdomain of
+    # BASE_DOMAIN to traefik so cozy-to-cozy sharing requests stay inside the
+    # docker bridge instead of looping through the host's public IP.
+    dns:
+      - 172.27.0.53
     extra_hosts:
       - "auth.${BASE_DOMAIN}:172.27.0.100"
     volumes:
