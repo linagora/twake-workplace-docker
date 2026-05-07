@@ -48,7 +48,7 @@ scripts/twake users add <userName> [flags] [--dry-run]
 scripts/twake users add --file <path>   [--dry-run]
 ```
 
-`<userName>` must be a valid DNS label — lowercase letters, digits, hyphens, no leading/trailing hyphen, ≤63 chars. It becomes the cozy instance subdomain `<userName>.${BASE_DOMAIN}`.
+`<userName>` must be a valid DNS label: lowercase letters, digits, hyphens, no leading/trailing hyphen, ≤63 chars. It becomes the cozy instance subdomain `<userName>.${BASE_DOMAIN}`. Slugs that match a stack service subdomain (e.g. `chat`, `mail`, `auth`) are rejected to avoid traefik routing collisions; the list is derived at runtime from the `Host(...)` rules in every `docker-compose*.y*ml` under the repo, so it stays in sync as services are added or removed.
 
 In file mode the file is **one SCIM User object or an array**. Every SCIM attribute (extension URNs, addresses, custom claims) is forwarded to ldap-rest verbatim. Each entry is either:
 - a full SCIM User (anything with a `schemas` field), or

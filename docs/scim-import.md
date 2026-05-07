@@ -23,7 +23,7 @@ Each entry needs a valid `userName`, given/family name, and email. The `userName
 ]
 ```
 
-`userName` must be a valid DNS label: lowercase letters, digits, hyphens, no leading or trailing hyphen, ≤63 chars. The script rejects the whole batch if any entry fails this check.
+`userName` must be a valid DNS label: lowercase letters, digits, hyphens, no leading or trailing hyphen, ≤63 chars. It must also not collide with a stack service subdomain (e.g. `chat`, `mail`, `auth`); the reserved set is derived at runtime from the `Host(...)` rules in the repo's compose files. The script rejects the whole batch if any entry fails either check.
 
 ## 2. Run the import
 
