@@ -28,13 +28,13 @@ Each entry needs a valid `userName`, given/family name, and email. The `userName
 ## 2. Run the import
 
 ```bash
-./scripts/scim-import-users.sh scripts/users.json
+./scripts/twake users add --file scripts/users.json
 ```
 
 To target a remote deployment without changing `.env`:
 
 ```bash
-LDAP_REST_HOST=https://ldap-rest.example.org ./scripts/scim-import-users.sh scripts/users.json
+LDAP_REST_HOST=https://ldap-rest.example.org ./scripts/twake users add --file scripts/users.json
 ```
 
 Use `--dry-run` to print the SCIM bodies without sending anything.
@@ -42,7 +42,7 @@ Use `--dry-run` to print the SCIM bodies without sending anything.
 A clean run looks like:
 
 ```
-→ Importing 2 user(s) from scripts/users.json
+→ Provisioning 2 user(s)
   target: https://ldap-rest.example.org/scim/v2/Users
 
   alice                    ... OK (201)
@@ -99,15 +99,11 @@ Open `https://<userName>.<BASE_DOMAIN>` in an incognito window. The flow is OP l
 
 ## Cleanup
 
-`SCIM DELETE` removes the LDAP entry but does not destroy the cozy instance. A subsequent `POST` for the same `userName` re-attaches to the existing instance, which can leave `oidc_id` set to a stale value. For a real reset:
+`twake users destroy` calls SCIM DELETE on ldap-rest, which tears down the LDAP entry and the cozy instance in one shot:
 
 ```bash
-# delete via SCIM (clears LDAP)
-curl -k -sS -X DELETE -H "Authorization: Bearer $LDAP_REST_ADMIN_TOKEN" \
-  https://ldap-rest.example.org/scim/v2/Users/alice
-
-# destroy the cozy instance
-docker exec cozyt cozy-stack instances destroy alice.example.org --force
+scripts/twake users destroy alice                          # one user, prompts to confirm
+scripts/twake users destroy --file scripts/users.json --yes # everyone in the import file
 ```
 
 Then re-import.

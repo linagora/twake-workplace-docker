@@ -2,6 +2,8 @@
 
 Command-first reference for the things you do most often. For the why and the deeper walkthroughs, follow the cross-references back into the topic-specific docs.
 
+Many of the recipes below are wrapped by [`scripts/twake`](../scripts/README.md), the operator CLI: `twake preflight`, `twake users add|destroy|list`, `twake mq tap`. Reach for `twake` first; the raw commands here are the fallback for cases the CLI doesn't cover or when you're debugging the CLI itself.
+
 All `docker exec` commands assume the host. Wrap with `ssh <host> '<command>'` if you're remote and replace `docker` with `sudo docker` if your operator user is not in the docker group. The snippets below reference these from the repo's `.env`:
 
 ```bash
@@ -11,6 +13,14 @@ TOKEN=${LDAP_REST_ADMIN_TOKEN}
 ```
 
 ## Listing state
+
+**Joined SCIM × cozy report** (the first command to run when something feels off):
+
+```bash
+scripts/twake users list             # table
+scripts/twake users list --orphans   # only drift rows
+scripts/twake users list --json      # for piping
+```
 
 **SCIM users** (everything ldap-rest serves):
 
@@ -49,45 +59,61 @@ docker exec couchdb curl -sS -u admin:password "http://localhost:5984/${PREFIX}%
 
 ## Cleaning up
 
-`SCIM DELETE` removes the LDAP entry but does not destroy the cozy instance. A subsequent `POST` for the same `userName` re-attaches to the existing instance. For a real reset, do both.
+`twake users destroy` calls `DELETE /scim/v2/Users/<userName>` on ldap-rest, which tears down both the LDAP entry and the cozy instance. Idempotent on re-run.
 
 **Delete one user end-to-end**:
 
 ```bash
-docker exec -e COZY_ADMIN_PASSPHRASE=admin cozyt cozy-stack instances destroy \
-  <userName>.<BASE_DOMAIN> --force
-
-curl -k -sS -X DELETE -H "Authorization: Bearer $TOKEN" \
-  "$HOST/scim/v2/Users/<userName>"
+scripts/twake users destroy <userName>            # confirms before acting
+scripts/twake users destroy <userName> --yes      # non-interactive
 ```
 
 **Wipe every imported user** (keeps `admin` and any pre-existing dev users):
 
 ```bash
-# 1. destroy cozy instances for the users in your import file
-for u in $(jq -r '.[].userName' scripts/users.json); do
-  docker exec -e COZY_ADMIN_PASSPHRASE=admin cozyt cozy-stack instances destroy \
-    "${u}.${BASE_DOMAIN}" --force 2>/dev/null
-done
-
-# 2. SCIM-delete the same set
-for u in $(jq -r '.[].userName' scripts/users.json); do
-  curl -k -sS -X DELETE -H "Authorization: Bearer $TOKEN" \
-    -o /dev/null -w "$u %{http_code}\n" "$HOST/scim/v2/Users/$u"
-done
+scripts/twake users destroy --file scripts/users.json --yes
 ```
 
-To reimport, see [`scim-import.md`](scim-import.md).
+To re-provision, see [`scim-import.md`](scim-import.md).
 
-**Destroy orphan cozy instances** (instances whose SCIM user no longer exists):
+**Find and destroy orphan cozy instances** (instances whose SCIM user no longer exists):
 
 ```bash
-docker exec -e COZY_ADMIN_PASSPHRASE=admin cozyt cozy-stack instances ls \
-  | awk '{print $1}' \
-  | while read d; do echo "$d"; done   # eyeball, then destroy the ones you don't want
+scripts/twake users list --orphans
+# then for each cozy_only row:
+docker exec -e COZY_ADMIN_PASSPHRASE=admin cozyt cozy-stack instances destroy \
+  <userName>.<BASE_DOMAIN> --force
 ```
 
+## Feature flags
+
+`twake flags` wraps `cozy-stack feature` for the per-instance overrides — what the cozy frontend reads. `flags show` prints the effective (merged) flags, `flags set` upserts overrides, `flags unset` removes them. Use `--all` instead of a userName to apply across every instance under `${BASE_DOMAIN}`.
+
+```bash
+scripts/twake flags show <userName>
+scripts/twake flags show --all
+
+# JSON values are parsed where possible; plain words become strings.
+scripts/twake flags set <userName> drive.shared-drive.enabled=true
+scripts/twake flags set --all 'apps.hidden=["dataproxy","mespapiers"]'
+
+scripts/twake flags unset <userName> drive.shared-drive.enabled
+scripts/twake flags unset --all apps.hidden
+```
+
+For setting **defaults** that ship to new instances, edit `cozy_stack/config/default-flags.yaml` and reload — that's the boot-time path, see [`cozy-defaults.md`](cozy-defaults.md). Use `flags set` for one-off overrides on existing instances.
+
 ## RabbitMQ
+
+**Watch live messages flowing through an exchange** (most useful when debugging the ldap-rest → cozy-stack handoff):
+
+```bash
+scripts/twake mq tap auth                 # everything on the auth exchange
+scripts/twake mq tap auth user.created    # one routing key
+scripts/twake mq tap b2b 'domain.user.*'  # patterns work
+```
+
+The tap binds a fresh queue, so real consumers (cozy-stack) keep getting their messages.
 
 **Queue depth and consumers**:
 

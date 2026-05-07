@@ -1,0 +1,1285 @@
+#!/usr/bin/env bash
+# twake — operator CLI for the Twake Workplace Docker.
+#
+# One entry point for the day-to-day operator tasks: pre-boot host check,
+# SCIM user lifecycle, drift report, RabbitMQ tap. Each command and
+# subcommand has its own --help.
+#
+# Top-level usage:
+#   scripts/twake <command> [subcommand] [args...]
+#
+# Discoverable layout:
+#   scripts/twake --help                  # this overview
+#   scripts/twake preflight --help        # pre-boot host check
+#   scripts/twake users --help             # user lifecycle namespace
+#   scripts/twake users add --help         # provision one user
+#   scripts/twake users destroy --help     # tear down user(s)
+#   scripts/twake users list --help        # joined SCIM × cozy report
+#   scripts/twake flags --help            # cozy feature flags namespace
+#   scripts/twake flags show --help       # show effective flags
+#   scripts/twake flags set --help        # upsert per-instance overrides
+#   scripts/twake flags unset --help      # remove per-instance overrides
+#   scripts/twake mq --help               # RabbitMQ namespace
+#   scripts/twake mq tap --help           # tap an exchange
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
+
+# =============================================================================
+# Helpers (shared across commands)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Style — ANSI colors and glyphs. Honours NO_COLOR and tty detection.
+# -----------------------------------------------------------------------------
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+  C_BOLD=$'\033[1m'; C_DIM=$'\033[2m'
+  C_RED=$'\033[31m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'
+  C_CYAN=$'\033[36m'; C_GREY=$'\033[90m'
+  C_END=$'\033[0m'
+else
+  C_BOLD=""; C_DIM=""; C_RED=""; C_GREEN=""; C_YELLOW=""
+  C_CYAN=""; C_GREY=""; C_END=""
+fi
+
+# Glyphs (graceful fallback if locale is C).
+if [[ "${LANG:-}${LC_ALL:-}" == *UTF-8* || "${LANG:-}${LC_ALL:-}" == *utf8* ]]; then
+  G_OK="✓"; G_FAIL="✗"; G_WARN="⚠"; G_ARROW="→"; G_BULLET="•"
+else
+  G_OK="+"; G_FAIL="x"; G_WARN="!"; G_ARROW=">"; G_BULLET="*"
+fi
+
+# -----------------------------------------------------------------------------
+# Diagnostics
+# -----------------------------------------------------------------------------
+err()  { printf '%s%s%s %s\n' "$C_RED" "$G_FAIL" "$C_END" "$*" >&2; }
+die()  { err "$*"; exit 1; }
+
+# Verifies every named tool is on PATH; reports them all in one message,
+# not one-by-one across consecutive runs.
+require_tools() {
+  local missing=() t
+  for t in "$@"; do
+    command -v "$t" >/dev/null 2>&1 || missing+=("$t")
+  done
+  if (( ${#missing[@]} > 0 )); then
+    err "missing required tool(s): ${C_BOLD}${missing[*]}${C_END}"
+    printf '  hint: %sapt install %s%s\n' "$C_DIM" "${missing[*]}" "$C_END" >&2
+    exit 1
+  fi
+}
+
+# Sets REQ_VAL to the next argument; aborts with exit 2 if it's missing or
+# starts with `--` (which would mean the previous flag was given no value).
+require_value() {
+  if [[ $# -lt 2 || "$2" == --* ]]; then
+    err "$1 requires a value"; exit 2
+  fi
+  REQ_VAL="$2"
+}
+
+load_env() {
+  # The .env file is a convenience: each command falls through to per-var
+  # `:?` checks that work fine if the variables are already exported in the
+  # shell. So a missing .env is not an error here.
+  [[ -f "$ENV_FILE" ]] || return 0
+  # shellcheck disable=SC1090
+  set -a; source "$ENV_FILE"; set +a
+}
+
+# Used as a SCIM `userName` (cozy instance subdomain). Stricter than
+# cozy-stack's own check because underscores, dots, and uppercase break
+# traefik / lemonldap elsewhere in the stack.
+SLUG_RE='^[a-z0-9](([a-z0-9-]*[a-z0-9])?)$'
+
+# Reads userNames on stdin (one per line). Prints all errors then exits 1
+# if any entry is invalid. Returns silently on success.
+validate_slugs() {
+  local invalid=() i=0 u
+  while IFS= read -r u; do
+    if [[ -z "$u" ]]; then
+      invalid+=("entry #$i: missing userName")
+    elif (( ${#u} > 63 )); then
+      invalid+=("$u: longer than 63 chars")
+    elif ! [[ "$u" =~ $SLUG_RE ]]; then
+      invalid+=("$u: not a valid DNS label (lowercase letters, digits, hyphens; no leading/trailing hyphen)")
+    fi
+    i=$((i + 1))
+  done
+  if (( ${#invalid[@]} > 0 )); then
+    err "invalid userName(s):"
+    printf '  - %s\n' "${invalid[@]}" >&2
+    exit 1
+  fi
+}
+
+# =============================================================================
+# preflight
+# =============================================================================
+
+cmd_preflight_help() {
+  cat <<EOF
+${C_BOLD}twake preflight${C_END} ${C_DIM}— pre-boot host sanity check.${C_END}
+
+Verifies the things that historically block a fresh deployment: missing
+tooling, UFW forward policy, ip_forward sysctl, wildcard DNS, hairpin
+reachability. Run once on a new host before \`./wrapper.sh up\`, and again
+whenever something breaks in a way that smells like infrastructure.
+
+${C_DIM}Usage:${C_END}
+  scripts/twake preflight [--no-color]
+
+${C_DIM}Exit code:${C_END} 0 if no FAIL, 1 if any FAIL. WARN does not affect the exit code.
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}ENV_FILE${C_END}     alternate .env path (default: <repo>/.env)
+  ${C_CYAN}PROBE_LABEL${C_END}  DNS label used for wildcard / hairpin probes (default: __preflight)
+EOF
+}
+
+cmd_preflight() {
+  local no_color=0
+  for arg in "$@"; do
+    case "$arg" in
+      --no-color)        no_color=1; C_BOLD=""; C_DIM=""; C_RED=""; C_GREEN=""
+                         C_YELLOW=""; C_CYAN=""; C_GREY=""; C_END="" ;;
+      -h|--help)         cmd_preflight_help; return 0 ;;
+      *)                 err "unknown option: $arg"; return 2 ;;
+    esac
+  done
+
+  local OK=0 FAIL=0 WARN=0 SKIP=0
+  ok()   { printf '  %s%s%s %s\n' "$C_GREEN"  "$G_OK"   "$C_END" "$1"; OK=$((OK+1)); }
+  pfail(){ printf '  %s%s%s %s\n' "$C_RED"    "$G_FAIL" "$C_END" "$1"
+           [[ -n "${2-}" ]] && printf '    %shint:%s %s\n' "$C_DIM" "$C_END" "$2"
+           FAIL=$((FAIL+1)); }
+  pwarn(){ printf '  %s%s%s %s\n' "$C_YELLOW" "$G_WARN" "$C_END" "$1"
+           [[ -n "${2-}" ]] && printf '    %shint:%s %s\n' "$C_DIM" "$C_END" "$2"
+           WARN=$((WARN+1)); }
+  pskip(){ printf '  %s%s%s %s\n' "$C_GREY"   "$G_BULLET" "$C_END" "$1"
+           [[ -n "${2-}" ]] && printf '    %s%s%s\n' "$C_DIM" "$2" "$C_END"
+           SKIP=$((SKIP+1)); }
+
+  local probe_label="${PROBE_LABEL:-__preflight}"
+
+  printf '%s%s%s preflight checks%s\n' "$C_BOLD" "$G_ARROW" "$C_END" ""
+  echo
+
+  for tool in jq curl docker; do
+    if command -v "$tool" >/dev/null 2>&1; then ok "$tool installed"
+    else pfail "$tool not installed" "install via your package manager (e.g. sudo apt install $tool)"
+    fi
+  done
+
+  if docker compose version >/dev/null 2>&1; then ok "docker compose v2 available"
+  else pfail "docker compose v2 not available" "install the docker-compose-plugin package"
+  fi
+
+  if docker info >/dev/null 2>&1; then ok "docker daemon reachable"
+  else pfail "cannot talk to docker daemon" \
+            "start docker, or add your user to the 'docker' group and re-login"
+  fi
+
+  if [[ -f "$ENV_FILE" ]]; then
+    ok ".env present at $ENV_FILE"
+    # shellcheck disable=SC1090
+    set -a; source "$ENV_FILE"; set +a
+    local missing=()
+    local k
+    for k in BASE_DOMAIN LDAP_REST_ADMIN_TOKEN COZY_ADMIN_PASSPHRASE \
+             RABBITMQ_USER RABBITMQ_PASSWORD; do
+      [[ -z "${!k:-}" ]] && missing+=("$k")
+    done
+    if (( ${#missing[@]} == 0 )); then ok "required env vars present"
+    else pfail "missing env vars: ${missing[*]}" "set them in $ENV_FILE"
+    fi
+  else
+    pfail ".env not found at $ENV_FILE" \
+          "copy .env.example or follow docs/operations.md; remaining checks need it"
+    echo
+    printf '%ssummary:%s %s%d FAIL%s, %s%d WARN%s, %s%d OK%s, %s%d SKIP%s\n' \
+      "$C_BOLD" "$C_END" \
+      "$C_RED" "$FAIL" "$C_END" "$C_YELLOW" "$WARN" "$C_END" \
+      "$C_GREEN" "$OK" "$C_END" "$C_GREY" "$SKIP" "$C_END"
+    return 1
+  fi
+
+  local ipfwd
+  ipfwd=$(sysctl -n net.ipv4.ip_forward 2>/dev/null || echo "")
+  case "$ipfwd" in
+    1) ok "net.ipv4.ip_forward=1" ;;
+    0) pfail "net.ipv4.ip_forward=0 — containers cannot reach the outside" \
+             "uncomment 'net/ipv4/ip_forward=1' in /etc/ufw/sysctl.conf and 'sudo ufw reload', or 'echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward'" ;;
+    *) pskip "net.ipv4.ip_forward (sysctl unavailable)" ;;
+  esac
+
+  # UFW: only the active state actually enforces FORWARD policy. If the
+  # service is inactive the value in /etc/default/ufw is dormant and not
+  # worth flagging.
+  if command -v ufw >/dev/null 2>&1; then
+    local ufw_active="unknown"
+    if command -v systemctl >/dev/null 2>&1; then
+      ufw_active=$(systemctl is-active ufw 2>/dev/null || true)
+    fi
+    if [[ "$ufw_active" != "active" ]]; then
+      pskip "UFW installed but not active (forward policy doesn't apply)"
+    elif [[ -r /etc/default/ufw ]]; then
+      local fwd
+      fwd=$(awk -F= '/^DEFAULT_FORWARD_POLICY/ {gsub(/"/,"",$2); print $2}' /etc/default/ufw)
+      case "$fwd" in
+        ACCEPT) ok "UFW active, DEFAULT_FORWARD_POLICY=ACCEPT" ;;
+        "")     pskip "UFW active but forward policy unparseable in /etc/default/ufw" ;;
+        *)      pfail "UFW active, DEFAULT_FORWARD_POLICY=$fwd — containers cannot egress" \
+                      "edit /etc/default/ufw, set DEFAULT_FORWARD_POLICY=\"ACCEPT\", then sudo ufw reload" ;;
+      esac
+    else
+      pskip "UFW active but /etc/default/ufw not readable"
+    fi
+  else
+    pskip "UFW not installed (no firewall to misconfigure)"
+  fi
+
+  local probe_fqdn="${probe_label}.${BASE_DOMAIN}"
+  local resolved dns_ok=0
+  resolved=$( (getent ahosts "$probe_fqdn" 2>/dev/null || true) | awk '{print $1; exit}')
+  if [[ -n "$resolved" ]]; then
+    ok "wildcard DNS: $probe_fqdn → $resolved"
+    dns_ok=1
+  else
+    pfail "wildcard DNS: $probe_fqdn does not resolve" \
+          "add a wildcard A record *.${BASE_DOMAIN} pointing to this host's public IP"
+  fi
+
+  if (( dns_ok == 1 )); then
+    if curl -k -sS -o /dev/null --max-time 5 "https://$probe_fqdn/" 2>/dev/null \
+       || curl -sS -o /dev/null --max-time 5 "http://$probe_fqdn/" 2>/dev/null; then
+      ok "hairpin probe: $probe_fqdn reachable from this host"
+    else
+      pwarn "hairpin probe: could not reach $probe_fqdn" \
+            "expected before traefik is up; recheck after './wrapper.sh up'. Otherwise see docs/operations.md (NAT hairpin)"
+    fi
+  else
+    pskip "hairpin probe (DNS resolution failed)"
+  fi
+
+  echo
+  printf '%ssummary:%s %s%d FAIL%s, %s%d WARN%s, %s%d OK%s, %s%d SKIP%s\n' \
+    "$C_BOLD" "$C_END" \
+    "$C_RED" "$FAIL" "$C_END" "$C_YELLOW" "$WARN" "$C_END" \
+    "$C_GREEN" "$OK" "$C_END" "$C_GREY" "$SKIP" "$C_END"
+
+  (( FAIL == 0 ))
+}
+
+# =============================================================================
+# users — namespace
+# =============================================================================
+
+cmd_users_help() {
+  cat <<EOF
+${C_BOLD}twake users${C_END} ${C_DIM}— manage SCIM users and their cozy instances.${C_END}
+
+${C_DIM}Subcommands:${C_END}
+  ${C_CYAN}add${C_END}        Provision one user (or a small batch from --file)
+  ${C_RED}destroy${C_END}    Tear down user(s) end-to-end (SCIM + cozy)
+  ${C_CYAN}list${C_END}       Joined view of SCIM users × cozy instances
+
+${C_DIM}Help for a subcommand:${C_END}
+  scripts/twake users <subcommand> --help
+EOF
+}
+
+cmd_users() {
+  local sub="${1:-}"
+  shift || true
+  case "$sub" in
+    add)          cmd_users_add "$@" ;;
+    destroy)      cmd_users_destroy "$@" ;;
+    list)         cmd_users_list "$@" ;;
+    -h|--help|"") cmd_users_help ;;
+    *)            err "unknown 'users' subcommand: $sub"; cmd_users_help >&2; return 2 ;;
+  esac
+}
+
+# -----------------------------------------------------------------------------
+# users add
+# -----------------------------------------------------------------------------
+
+cmd_users_add_help() {
+  cat <<EOF
+${C_BOLD}twake users add${C_END} ${C_DIM}— provision SCIM users (and their cozy instances).${C_END}
+
+Three input modes share the same code path:
+
+  ${C_DIM}\$${C_END} scripts/twake users add alice
+  ${C_DIM}\$${C_END} scripts/twake users add alice --email alice@x.org --display-name "Alice D."
+  ${C_DIM}\$${C_END} scripts/twake users add --file path/to/user.json
+
+In file mode the file is one SCIM user object or an array — every SCIM
+attribute (extension URNs, addresses, custom claims) is forwarded to
+ldap-rest verbatim.
+
+Each entry can be:
+  - a full SCIM User object (with \`schemas\`), passed through verbatim, or
+  - a shorthand: userName, givenName, familyName, email, active, plus any
+    extra top-level SCIM fields (displayName, phoneNumbers, title, …)
+    merged onto the synthesized body.
+
+${C_DIM}Per-field flags${C_END} (only valid with positional userName):
+  ${C_CYAN}--email${C_END} VALUE
+  ${C_CYAN}--display-name${C_END} VALUE
+  ${C_CYAN}--given-name${C_END} VALUE
+  ${C_CYAN}--family-name${C_END} VALUE
+  ${C_CYAN}--phone${C_END} VALUE
+  ${C_CYAN}--locale${C_END} VALUE
+  ${C_CYAN}--title${C_END} VALUE
+  ${C_CYAN}--inactive${C_END}               sets active=false (default is active=true)
+
+${C_DIM}Modifiers:${C_END}
+  ${C_CYAN}--dry-run${C_END}                print the SCIM body for each entry without POSTing
+  ${C_CYAN}-h, --help${C_END}               this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}LDAP_REST_HOST${C_END}   alternate ldap-rest URL
+                   (default: https://ldap-rest.\${BASE_DOMAIN})
+
+${C_DIM}Exit code:${C_END} 0 if every POST returned 2xx, 1 otherwise.
+EOF
+}
+
+cmd_users_add() {
+  local pos_username="" file=""
+  local email="" display_name="" given_name="" family_name=""
+  local phone="" locale="" title="" active=""
+  local dry_run=0
+
+  while (( $# )); do
+    case "$1" in
+      --file)         require_value "$@"; file="$REQ_VAL";         shift 2 ;;
+      --email)        require_value "$@"; email="$REQ_VAL";        shift 2 ;;
+      --display-name) require_value "$@"; display_name="$REQ_VAL"; shift 2 ;;
+      --given-name)   require_value "$@"; given_name="$REQ_VAL";   shift 2 ;;
+      --family-name)  require_value "$@"; family_name="$REQ_VAL";  shift 2 ;;
+      --phone)        require_value "$@"; phone="$REQ_VAL";        shift 2 ;;
+      --locale)       require_value "$@"; locale="$REQ_VAL";       shift 2 ;;
+      --title)        require_value "$@"; title="$REQ_VAL";        shift 2 ;;
+      --inactive)     active="false";                              shift ;;
+      --dry-run)      dry_run=1;                                   shift ;;
+      -h|--help)      cmd_users_add_help; return 0 ;;
+      -*)             err "unknown option: $1"; return 2 ;;
+      *)
+        [[ -n "$pos_username" ]] && { err "only one positional userName allowed"; return 2; }
+        pos_username="$1"; shift ;;
+    esac
+  done
+
+  if [[ -n "$file" && -n "$pos_username" ]]; then
+    err "--file and a positional userName are mutually exclusive"; return 2
+  fi
+  if [[ -n "$file" && -n "${email}${display_name}${given_name}${family_name}${phone}${locale}${title}${active}" ]]; then
+    err "--file cannot be combined with per-field flags"; return 2
+  fi
+  if [[ -z "$file" && -z "$pos_username" ]]; then
+    err "provide a userName or --file"; cmd_users_add_help >&2; return 2
+  fi
+
+  require_tools jq curl
+  load_env
+  : "${LDAP_REST_ADMIN_TOKEN:?required (set in .env or export it)}"
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+  local host="${LDAP_REST_HOST:-https://ldap-rest.${BASE_DOMAIN}}"
+
+  local entries
+  if [[ -n "$file" ]]; then
+    [[ -f "$file" ]] || die "file not found: $file"
+    entries=$(jq -c 'if type=="array" then . else [.] end' "$file")
+  else
+    entries=$(jq -nc \
+      --arg userName    "$pos_username" \
+      --arg email       "$email" \
+      --arg displayName "$display_name" \
+      --arg givenName   "$given_name" \
+      --arg familyName  "$family_name" \
+      --arg phone       "$phone" \
+      --arg locale      "$locale" \
+      --arg title       "$title" \
+      --arg active      "$active" \
+      '
+        { userName: $userName }
+        + (if $email       != "" then { email:        $email }       else {} end)
+        + (if $displayName != "" then { displayName:  $displayName } else {} end)
+        + (if $givenName   != "" then { givenName:    $givenName }   else {} end)
+        + (if $familyName  != "" then { familyName:   $familyName }  else {} end)
+        + (if $title       != "" then { title:        $title }       else {} end)
+        + (if $locale      != "" then { preferredLanguage: $locale } else {} end)
+        + (if $phone       != "" then { phoneNumbers: [{ value: $phone, primary: true }] } else {} end)
+        + (if $active      != "" then { active: ($active == "true") } else {} end)
+        | [.]
+      ')
+  fi
+
+  # One jq pass: normalise every entry into a SCIM body and emit
+  # "<userName><TAB><compact-body-json>" per line. Compact JSON has no
+  # literal tabs or newlines (both escaped per the JSON spec), so the
+  # tab is a safe field separator for the bash loop below.
+  local lines count
+  lines=$(jq -r '
+    .[] |
+    (if has("schemas") then .
+     else
+       ({
+         schemas: ["urn:ietf:params:scim:schemas:core:2.0:User"],
+         userName: .userName,
+         name: { givenName: (.givenName // ""), familyName: (.familyName // "") },
+         emails: (if .email then [{ value: .email, primary: true }] else [] end),
+         active: (.active // true)
+       }) as $base |
+       (. | del(.userName, .givenName, .familyName, .email, .active)) as $extra |
+       $base + $extra
+     end) as $body |
+    [($body.userName // ""), ($body | tostring)] | join("\t")
+  ' <<<"$entries")
+  count=$(jq 'length' <<<"$entries")
+
+  if (( count > 0 )); then
+    cut -f1 <<<"$lines" | validate_slugs
+  fi
+
+  printf '%s%s%s Provisioning %s%d user(s)%s\n' \
+    "$C_BOLD" "$G_ARROW" "$C_END" "$C_BOLD" "$count" "$C_END"
+  printf '  %starget:%s %s\n' "$C_DIM" "$C_END" "$host/scim/v2/Users"
+  (( dry_run == 1 )) && printf '  %s(dry-run: no requests will be sent)%s\n' "$C_DIM" "$C_END"
+  echo
+
+  local ok=0 fail=0 uname body tmp http
+  while IFS=$'\t' read -r uname body; do
+    [[ -z "$uname" ]] && continue
+    if (( dry_run == 1 )); then
+      printf '  %s%s%s %s\n' "$C_DIM" "$G_BULLET" "$C_END" "$uname"
+      jq . <<<"$body" | sed 's/^/      /'
+      continue
+    fi
+    tmp=$(mktemp)
+    http=$(curl -k -sS -o "$tmp" -w "%{http_code}" \
+      -X POST "$host/scim/v2/Users" \
+      -H "Authorization: Bearer $LDAP_REST_ADMIN_TOKEN" \
+      -H "Content-Type: application/scim+json" \
+      -d "$body" || echo "000")
+    if [[ "$http" =~ ^2 ]]; then
+      printf '  %s%s%s %-24s %s(%s)%s\n' \
+        "$C_GREEN" "$G_OK" "$C_END" "$uname" "$C_DIM" "$http" "$C_END"
+      ok=$((ok + 1))
+    else
+      printf '  %s%s%s %-24s %s%s (%s)%s\n' \
+        "$C_RED" "$G_FAIL" "$C_END" "$uname" "$C_RED" "FAIL" "$http" "$C_END"
+      sed 's/^/      /' "$tmp"; echo
+      fail=$((fail + 1))
+    fi
+    rm -f "$tmp"
+  done <<<"$lines"
+
+  echo
+  if (( dry_run == 0 )); then
+    printf '%sDone:%s %s%d created%s, %s%d failed%s\n' \
+      "$C_BOLD" "$C_END" \
+      "$C_GREEN" "$ok" "$C_END" \
+      "$C_RED" "$fail" "$C_END"
+    (( fail == 0 ))
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# users destroy
+# -----------------------------------------------------------------------------
+
+cmd_users_destroy_help() {
+  cat <<EOF
+${C_BOLD}${C_RED}twake users destroy${C_END} ${C_DIM}— tear down user(s) end-to-end.${C_END}
+
+${C_DIM}Usage:${C_END}
+  scripts/twake users destroy <userName> [<userName> ...] [--yes] [--dry-run]
+  scripts/twake users destroy --file users.json [--yes] [--dry-run]
+
+In file mode the file is the same JSON array used by \`users add\` — only
+the \`userName\` field of each entry is read.
+
+\`DELETE /scim/v2/Users/<userName>\` on ldap-rest tears down both the LDAP
+entry and the cozy instance. 204 = destroyed, 404 = already gone (both
+treated as success).
+
+Confirmation: prints the FQDNs about to be destroyed and prompts unless
+--yes is given. Refuses to run unattended without --yes.
+
+${C_DIM}Modifiers:${C_END}
+  ${C_CYAN}--yes, -y${C_END}      skip the confirmation prompt
+  ${C_CYAN}--dry-run${C_END}      list the targets without sending anything
+  ${C_CYAN}-h, --help${C_END}     this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}LDAP_REST_HOST${C_END}   alternate ldap-rest URL
+                   (default: https://ldap-rest.\${BASE_DOMAIN})
+
+${C_DIM}Exit code:${C_END} 0 if every user was destroyed (or already gone), 1 otherwise.
+EOF
+}
+
+cmd_users_destroy() {
+  local names=() file="" yes=0 dry_run=0
+
+  while (( $# )); do
+    case "$1" in
+      --file)     require_value "$@"; file="$REQ_VAL"; shift 2 ;;
+      --yes|-y)   yes=1; shift ;;
+      --dry-run)  dry_run=1; shift ;;
+      -h|--help)  cmd_users_destroy_help; return 0 ;;
+      -*)         err "unknown option: $1"; return 2 ;;
+      *)          names+=("$1"); shift ;;
+    esac
+  done
+
+  if [[ -n "$file" && ${#names[@]} -gt 0 ]]; then
+    err "--file and positional userNames are mutually exclusive"; return 2
+  fi
+  if [[ -z "$file" && ${#names[@]} -eq 0 ]]; then
+    err "provide at least one userName, or --file"; cmd_users_destroy_help >&2; return 2
+  fi
+
+  require_tools jq curl
+  load_env
+  : "${LDAP_REST_ADMIN_TOKEN:?required (set in .env or export it)}"
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+  local host="${LDAP_REST_HOST:-https://ldap-rest.${BASE_DOMAIN}}"
+
+  if [[ -n "$file" ]]; then
+    [[ -f "$file" ]] || die "file not found: $file"
+    while IFS= read -r u; do
+      [[ -n "$u" ]] && names+=("$u")
+    done < <(jq -r '(if type=="array" then . else [.] end) | .[].userName // empty' "$file")
+    (( ${#names[@]} > 0 )) || die "no userNames found in $file"
+  fi
+
+  printf '%s\n' "${names[@]}" | validate_slugs
+
+  local count=${#names[@]}
+  printf '%s%s About to destroy %d user(s)%s:\n' \
+    "$C_RED" "$G_ARROW" "$count" "$C_END"
+  local u
+  for u in "${names[@]}"; do
+    printf '    %s%s%s\n' "$C_DIM" "${u}.${BASE_DOMAIN}" "$C_END"
+  done
+  echo
+
+  if (( dry_run == 1 )); then
+    printf '%s(dry-run: nothing sent)%s\n' "$C_DIM" "$C_END"
+    return 0
+  fi
+
+  if (( yes == 0 )); then
+    [[ -t 0 ]] || die "refusing to run without --yes when stdin is not a tty"
+    local ans
+    read -r -p "Confirm? [y/N] " ans
+    [[ "${ans:-}" =~ ^[Yy] ]] || { echo "aborted"; return 1; }
+    echo
+  fi
+
+  local ok=0 fail=0 http
+  for u in "${names[@]}"; do
+    http=$(curl -k -sS -o /dev/null -w "%{http_code}" \
+      -X DELETE "$host/scim/v2/Users/$u" \
+      -H "Authorization: Bearer $LDAP_REST_ADMIN_TOKEN" || echo "000")
+    case "$http" in
+      2*)  printf '  %s%s%s %-24s %s(%s)%s\n' \
+             "$C_GREEN" "$G_OK" "$C_END" "$u" "$C_DIM" "$http" "$C_END"
+           ok=$((ok + 1)) ;;
+      404) printf '  %s%s%s %-24s %salready gone (%s)%s\n' \
+             "$C_GREY" "$G_BULLET" "$C_END" "$u" "$C_DIM" "$http" "$C_END"
+           ok=$((ok + 1)) ;;
+      *)   printf '  %s%s%s %-24s %sFAIL (%s)%s\n' \
+             "$C_RED" "$G_FAIL" "$C_END" "$u" "$C_RED" "$http" "$C_END"
+           fail=$((fail + 1)) ;;
+    esac
+  done
+
+  echo
+  printf '%sDone:%s %s%d destroyed%s, %s%d failed%s\n' \
+    "$C_BOLD" "$C_END" \
+    "$C_GREEN" "$ok" "$C_END" \
+    "$C_RED" "$fail" "$C_END"
+  (( fail == 0 ))
+}
+
+# -----------------------------------------------------------------------------
+# users list
+# -----------------------------------------------------------------------------
+
+cmd_users_list_help() {
+  cat <<EOF
+${C_BOLD}twake users list${C_END} ${C_DIM}— joined view of SCIM users × cozy instances.${C_END}
+
+Surfaces orphans on either side:
+  ${C_GREEN}ok${C_END}           Present on both sides.
+  ${C_YELLOW}scim_only${C_END}    LDAP entry exists, no cozy instance.
+               Provisioning failed silently; check \`auth.dlq\` and cozyt logs.
+  ${C_YELLOW}cozy_only${C_END}    Cozy instance exists, no LDAP entry.
+               Stale tenant from a past import that bypassed the destroy flow.
+
+Cozy instances are filtered to \${BASE_DOMAIN} so reports on a host that
+has previously served other contexts stay focused.
+
+${C_DIM}Usage:${C_END}
+  scripts/twake users list [--json] [--orphans]
+
+${C_DIM}Options:${C_END}
+  ${C_CYAN}--json${C_END}       emit the joined records as JSON instead of a table
+  ${C_CYAN}--orphans${C_END}    show only rows where status != ok
+  ${C_CYAN}-h, --help${C_END}   this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}LDAP_REST_HOST${C_END}   alternate ldap-rest URL
+                   (default: https://ldap-rest.\${BASE_DOMAIN})
+  ${C_CYAN}COZY_CONTAINER${C_END}   name of the cozy-stack container (default: cozyt)
+
+${C_DIM}Exit code:${C_END} always 0 (read-only). Pipe \`--orphans\` through \`wc -l\` if you
+want CI to fail on drift.
+EOF
+}
+
+cmd_users_list() {
+  local json=0 orphans_only=0
+  for arg in "$@"; do
+    case "$arg" in
+      --json)     json=1 ;;
+      --orphans)  orphans_only=1 ;;
+      -h|--help)  cmd_users_list_help; return 0 ;;
+      *)          err "unknown option: $arg"; return 2 ;;
+    esac
+  done
+
+  require_tools jq curl docker
+  load_env
+  : "${LDAP_REST_ADMIN_TOKEN:?required (set in .env or export it)}"
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+  local host="${LDAP_REST_HOST:-https://ldap-rest.${BASE_DOMAIN}}"
+  local cozy_container="${COZY_CONTAINER:-cozyt}"
+
+  local scim_raw cozy_raw
+  scim_raw=$(curl -k -sS -H "Authorization: Bearer $LDAP_REST_ADMIN_TOKEN" \
+    "$host/scim/v2/Users") || die "SCIM fetch failed (is $host reachable?)"
+
+  docker ps --format '{{.Names}}' | grep -qx "$cozy_container" \
+    || die "container $cozy_container not running on this host"
+  cozy_raw=$(docker exec -e COZY_ADMIN_PASSPHRASE="${COZY_ADMIN_PASSPHRASE:-admin}" \
+    "$cozy_container" cozy-stack instances ls --json 2>/dev/null) \
+    || die "cozy-stack instances ls failed"
+
+  # One jq pass produces both the joined rows and the summary counts as
+  # an envelope `{ rows: [...], counts: {ok, scim_only, cozy_only, total} }`,
+  # with the orphans filter folded in via $orphans_only.
+  local payload
+  payload=$(jq -n \
+    --argjson scim         "$scim_raw" \
+    --arg     base         "$BASE_DOMAIN" \
+    --arg     cozy_ndjson  "$cozy_raw" \
+    --argjson orphans_only "$orphans_only" \
+    '
+      def trim_suffix($s; $suf):
+        if $s | endswith($suf) then $s[:-($suf | length)] else $s end;
+
+      ([$scim.Resources[]? | {
+        key: .userName,
+        value: {
+          id, userName,
+          email: (
+            ((.emails // []) | map(select(.primary == true)) | .[0].value)
+            // ((.emails // [])[0].value // null)
+          ),
+          displayName: (.displayName // null),
+          active: (.active // null)
+        }
+      }] | from_entries) as $sm |
+
+      ([$cozy_ndjson | split("\n") | .[] | select(length > 0) | fromjson
+        | select(.domain | endswith("." + $base))
+        | { key: trim_suffix(.domain; "." + $base),
+            value: { domain: .domain, oidc_id, context, prefix, onboarding_finished } }
+      ] | from_entries) as $cm |
+
+      (($sm | keys) + ($cm | keys) | unique) as $names |
+
+      ($names | map(. as $k | {
+        userName: $k,
+        domain: ($k + "." + $base),
+        scim: ($sm[$k] // null),
+        cozy: ($cm[$k] // null),
+        status: (
+          if ($sm[$k] != null) and ($cm[$k] != null) then "ok"
+          elif ($sm[$k] != null) then "scim_only"
+          else "cozy_only"
+          end
+        )
+      })) as $all |
+      (if $orphans_only == 1 then [$all[] | select(.status != "ok")] else $all end) as $rows |
+
+      {
+        rows: $rows,
+        counts: ($rows | reduce .[] as $r ({total:0, ok:0, scim_only:0, cozy_only:0};
+          .total += 1 | .[$r.status] += 1
+        ))
+      }
+    ')
+
+  local joined
+  joined=$(jq '.rows' <<<"$payload")
+
+  if (( json == 1 )); then
+    echo "$joined"
+    return 0
+  fi
+
+  local total ok scim_only cozy_only
+  read -r total ok scim_only cozy_only < <(jq -r '.counts | [.total, .ok, .scim_only, .cozy_only] | @tsv' <<<"$payload")
+
+  if (( total == 0 )); then
+    echo "No users found."
+    return 0
+  fi
+
+  {
+    printf 'STATUS\tUSERNAME\tEMAIL\tCONTEXT\tOIDC_ID\n'
+    jq -r '.[] | [
+      .status, .userName, (.scim.email // "-"),
+      (.cozy.context // "-"), (.cozy.oidc_id // "-")
+    ] | @tsv' <<<"$joined"
+  } | column -t -s $'\t'
+
+  echo
+  printf '%sSummary:%s %s%d total%s, %s%d ok%s, %s%d scim_only%s, %s%d cozy_only%s %s(base: %s)%s\n' \
+    "$C_BOLD" "$C_END" \
+    "$C_BOLD" "$total" "$C_END" \
+    "$C_GREEN" "$ok" "$C_END" \
+    "$C_YELLOW" "$scim_only" "$C_END" \
+    "$C_YELLOW" "$cozy_only" "$C_END" \
+    "$C_DIM" "$BASE_DOMAIN" "$C_END"
+}
+
+# =============================================================================
+# mq — namespace
+# =============================================================================
+
+cmd_mq_help() {
+  cat <<EOF
+${C_BOLD}twake mq${C_END} ${C_DIM}— RabbitMQ utilities.${C_END}
+
+${C_DIM}Subcommands:${C_END}
+  ${C_CYAN}tap${C_END}        Watch live messages flowing through an exchange
+
+${C_DIM}Help for a subcommand:${C_END}
+  scripts/twake mq <subcommand> --help
+EOF
+}
+
+cmd_mq() {
+  local sub="${1:-}"
+  shift || true
+  case "$sub" in
+    tap)          cmd_mq_tap "$@" ;;
+    -h|--help|"") cmd_mq_help ;;
+    *)            err "unknown 'mq' subcommand: $sub"; cmd_mq_help >&2; return 2 ;;
+  esac
+}
+
+# -----------------------------------------------------------------------------
+# mq tap
+# -----------------------------------------------------------------------------
+
+cmd_mq_tap_help() {
+  cat <<EOF
+${C_BOLD}twake mq tap${C_END} ${C_DIM}— tap messages flowing through a RabbitMQ exchange.${C_END}
+
+Declares a temporary auto-delete queue, binds it to <exchange> with
+<routing_key>, polls the management API roughly once a second, and
+pretty-prints each message that arrives. The temp queue is destroyed on
+exit (trap) and self-destructs after 10 minutes of inactivity even if
+the trap is bypassed.
+
+Non-destructive: we bind a NEW queue, never consume from existing ones.
+Real consumers (cozy-stack, b2b consumers) are unaffected.
+
+${C_DIM}Usage:${C_END}
+  scripts/twake mq tap <exchange> [routing_key] [--interval N] [--batch N]
+  scripts/twake mq tap --auth      [routing_key] [--interval N] [--batch N]
+  scripts/twake mq tap --b2b       [routing_key] [--interval N] [--batch N]
+
+${C_DIM}Shortcuts:${C_END}
+  ${C_CYAN}--auth${C_END}       alias for the \`auth\` exchange
+  ${C_CYAN}--b2b${C_END}        alias for the \`b2b\` exchange
+
+${C_DIM}Defaults:${C_END}
+  routing_key  ${C_CYAN}#${C_END}  (every message)
+  ${C_CYAN}--interval${C_END}   1  (poll once per second)
+  ${C_CYAN}--batch${C_END}     20  (max messages per poll)
+
+${C_DIM}Caveats:${C_END}
+  - Polled, not pushed: ~1s of latency between publish and display.
+  - No history replay: only messages arriving after the script starts.
+  - For stuck/old messages, use \`rabbitmqadmin get\` directly on a real DLQ.
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}RABBITMQ_CONTAINER${C_END}   name of the broker container (default: rabbitmq)
+EOF
+}
+
+cmd_mq_tap() {
+  local exchange="" routing_key="#" interval=1 batch=20
+
+  while (( $# )); do
+    case "$1" in
+      --auth)     exchange="auth"; shift ;;
+      --b2b)      exchange="b2b"; shift ;;
+      --interval) require_value "$@"; interval="$REQ_VAL"; shift 2 ;;
+      --batch)    require_value "$@"; batch="$REQ_VAL";    shift 2 ;;
+      -h|--help)  cmd_mq_tap_help; return 0 ;;
+      -*)         err "unknown option: $1"; return 2 ;;
+      *)
+        if [[ -z "$exchange" ]]; then exchange="$1"
+        elif [[ "$routing_key" == "#" ]]; then routing_key="$1"
+        else err "unexpected positional argument: $1"; return 2
+        fi
+        shift ;;
+    esac
+  done
+
+  [[ -n "$exchange" ]] || { err "missing exchange name"; cmd_mq_tap_help >&2; return 2; }
+
+  require_tools jq docker
+  load_env
+  : "${RABBITMQ_USER:?required (set in .env or export it)}"
+  : "${RABBITMQ_PASSWORD:?required (set in .env or export it)}"
+  local rabbitmq_container="${RABBITMQ_CONTAINER:-rabbitmq}"
+
+  docker ps --format '{{.Names}}' | grep -qx "$rabbitmq_container" \
+    || die "container $rabbitmq_container not running"
+
+  local temp_q="tap-$(date +%s)-$$"
+
+  local rmq
+  rmq() {
+    docker exec "$rabbitmq_container" rabbitmqadmin \
+      --username="$RABBITMQ_USER" --password="$RABBITMQ_PASSWORD" "$@"
+  }
+
+  cleanup() {
+    trap - EXIT INT TERM
+    rmq delete queue name="$temp_q" >/dev/null 2>&1 || true
+    echo
+    printf '%stwake mq tap: cleaned up queue %s%s\n' "$C_DIM" "$temp_q" "$C_END"
+  }
+  trap cleanup EXIT INT TERM
+
+  rmq declare queue name="$temp_q" durable=false auto_delete=true \
+    arguments='{"x-expires":600000}' >/dev/null \
+    || die "could not declare queue"
+  rmq declare binding source="$exchange" destination="$temp_q" \
+    routing_key="$routing_key" >/dev/null \
+    || die "could not bind to exchange '$exchange'"
+
+  printf '%s%s%s tapping %s%s%s (routing_key=%s%s%s)\n' \
+    "$C_BOLD" "$G_ARROW" "$C_END" \
+    "$C_BOLD" "$exchange" "$C_END" \
+    "$C_CYAN" "$routing_key" "$C_END"
+  printf '  %squeue: %s (auto-cleanup on Ctrl-C)%s\n' "$C_DIM" "$temp_q" "$C_END"
+  echo
+
+  # Single jq invocation per message extracts every field shell-escaped, so
+  # the print loop avoids the per-field jq forks that pile up under load.
+  print_message() {
+    local msg="$1" rk enc hdrs payload body ts
+    eval "set -- $(jq -r '
+      [ .routing_key // "?",
+        .payload_encoding // "string",
+        (.properties.headers // {} | tojson),
+        .payload // ""
+      ] | @sh' <<<"$msg")"
+    rk="$1"; enc="$2"; hdrs="$3"; payload="$4"
+
+    if [[ "$enc" == "base64" ]]; then
+      body=$(printf '%s' "$payload" | base64 -d 2>/dev/null || printf '%s' "$payload")
+    else
+      body="$payload"
+    fi
+    ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+    printf '%s[%s]%s %s%s%s/%s%s%s\n' \
+      "$C_DIM" "$ts" "$C_END" \
+      "$C_BOLD" "$exchange" "$C_END" \
+      "$C_CYAN" "$rk" "$C_END"
+    [[ "$hdrs" != "{}" && "$hdrs" != "null" ]] \
+      && printf '  %sheaders:%s %s\n' "$C_DIM" "$C_END" "$hdrs"
+    if jq -e . <<<"$body" >/dev/null 2>&1; then
+      printf '  %sbody:%s\n' "$C_DIM" "$C_END"
+      jq . <<<"$body" | sed 's/^/    /'
+    else
+      printf '  %sbody:%s %s\n' "$C_DIM" "$C_END" "$body"
+    fi
+    echo
+  }
+
+  while :; do
+    local out n
+    out=$(rmq --format=raw_json get queue="$temp_q" count="$batch" \
+          ackmode=ack_requeue_false 2>/dev/null || echo "[]")
+    n=$(jq 'length' <<<"$out" 2>/dev/null || echo 0)
+    if (( n > 0 )); then
+      while IFS= read -r msg; do
+        print_message "$msg"
+      done < <(jq -c '.[]' <<<"$out")
+    fi
+    sleep "$interval"
+  done
+}
+
+# =============================================================================
+# flags — namespace
+# =============================================================================
+
+cmd_flags_help() {
+  cat <<EOF
+${C_BOLD}twake flags${C_END} ${C_DIM}— manage cozy feature flags on user instances.${C_END}
+
+${C_DIM}Subcommands:${C_END}
+  ${C_CYAN}show${C_END}       Display the effective (merged) flags on an instance
+  ${C_CYAN}set${C_END}        Upsert per-instance flag overrides
+  ${C_RED}unset${C_END}      Remove per-instance flag overrides
+
+Each subcommand takes either a positional <userName> (the bare slug, the
+instance domain is composed as <userName>.\${BASE_DOMAIN}) or ${C_CYAN}--all${C_END} to
+iterate every instance in this BASE_DOMAIN.
+
+${C_DIM}Help for a subcommand:${C_END}
+  scripts/twake flags <subcommand> --help
+EOF
+}
+
+cmd_flags() {
+  local sub="${1:-}"
+  shift || true
+  case "$sub" in
+    show)         cmd_flags_show "$@" ;;
+    set)          cmd_flags_set "$@" ;;
+    unset)        cmd_flags_unset "$@" ;;
+    -h|--help|"") cmd_flags_help ;;
+    *)            err "unknown 'flags' subcommand: $sub"; cmd_flags_help >&2; return 2 ;;
+  esac
+}
+
+# Resolve a `<userName>|--all` target into FLAGS_DOMAINS (a global, set as
+# a byproduct of calling this — runs in the parent shell so `die` can abort
+# on failure; using process substitution here would let the subshell eat
+# die() and surface a misleading "no instances found").
+flags_resolve_domains() {
+  local user="$1" all="$2"
+  FLAGS_DOMAINS=()
+  if (( all == 1 )); then
+    local cozy_container="${COZY_CONTAINER:-cozyt}"
+    docker ps --format '{{.Names}}' | grep -qx "$cozy_container" \
+      || die "container $cozy_container not running on this host"
+    local domains_text
+    domains_text=$(docker exec -e COZY_ADMIN_PASSPHRASE="${COZY_ADMIN_PASSPHRASE:-admin}" \
+      "$cozy_container" cozy-stack instances ls --json 2>/dev/null \
+      | jq -r --arg suf ".$BASE_DOMAIN" 'select(.domain | endswith($suf)) | .domain')
+    [[ -n "$domains_text" ]] || die "no instances found under .$BASE_DOMAIN"
+    mapfile -t FLAGS_DOMAINS <<<"$domains_text"
+  else
+    printf '%s\n' "$user" | validate_slugs
+    FLAGS_DOMAINS=("${user}.${BASE_DOMAIN}")
+  fi
+}
+
+# Reject the user-vs-all argument combinations that don't make sense.
+# Caller passes its help function name as $3 so we can re-emit it on error.
+flags_validate_target() {
+  local user="$1" all="$2" help_fn="$3"
+  if [[ -n "$user" && "$all" -eq 1 ]]; then
+    err "<userName> and --all are mutually exclusive"; return 2
+  fi
+  if [[ -z "$user" && "$all" -eq 0 ]]; then
+    err "specify a userName or --all"; "$help_fn" >&2; return 2
+  fi
+}
+
+# Push a JSON payload to every domain via cozy-stack feature flags. Sets
+# global apply_ok / apply_fail counters and returns 0 if every call worked.
+flags_apply_to_domains() {
+  local payload="$1"; shift
+  local cozy_container="${COZY_CONTAINER:-cozyt}" d
+  apply_ok=0; apply_fail=0
+  for d in "$@"; do
+    if docker exec -e COZY_ADMIN_PASSPHRASE="${COZY_ADMIN_PASSPHRASE:-admin}" \
+         "$cozy_container" cozy-stack feature flags --domain "$d" "$payload" \
+         >/dev/null 2>&1; then
+      printf '  %s%s%s %s\n' "$C_GREEN" "$G_OK"   "$C_END" "$d"; apply_ok=$((apply_ok+1))
+    else
+      printf '  %s%s%s %s\n' "$C_RED"   "$G_FAIL" "$C_END" "$d"; apply_fail=$((apply_fail+1))
+    fi
+  done
+  (( apply_fail == 0 ))
+}
+
+# -----------------------------------------------------------------------------
+# flags show
+# -----------------------------------------------------------------------------
+
+cmd_flags_show_help() {
+  cat <<EOF
+${C_BOLD}twake flags show${C_END} ${C_DIM}— display effective feature flags on an instance.${C_END}
+
+The output merges instance overrides on top of context flags on top of
+defaults — i.e. what the cozy frontend actually reads. Use \`flags set\`
+to add an override and \`flags unset\` to remove one.
+
+${C_DIM}Usage:${C_END}
+  scripts/twake flags show <userName>
+  scripts/twake flags show --all
+
+${C_DIM}Options:${C_END}
+  ${C_CYAN}--all${C_END}        iterate every instance under \${BASE_DOMAIN}
+  ${C_CYAN}-h, --help${C_END}   this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}COZY_CONTAINER${C_END}   name of the cozy-stack container (default: cozyt)
+EOF
+}
+
+cmd_flags_show() {
+  local flags_target_user="" flags_target_all=0
+  for arg in "$@"; do
+    case "$arg" in
+      --all)      flags_target_all=1 ;;
+      -h|--help)  cmd_flags_show_help; return 0 ;;
+      -*)         err "unknown option: $arg"; return 2 ;;
+      *)          [[ -n "$flags_target_user" ]] && { err "only one userName allowed"; return 2; }
+                  flags_target_user="$arg" ;;
+    esac
+  done
+
+  flags_validate_target "$flags_target_user" "$flags_target_all" cmd_flags_show_help || return $?
+
+  require_tools jq docker
+  load_env
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+  local cozy_container="${COZY_CONTAINER:-cozyt}"
+
+  local FLAGS_DOMAINS=()
+  flags_resolve_domains "$flags_target_user" "$flags_target_all"
+
+  local d first=1
+  for d in "${FLAGS_DOMAINS[@]}"; do
+    if (( ${#FLAGS_DOMAINS[@]} > 1 )); then
+      (( first == 1 )) || echo
+      printf '%s%s %s%s\n' "$C_BOLD" "$G_ARROW" "$d" "$C_END"
+      first=0
+    fi
+    docker exec -e COZY_ADMIN_PASSPHRASE="${COZY_ADMIN_PASSPHRASE:-admin}" \
+      "$cozy_container" cozy-stack feature show --domain "$d"
+  done
+}
+
+# -----------------------------------------------------------------------------
+# flags set
+# -----------------------------------------------------------------------------
+
+cmd_flags_set_help() {
+  cat <<EOF
+${C_BOLD}twake flags set${C_END} ${C_DIM}— upsert per-instance feature flag overrides.${C_END}
+
+${C_DIM}Usage:${C_END}
+  scripts/twake flags set <userName> KEY=VALUE [KEY=VALUE ...]
+  scripts/twake flags set --all      KEY=VALUE [KEY=VALUE ...]
+
+${C_DIM}Value parsing:${C_END}
+  Each VALUE is parsed as JSON when possible, falling back to a JSON
+  string for plain words. So:
+    cozy.hide-sharing-cozy-to-cozy=true        → boolean true
+    drive.shared-drive.enabled=false           → boolean false
+    apps.hidden='["dataproxy","mespapiers"]'   → array
+    home.apps.only-one-list=hello              → string "hello" (auto-quoted)
+    chat.embedded-app-url='"https://x.org"'    → string "https://x.org"
+
+${C_DIM}Options:${C_END}
+  ${C_CYAN}--all${C_END}        apply to every instance under \${BASE_DOMAIN}
+  ${C_CYAN}-h, --help${C_END}   this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}COZY_CONTAINER${C_END}   name of the cozy-stack container (default: cozyt)
+EOF
+}
+
+cmd_flags_set() {
+  local flags_target_user="" flags_target_all=0
+  local pairs=()
+  for arg in "$@"; do
+    case "$arg" in
+      --all)      flags_target_all=1 ;;
+      -h|--help)  cmd_flags_set_help; return 0 ;;
+      --*)        err "unknown option: $arg"; return 2 ;;
+      *=*)        pairs+=("$arg") ;;
+      *)          [[ -n "$flags_target_user" ]] && { err "only one userName allowed (then KEY=VAL pairs)"; return 2; }
+                  flags_target_user="$arg" ;;
+    esac
+  done
+
+  flags_validate_target "$flags_target_user" "$flags_target_all" cmd_flags_set_help || return $?
+  (( ${#pairs[@]} > 0 )) || { err "at least one KEY=VALUE pair required"; cmd_flags_set_help >&2; return 2; }
+
+  require_tools jq docker
+  load_env
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+
+  # Build the JSON payload once. Each VALUE is tried as JSON; failed
+  # parses fall back to a JSON string (lenient mode for plain words).
+  # The `try [...] catch [...]` array-wrap is required because a successful
+  # parse can yield JSON null, which `// $fallback` would defeat.
+  local payload
+  payload=$(jq -nc --args '
+    [ $ARGS.positional[]
+      | capture("^(?<k>[^=]+)=(?<v>.*)$")
+      | .v as $v
+      | { (.k): ((try [$v | fromjson] catch [$v])[0]) }
+    ] | add // {}
+  ' -- "${pairs[@]}")
+
+  local FLAGS_DOMAINS=()
+  flags_resolve_domains "$flags_target_user" "$flags_target_all"
+
+  printf '%s%s%s setting %s%d flag(s)%s on %s%d instance(s)%s\n' \
+    "$C_BOLD" "$G_ARROW" "$C_END" \
+    "$C_BOLD" "${#pairs[@]}" "$C_END" \
+    "$C_BOLD" "${#FLAGS_DOMAINS[@]}" "$C_END"
+  printf '  payload: %s%s%s\n\n' "$C_DIM" "$payload" "$C_END"
+
+  local apply_ok=0 apply_fail=0
+  flags_apply_to_domains "$payload" "${FLAGS_DOMAINS[@]}" || true
+
+  echo
+  printf '%sDone:%s %s%d set%s, %s%d failed%s\n' \
+    "$C_BOLD" "$C_END" \
+    "$C_GREEN" "$apply_ok" "$C_END" \
+    "$C_RED" "$apply_fail" "$C_END"
+  (( apply_fail == 0 ))
+}
+
+# -----------------------------------------------------------------------------
+# flags unset
+# -----------------------------------------------------------------------------
+
+cmd_flags_unset_help() {
+  cat <<EOF
+${C_BOLD}${C_RED}twake flags unset${C_END} ${C_DIM}— remove per-instance feature flag overrides.${C_END}
+
+The override is removed (cozy-stack falls back to the context / default
+value). To list current overrides on an instance, use \`flags show\`.
+
+${C_DIM}Usage:${C_END}
+  scripts/twake flags unset <userName> KEY [KEY ...]
+  scripts/twake flags unset --all      KEY [KEY ...]
+
+${C_DIM}Options:${C_END}
+  ${C_CYAN}--all${C_END}        apply to every instance under \${BASE_DOMAIN}
+  ${C_CYAN}-h, --help${C_END}   this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}COZY_CONTAINER${C_END}   name of the cozy-stack container (default: cozyt)
+EOF
+}
+
+cmd_flags_unset() {
+  local flags_target_user="" flags_target_all=0
+  local keys=()
+  for arg in "$@"; do
+    case "$arg" in
+      --all)      flags_target_all=1 ;;
+      -h|--help)  cmd_flags_unset_help; return 0 ;;
+      --*)        err "unknown option: $arg"; return 2 ;;
+      *=*)        err "expected KEY (no '='), got: $arg"; return 2 ;;
+      *)
+        if [[ -z "$flags_target_user" && $flags_target_all -eq 0 ]]; then
+          flags_target_user="$arg"
+        else
+          keys+=("$arg")
+        fi
+        ;;
+    esac
+  done
+
+  flags_validate_target "$flags_target_user" "$flags_target_all" cmd_flags_unset_help || return $?
+  (( ${#keys[@]} > 0 )) || { err "at least one KEY required"; cmd_flags_unset_help >&2; return 2; }
+
+  require_tools jq docker
+  load_env
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+
+  # cozy-stack treats null as "remove this key".
+  local payload
+  payload=$(jq -nc --args '
+    [ $ARGS.positional[] | { (.): null } ] | add // {}
+  ' -- "${keys[@]}")
+
+  local FLAGS_DOMAINS=()
+  flags_resolve_domains "$flags_target_user" "$flags_target_all"
+
+  printf '%s%s removing %d flag(s) on %d instance(s)%s\n' \
+    "$C_RED" "$G_ARROW" "${#keys[@]}" "${#FLAGS_DOMAINS[@]}" "$C_END"
+  printf '  keys: %s%s%s\n\n' "$C_DIM" "${keys[*]}" "$C_END"
+
+  local apply_ok=0 apply_fail=0
+  flags_apply_to_domains "$payload" "${FLAGS_DOMAINS[@]}" || true
+
+  echo
+  printf '%sDone:%s %s%d removed%s, %s%d failed%s\n' \
+    "$C_BOLD" "$C_END" \
+    "$C_GREEN" "$apply_ok" "$C_END" \
+    "$C_RED" "$apply_fail" "$C_END"
+  (( apply_fail == 0 ))
+}
+
+# =============================================================================
+# main dispatch
+# =============================================================================
+
+top_usage() {
+  cat <<EOF
+${C_BOLD}twake${C_END} ${C_DIM}— operator CLI for the Twake Workplace POC.${C_END}
+
+${C_DIM}Usage:${C_END}
+  scripts/twake <command> [subcommand] [args...]
+
+${C_DIM}Commands:${C_END}
+  ${C_CYAN}preflight${C_END}            Pre-boot host sanity check
+  ${C_CYAN}users add${C_END}            Provision a SCIM user (creates the cozy instance)
+  ${C_RED}users destroy${C_END}        Tear down user(s): SCIM DELETE + cozy destroy
+  ${C_CYAN}users list${C_END}           Joined view of SCIM users × cozy instances
+  ${C_CYAN}flags show${C_END}           Display effective feature flags on an instance
+  ${C_CYAN}flags set${C_END}            Upsert per-instance flag overrides
+  ${C_RED}flags unset${C_END}          Remove per-instance flag overrides
+  ${C_CYAN}mq tap${C_END}               Tap a RabbitMQ exchange (live message stream)
+
+${C_DIM}Help:${C_END}
+  scripts/twake --help                  this overview
+  scripts/twake <command> --help        help for one command
+  scripts/twake <command> <sub> --help  help for a subcommand
+
+All commands read .env from <repo>/.env (override with ENV_FILE=...).
+EOF
+}
+
+case "${1:-}" in
+  -h|--help|"") top_usage ;;
+  preflight)    shift; cmd_preflight "$@" ;;
+  users)        shift; cmd_users "$@" ;;
+  flags)        shift; cmd_flags "$@" ;;
+  mq)           shift; cmd_mq "$@" ;;
+  *)            err "unknown command: $1"; top_usage >&2; exit 2 ;;
+esac
