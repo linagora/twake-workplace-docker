@@ -1,3 +1,4 @@
-CREATE USER visio WITH PASSWORD 'visio';
-CREATE DATABASE meet OWNER visio;
-GRANT ALL PRIVILEGES ON DATABASE meet TO visio;
+-- meet db bootstrap for meet_app, disabled while meet is excluded
+-- CREATE USER visio WITH PASSWORD 'visio';
+-- CREATE DATABASE meet OWNER visio;
+-- GRANT ALL PRIVILEGES ON DATABASE meet TO visio;

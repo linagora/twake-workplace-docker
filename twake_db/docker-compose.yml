@@ -148,31 +148,31 @@ services:
       - "traefik.enable=false"  
     entrypoint: ["/bin/bash", "/etc/rabbitmq/rabbitmq-init.sh"]  
 
-  cassandra:
-    image: bitnamilegacy/cassandra:4.1.7
-    container_name: cassandra
-    hostname: cassandra
-    restart: always
-    networks:
-      - twake-network
-    labels:
-      - "traefik.enable=false" 
-    environment:
-      CASSANDRA_USER: cassandra
-      CASSANDRA_PASSWORD: jK9mL2nP5qR8tW3vX
-      CASSANDRA_PASSWORD_SEEDER: yes
-      JAVA_TOOL_OPTIONS: -Dcassandra.skip_wait_for_gossip_to_settle=0
-      HEAP_NEWSIZE: 256M
-      MAX_HEAP_SIZE: 1024M
- 
-    volumes:
-      - cassandra_data:/bitnami/cassandra
-    healthcheck:
-      test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
-      interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 120s
+  # cassandra dependency of tmail_app, disabled while tmail is excluded
+  # cassandra:
+  #   image: bitnamilegacy/cassandra:4.1.7
+  #   container_name: cassandra
+  #   hostname: cassandra
+  #   restart: always
+  #   networks:
+  #     - twake-network
+  #   labels:
+  #     - "traefik.enable=false"
+  #   environment:
+  #     CASSANDRA_USER: cassandra
+  #     CASSANDRA_PASSWORD: jK9mL2nP5qR8tW3vX
+  #     CASSANDRA_PASSWORD_SEEDER: yes
+  #     JAVA_TOOL_OPTIONS: -Dcassandra.skip_wait_for_gossip_to_settle=0
+  #     HEAP_NEWSIZE: 256M
+  #     MAX_HEAP_SIZE: 1024M
+  #   volumes:
+  #     - cassandra_data:/bitnami/cassandra
+  #   healthcheck:
+  #     test: ["CMD", "cqlsh", "-u", "cassandra", "-p", "jK9mL2nP5qR8tW3vX", "-e", "describe keyspaces"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 10
+  #     start_period: 120s
 
 
   minio:
@@ -207,8 +207,8 @@ volumes:
     driver: local
   rabbitmq_data:
     driver: local
-  cassandra_data:
-    driver: local
+  # cassandra_data:
+  #   driver: local
   minio_data:
     driver: local  
   valkey_data:

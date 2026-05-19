@@ -1,3 +1,4 @@
-CREATE USER synapse PASSWORD 'synapse!1';
-CREATE DATABASE synapse TEMPLATE='template0' LOCALE='C' ENCODING='UTF8' OWNER='synapse';
-GRANT ALL PRIVILEGES ON DATABASE synapse TO synapse;
+-- synapse db bootstrap for chat_app, disabled while chat is excluded
+-- CREATE USER synapse PASSWORD 'synapse!1';
+-- CREATE DATABASE synapse TEMPLATE='template0' LOCALE='C' ENCODING='UTF8' OWNER='synapse';
+-- GRANT ALL PRIVILEGES ON DATABASE synapse TO synapse;

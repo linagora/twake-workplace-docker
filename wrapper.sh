@@ -12,15 +12,16 @@ REPOS=(
     ["twake_auth"]="${BASE_DIR}/twake_auth"
     ["cozy_stack"]="${BASE_DIR}/cozy_stack"
     ["onlyoffice_app"]="${BASE_DIR}/onlyoffice_app"
-    ["meet_app"]="${BASE_DIR}/meet_app"
+    # meet_app, chat_app, tmail_app disabled while their backends are excluded
+    # ["meet_app"]="${BASE_DIR}/meet_app"
     ["calendar_app"]="${BASE_DIR}/calendar_app"
-    ["chat_app"]="${BASE_DIR}/chat_app"
-    ["tmail_app"]="${BASE_DIR}/tmail_app"
+    # ["chat_app"]="${BASE_DIR}/chat_app"
+    # ["tmail_app"]="${BASE_DIR}/tmail_app"
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
-STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "calendar_app")
+STOP_ORDER=("calendar_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 # Dependencies: containers that must be healthy before starting a repo.
 # Apps gated on lemonldap-ng:
@@ -33,10 +34,10 @@ STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "c
 #     precaution so the first login is never racing the IdP startup.
 declare -A REPO_DEPS
 REPO_DEPS=(
-    ["chat_app"]="lemonldap-ng"
+    # ["chat_app"]="lemonldap-ng"
     ["cozy_stack"]="lemonldap-ng"
-    ["meet_app"]="lemonldap-ng"
-    ["tmail_app"]="lemonldap-ng"
+    # ["meet_app"]="lemonldap-ng"
+    # ["tmail_app"]="lemonldap-ng"
     ["calendar_app"]="lemonldap-ng"
 )
 
