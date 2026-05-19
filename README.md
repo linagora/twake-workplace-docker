@@ -122,7 +122,7 @@ Add the following entries to your `/etc/hosts` file:
 
 ```
 127.0.0.1  linshare.twake.local admin-linshare.twake.local upload-request-linshare.twake.local meet.twake.local onlyoffice.twake.local calendar.twake.local contacts.twake.local account.twake.local excal.twake.local mail.twake.local jmap.twake.local
-127.0.0.1  oauthcallback.twake.local manager.twake.local auth.twake.local tcalendar-side-service.twake.local sabre-dav.twake.local
+127.0.0.1  oauthcallback.twake.local manager.twake.local auth.twake.local ldap-rest.twake.local tcalendar-side-service.twake.local sabre-dav.twake.local
 127.0.0.1  user1.twake.local user1-home.twake.local user1-linshare.twake.local user1-drive.twake.local user1-settings.twake.local user1-mail.twake.local user1-chat.twake.local user1-notes.twake.local user1-dataproxy.twake.local
 127.0.0.1  user2.twake.local user2-home.twake.local user2-linshare.twake.local user2-drive.twake.local user2-settings.twake.local user2-mail.twake.local user2-chat.twake.local user2-notes.twake.local user2-dataproxy.twake.local
 127.0.0.1  user3.twake.local user3-home.twake.local user3-linshare.twake.local user3-drive.twake.local user3-settings.twake.local user3-mail.twake.local user3-chat.twake.local user3-notes.twake.local user3-dataproxy.twake.local
