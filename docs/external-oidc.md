@@ -11,7 +11,7 @@ The integration relies on the standard OIDC bits, nothing exotic:
 - ID tokens signed with `RS256` (read from the `jwks_uri` in the discovery doc).
 - `client_secret_post` for token endpoint authentication.
 - Scopes `openid`, `profile`, `email`.
-- A `sub` claim that you can use as the username, either directly (when the OP's `sub` is a stable handle like `alice`) or by remapping the LemonLDAP `uid` field to a different claim (`preferred_username`, `email`, …) when `sub` is opaque.
+- A claim usable as the username: either `sub` directly (when it's a stable handle like `alice`) or another claim (`preferred_username`, `email`, …) you point LemonLDAP at when `sub` is opaque (see [When the OP's `sub` is a UUID](#when-the-ops-sub-is-a-uuid)).
 
 Any provider that ticks those boxes works: tested with the in-house LemonLDAP-NG OP (the `sign-up` portal at Linagora) and with Keycloak. Other compliant providers (Authentik, Dex, …) should work; you may need to adjust the claim mapping if their `sub` shape differs.
 
@@ -53,7 +53,45 @@ The wrapper picks the OIDC template, fetches the discovery doc, and splices it i
 
 ## Provision users
 
-Each user that should be able to log in has to exist in the local LDAP with `uid` equal to the OP's `sub` for that user. Use the SCIM import (see [scim-import.md](scim-import.md)). If the OP's `sub` is opaque, either provision with that opaque value as `userName` or change the OIDC `uid` mapping in `twake_auth/config/lmConf-1.json.oidc.template` to a more friendly claim.
+Each user that should be able to log in has to exist in the local LDAP with `uid` equal to the OP's `sub` for that user. Use the SCIM import (see [scim-import.md](scim-import.md)). If the OP's `sub` is opaque (a UUID), don't provision the UUID into LDAP, match on a friendly claim instead (see below).
+
+## When the OP's `sub` is a UUID
+
+Some providers (Keycloak, Authentik, Entra ID, …) put an opaque UUID in `sub`. LemonLDAP uses `sub` as the login identifier by default, so it would search LDAP for a UUID `uid` and every login would fail with `Wrong credentials`. Point LemonLDAP at a human-readable claim from the ID token (`preferred_username`, `email`, …) instead, and provision LDAP with that value.
+
+Set `oidcOPMetaDataOptionsUserAttribute` in `twake_auth/config/lmConf-1.json.oidc.template`, under the `${OIDC_OP_NAME}` key (it's empty by default, which means `sub`):
+
+```json
+"oidcOPMetaDataOptionsUserAttribute" : "preferred_username",
+```
+
+LemonLDAP reads this claim straight from the decoded ID token payload, so the claim has to be present in the ID token. The resulting login identifier (`$user`) is matched against LDAP through the `LDAPFilter` (`(uid=$user)` or `(mail=$user)`). Provision each user with `uid` equal to that claim, not the `sub` UUID. The same value also has to land in cozy's `oidc_id` for that instance, otherwise the redirect loop in [Common failures](#common-failures) appears.
+
+## Disabling TLS verification to the OP
+
+If the external SSO provider serves HTTPS with a certificate the server doesn't trust (private CA, self-signed staging endpoint), LemonLDAP's calls to the discovery, JWKS, token, and userinfo endpoints fail at the TLS handshake. The fix is to install the OP's CA on the LemonLDAP container; only when that isn't possible, turn certificate checking off.
+
+Set `lwpSslOpts` (empty by default, near the bottom of `twake_auth/config/lmConf-1.json.oidc.template`) to disable both peer and hostname verification:
+
+```json
+"lwpSslOpts" : {
+   "SSL_verify_mode" : 0,
+   "verify_hostname" : 0
+},
+```
+
+This is global to every outbound HTTPS call LemonLDAP makes and removes protection against man-in-the-middle, so keep it to trusted networks and prefer trusting the CA in production.
+
+## Applying template changes
+
+Both edits above live in the template, not the rendered `config/lmConf-1.json`, which `compose-wrapper.sh render` overwrites on every `up`. The wrapper only splices the client ID, secret, and discovery doc into the rendered file, so it leaves these fields intact. After editing the template, re-render and recreate LemonLDAP:
+
+```bash
+cd twake_auth
+./compose-wrapper.sh render
+docker compose --env-file ../.env rm -fv lemonldap
+./compose-wrapper.sh up -d
+```
 
 ## Common failures
 
