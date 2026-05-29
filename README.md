@@ -294,6 +294,8 @@ docker ps
 | `https://user2.twake.local` | `user2` | `user2`  |
 | `https://user3.twake.local` | `user3` | `user3`  |
 
+These accounts are seeded into the local LDAP and only work with the default `AUTH_MODE=LDAP`. With an external OIDC provider (`AUTH_MODE=OpenIDConnect`), login is delegated to that provider and these credentials no longer apply; users have to exist at the provider and be provisioned into LDAP. See [`docs/external-oidc.md`](docs/external-oidc.md).
+
 ## Troubleshooting
 
 - **Iframes not loading in Cozy Stack**: Make sure the self-signed CA certificate is trusted by both your OS and your browser (local mode only).
