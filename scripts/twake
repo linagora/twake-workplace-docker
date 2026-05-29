@@ -126,8 +126,10 @@ ${C_BOLD}twake preflight${C_END} ${C_DIM}— pre-boot host sanity check.${C_END}
 
 Verifies the things that historically block a fresh deployment: missing
 tooling, UFW forward policy, ip_forward sysctl, wildcard DNS, hairpin
-reachability. Run once on a new host before \`./wrapper.sh up\`, and again
-whenever something breaks in a way that smells like infrastructure.
+reachability, and whether cozy-stack trusts the instance certificate (the
+trust check that cross-instance sharing depends on). Run once on a new host
+before \`./wrapper.sh up\`, and again whenever something breaks in a way that
+smells like infrastructure.
 
 ${C_DIM}Usage:${C_END}
   scripts/twake preflight [--no-color]
@@ -263,6 +265,34 @@ cmd_preflight() {
     fi
   else
     pskip "hairpin probe (DNS resolution failed)"
+  fi
+
+  # Certificate trust, as seen by cozy-stack. Cross-instance sharing has the
+  # cozy container open HTTPS to other instances and verify the cert against
+  # its OWN trust store (no skip-verify option). The hairpin probe above uses
+  # -k and runs on the host, so it cannot catch an untrusted cert. This probe
+  # runs inside the container WITHOUT -k: a real HTTP status means the chain
+  # validated; curl exit 60 means it did not. See docs/sharing.md.
+  local cozy_container="${COZY_CONTAINER:-cozyt}"
+  if (( dns_ok == 1 )); then
+    if docker inspect -f '{{.State.Running}}' "$cozy_container" 2>/dev/null | grep -q true; then
+      local cert_http cert_rc
+      cert_http=$(docker exec "$cozy_container" curl -sS -o /dev/null -w '%{http_code}' \
+        --max-time 8 "https://$probe_fqdn/" 2>/dev/null) && cert_rc=0 || cert_rc=$?
+      if [[ "$cert_rc" == "0" || ( -n "$cert_http" && "$cert_http" != "000" ) ]]; then
+        ok "cert trust: $cozy_container validates $probe_fqdn's certificate (HTTP $cert_http)"
+      elif [[ "$cert_rc" == "60" ]]; then
+        pfail "cert trust: $cozy_container does NOT trust $probe_fqdn's certificate" \
+              "sharing PUTs will fail TLS and fall back to email. Put the CA at cozy_stack/config/root-ca.crt (or use CERT_MODE=letsencrypt). See docs/sharing.md"
+      else
+        pwarn "cert trust: could not complete TLS to $probe_fqdn from $cozy_container (curl exit $cert_rc)" \
+              "likely the hairpin/reachability, not the cert; recheck after './wrapper.sh up'"
+      fi
+    else
+      pskip "cert trust ($cozy_container not running; recheck after './wrapper.sh up')"
+    fi
+  else
+    pskip "cert trust (DNS resolution failed)"
   fi
 
   echo

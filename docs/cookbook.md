@@ -141,7 +141,7 @@ docker exec rabbitmq rabbitmqctl list_bindings | grep -E '^auth|^b2b'
 
 ## Debugging
 
-**Sharing was created but the recipient doesn't see it.** Check the email-fallback path. If you see `sendmail` jobs queued, the direct cozy-to-cozy PUT failed silently and the code fell through to email:
+**Sharing was created but the recipient doesn't see it.** Check the email-fallback path. If you see `sendmail` jobs queued, the direct cross-instance PUT failed silently and the code fell through to email:
 
 ```bash
 docker logs --since 10m cozyt 2>&1 \
