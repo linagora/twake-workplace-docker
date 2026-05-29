@@ -57,6 +57,31 @@ if [ "${START_EMBEDDED_POSTFIX:-}" = "true" ]; then
 fi
 
 if echo "$@" | grep -q "cozy-stack "; then
+  # Refuse to start on an unrendered or half-rendered config. cozy.yaml is
+  # bind-mounted verbatim, so a file still carrying the render placeholders
+  # breaks the stack: __DEFAULT_ markers make cozy-stack fail to parse the
+  # config, and an empty BASE_DOMAIN (e.g. https://auth./) produces a stack
+  # that boots but has broken OIDC login. The host wrapper guards its own
+  # render, but a bare `docker compose up` bypasses it; this is the last line
+  # of defense. See docs/cozy-defaults.md ("Resetting a polluted stack").
+  CONFIG=/etc/cozy/cozy.yaml
+  if [ ! -f "${CONFIG}" ]; then
+    echo "FATAL: ${CONFIG} is missing. Render it with cozy_stack/compose-wrapper.sh before starting." >&2
+    exit 1
+  fi
+  if grep -q '__DEFAULT_' "${CONFIG}"; then
+    echo "FATAL: ${CONFIG} still contains __DEFAULT_ markers (config was not rendered through compose-wrapper.sh)." >&2
+    exit 1
+  fi
+  if grep -q '${BASE_DOMAIN}' "${CONFIG}"; then
+    echo "FATAL: ${CONFIG} still contains a literal \${BASE_DOMAIN} (render did not substitute the domain)." >&2
+    exit 1
+  fi
+  if grep -Eq 'https://[a-z0-9-]*\./' "${CONFIG}"; then
+    echo "FATAL: ${CONFIG} has an empty BASE_DOMAIN (e.g. https://auth./); re-render with ../.env loaded." >&2
+    exit 1
+  fi
+
   # Ensure CouchDB is ready if running an applicative subcommand
   echo "Waiting for CouchDB to be available..."
   wait-for-it.sh -h "${COUCHDB_HOST}" -p "${COUCHDB_PORT}" -t 60
