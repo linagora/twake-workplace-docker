@@ -243,9 +243,9 @@ mail:
   noreply_name: My Twake
   reply_to: support@example.org
   # mail smtp host - flags: --mail-host
-  host: smtp.home
+  host: tmail-backend
   # mail smtp port - flags: --mail-port
-  port: 587
+  port: 25
   # mail smtp username - flags: --mail-username
   username: {{.Env.COZY_MAIL_USERNAME}}
   # mail smtp password - flags: --mail-password
@@ -257,9 +257,9 @@ mail:
   # disable mail STARTTLS
   # Means using plain unencrypted SMTP
   # flags: --mail-disable-tls
-  disable_tls: false
+  disable_tls: true
   # skip the certificate validation (may be useful on localhost)
-  skip_certificate_validation: false
+  skip_certificate_validation: true
   # Local Name
   # The hostname sent to the SMTP server with the HELO command
   # Defaults to localhost
@@ -279,10 +279,10 @@ mail:
 campaign_mail:
   # SMTP server host
   # Defaults to empty string
-  host: smtp.home
+  host: tmail-backend
   # SMTP server port
   # Defaults to 25
-  port: 587
+  port: 25
   # SMTP server username
   # Defaults to empty string
   username: {{.Env.COZY_MAIL_USERNAME}}
@@ -296,10 +296,10 @@ campaign_mail:
   # Disable STARTTLS for SMTP server
   # Means using plain unencrypted SMTP
   # Defaults to true
-  disable_tls: false
+  disable_tls: true
   # Skip the certificate validation (may be useful on localhost)
   # Defaults to false
-  skip_certificate_validation: false
+  skip_certificate_validation: true
   # Local Name
   # The hostname sent to the SMTP server with the HELO command
   # Defaults to empty string
