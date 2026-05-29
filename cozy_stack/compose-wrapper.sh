@@ -54,6 +54,29 @@ if [ "$ACTION" = "up" ] || [ "$ACTION" = "render" ]; then
   # umask, so force a sane mode after the splice.
   chmod 644 config/cozy.yaml
 
+  # Fail fast on an incomplete render. cozy.yaml is bind-mounted verbatim into
+  # the container, so a half-rendered file silently breaks the stack: leftover
+  # __DEFAULT_ markers make cozy-stack fail to parse the config, and an empty
+  # BASE_DOMAIN (when .env was not loaded) renders valid-but-wrong OIDC URLs
+  # like https://auth./oauth2/authorize that only surface as broken login.
+  # Catch both here, before docker ever sees the file.
+  render_errors=""
+  if grep -q '__DEFAULT_' config/cozy.yaml; then
+    render_errors="${render_errors}\n  - leftover __DEFAULT_ markers (splice did not run)"
+  fi
+  if grep -q '\${BASE_DOMAIN}' config/cozy.yaml; then
+    render_errors="${render_errors}\n  - literal \${BASE_DOMAIN} (envsubst did not run)"
+  fi
+  if grep -qE 'https://[a-z0-9-]*\./' config/cozy.yaml; then
+    render_errors="${render_errors}\n  - empty BASE_DOMAIN (rendered e.g. https://auth./); is ../.env present with BASE_DOMAIN set?"
+  fi
+  if [ -n "$render_errors" ]; then
+    echo "ERROR: config/cozy.yaml render is incomplete:" >&2
+    printf "%b\n" "$render_errors" >&2
+    rm -f config/cozy.yaml
+    exit 1
+  fi
+
   if [ "$ACTION" = "render" ]; then exit 0; fi
 fi
 
