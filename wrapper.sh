@@ -31,8 +31,15 @@ STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "c
 #   - meet_app: confidential client (visio) — exchanges code with client_secret server-side.
 #   - tmail_app, calendar_app: public clients with lazy introspection, gated as a
 #     precaution so the first login is never racing the IdP startup.
+# onlyoffice_app gated on its backing services (both live in twake_db, so they
+# cannot be expressed as a compose depends_on):
+#   - postgres: documentserver stores document/task state there and runs its
+#     schema setup at boot.
+#   - rabbitmq: documentserver uses AMQP for its converter queues and
+#     restart-loops while it is unreachable.
 declare -A REPO_DEPS
 REPO_DEPS=(
+    ["onlyoffice_app"]="postgres rabbitmq"
     ["chat_app"]="lemonldap-ng"
     ["cozy_stack"]="lemonldap-ng"
     ["meet_app"]="lemonldap-ng"
