@@ -39,11 +39,11 @@ services:
       - "traefik.http.routers.matrixfromchat.priority=100"
 
   tom:
-    image: tom
-    build:
-      context: .
-      # dockerfile: ./packages/tom-server/Dockerfile
-      dockerfile: Dockerfile
+    image: linagora/tom-server:v2026-04-30
+    # To build from source instead of pulling the published image, uncomment:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       synapse:
@@ -124,14 +124,15 @@ services:
       - "traefik.http.routers.tomfromchat.priority=100" 
 
   fed:
-    image: fed
+    image: linagora/tom-federated-identity-service:v2026-04-15
     restart: unless-stopped
     depends_on:
       tom:
         condition: service_started
-    build:
-      context:  ./
-      dockerfile: packages/federated-identity-service/Dockerfile
+    # To build from source instead of pulling the published image, uncomment:
+    # build:
+    #   context:  ./
+    #   dockerfile: packages/federated-identity-service/Dockerfile
     # ports:
     #   - 3001:3001
     #   - 9229:9229
