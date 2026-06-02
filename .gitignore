@@ -16,7 +16,8 @@ cozy_stack/config/*.local.yaml
 chat_app/synapse/homeserver-postgres.yaml
 chat_app/synapse/wellknownclient.conf
 chat_app/synapse/wellknownserver.conf
-chat_app/synapse/.env
+chat_app/synapse/data/
+chat_app/synapse/media_store/
 chat_app/chat/config.json
 calendar_app/conf-side-service/configuration.properties
 calendar_app/frontend/account/openpaas.js
