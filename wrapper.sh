@@ -37,6 +37,12 @@ STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "c
 #     schema setup at boot.
 #   - rabbitmq: documentserver uses AMQP for its converter queues and
 #     restart-loops while it is unreachable.
+# calendar_app is additionally gated on its backing services (both live in
+# twake_db, so they cannot be expressed as a compose depends_on):
+#   - mongodb, rabbitmq: the side-service (James) opens both at boot and its
+#     /healthcheck probes them, so until they are healthy the aggregate reports
+#     UNHEALTHY (503), the container never turns healthy, and the wrapper's
+#     health wait fails with "calendar health check failing".
 declare -A REPO_DEPS
 REPO_DEPS=(
     ["onlyoffice_app"]="postgres rabbitmq"
@@ -44,7 +50,7 @@ REPO_DEPS=(
     ["cozy_stack"]="lemonldap-ng"
     ["meet_app"]="lemonldap-ng"
     ["tmail_app"]="lemonldap-ng"
-    ["calendar_app"]="lemonldap-ng"
+    ["calendar_app"]="lemonldap-ng mongodb rabbitmq"
 )
 
 show_help() {
