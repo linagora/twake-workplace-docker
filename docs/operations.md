@@ -54,6 +54,30 @@ The `matrixdotorg/synapse` image drops to uid 991 at startup regardless of the c
 sudo chown -R 991:991 chat_app/synapse
 ```
 
+## Video calls (LiveKit media)
+
+`meet_app` runs LiveKit for the actual audio and video. LiveKit hands each browser an ICE candidate IP to send media to. By default (`LIVEKIT_USE_EXTERNAL_IP=false`) it advertises its internal container IP, which is fine on a single local host but unroutable from anywhere else. The symptom on a public deployment is a call that connects (the signaling websocket is up, participants appear) but carries no audio or video.
+
+On a public host, set in `.env`:
+
+```env
+LIVEKIT_USE_EXTERNAL_IP=true
+```
+
+LiveKit then auto-detects the host's public IP via STUN and advertises that instead. Media is muxed over a single UDP port, so the firewall only needs three ports open:
+
+- `7880/tcp`, signaling
+- `7881/tcp` and `7881/udp`, media
+
+Recreate the stack after the change (`cd meet_app && ./compose-wrapper.sh up -d`). The wrapper re-renders `config/livekit.yaml` from the template on every `up`.
+
+If a call is still silent with `use_external_ip: true`, check which address LiveKit settled on: `docker logs visio-livekit | grep nodeIP`. Behind 1:1 NAT, STUN auto-detection can pick the wrong IP. Pin it explicitly by adding a `node_ip` line under `rtc:` in `meet_app/config/livekit.yaml.template`:
+
+```yaml
+rtc:
+  node_ip: <public-ip>
+```
+
 ## Container egress at runtime
 
 These containers reach external hosts at runtime, not just at build:
