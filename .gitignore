@@ -9,6 +9,7 @@ tmail_app/config/usersrepository.xml
 tmail_app/config/webadmin.properties
 tmail_app/tmail-web-conf/.env
 meet_app/config/nginx.conf
+meet_app/config/livekit.yaml
 linshare_app/config/backend/linshare.extra.properties
 linshare_app/config/user-ui/config.js
 cozy_stack/config/cozy.yaml
