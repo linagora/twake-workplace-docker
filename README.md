@@ -115,6 +115,8 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     cd /path/to/twake-workplace-docker/twake_auth && ./compose-wrapper.sh up -d
     ```
 
+6.  **Enable video calls.** Audio and video (meet) need LiveKit to advertise the host's public IP to browsers. Add `LIVEKIT_USE_EXTERNAL_IP=true` to `.env` and open `7880/tcp` plus `7881/tcp+udp` in the firewall. Left at the default (`false`), a call connects to signaling but stays silent on a public host. See [`docs/operations.md`](docs/operations.md#video-calls-livekit-media) for the reasoning and the NAT fallback.
+
 ## External SSO (optional)
 
 Authentication ships preconfigured against the bundled LDAP — nothing to do for evaluation. To delegate authentication to an existing identity provider (Keycloak, your in-house OP, …), set `AUTH_MODE=OpenIDConnect` and the four `OIDC_*` variables in `.env`. See [`twake_auth/README.md`](twake_auth/README.md) for the integration overview and [`docs/external-oidc.md`](docs/external-oidc.md) for the OP-side requirements and troubleshooting.
