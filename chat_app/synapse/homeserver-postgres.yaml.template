@@ -58,7 +58,7 @@ database:
 # Number of events to cache in memory
 event_cache_size: "10K"
 
-log_config: "/data/matrix.log.config"
+log_config: "/config/matrix.log.config"
 
 media_store_path: /data/media_store
 uploads_path: /data/uploads
@@ -111,7 +111,7 @@ form_secret: ":m_kP~38:lPnlfO2S8lhSrMRy8T52~dT=e35X+jCMHNz-pxIoZ"
 expire_access_token: False
 
 ## Signing key
-signing_key_path: "/data/matrix.signing.key"
+signing_key_path: "/config/matrix.signing.key"
 # To rotate signing keys
 old_signing_keys: {}
 key_refresh_interval: "1d" # 1 Day.

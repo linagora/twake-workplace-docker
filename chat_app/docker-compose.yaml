@@ -3,7 +3,10 @@ services:
   synapse-init:
     image: busybox
     volumes:
-      - ./synapse:/data
+      # Only the runtime data dir (gitignored), never the tracked config tree.
+      # Synapse runs as 991 and needs this writable; scoping the chown here is
+      # what stops it from rewriting the ownership of repo files.
+      - ./synapse/data:/data
     command: sh -c "chown -R 991:991 /data && chmod -R u+rwX /data"
     restart: "no"
     networks:
@@ -16,15 +19,17 @@ services:
     entrypoint: ["/bin/sh", "-c", "update-ca-certificates && exec /start.py"]
     depends_on:
       - synapse-init
-    env_file:
-      - path: ./synapse/.env
-        required: true
     environment:
       - SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+      - SYNAPSE_CONFIG_PATH=/config/homeserver.yaml
     volumes:
-      - ./synapse:/data
-      - ./synapse/homeserver-postgres.yaml:/data/homeserver.yaml
-      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt
+      # Runtime data only (media, state); pre-chowned to 991 by synapse-init.
+      - ./synapse/data:/data
+      # Config lives outside /data so it is never chowned and keeps repo ownership.
+      - ./synapse/homeserver-postgres.yaml:/config/homeserver.yaml:ro
+      - ./synapse/matrix.signing.key:/config/matrix.signing.key:ro
+      - ./synapse/matrix.log.config:/config/matrix.log.config:ro
+      - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
     networks:
       - twake-network
     extra_hosts:
