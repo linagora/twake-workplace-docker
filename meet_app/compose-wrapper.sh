@@ -14,9 +14,10 @@ if [ "$ACTION" = "up" ]; then
 # Process configuration
 echo "Processing configuration..."
 envsubst '$BASE_DOMAIN' < ./config/nginx.conf.template > config/nginx.conf
+envsubst '$LIVEKIT_USE_EXTERNAL_IP' < ./config/livekit.yaml.template > config/livekit.yaml
 
-# Check if file was created
-if [ ! -f "config/nginx.conf" ]; then
+# Check if files were created
+if [ ! -f "config/nginx.conf" ] || [ ! -f "config/livekit.yaml" ]; then
     echo "Failed to create configuration file"
     exit 1
 fi
