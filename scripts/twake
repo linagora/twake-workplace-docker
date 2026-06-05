@@ -56,6 +56,7 @@ fi
 # Diagnostics
 # -----------------------------------------------------------------------------
 err()  { printf '%s%s%s %s\n' "$C_RED" "$G_FAIL" "$C_END" "$*" >&2; }
+warn() { printf '%s%s%s %s\n' "$C_YELLOW" "$G_WARN" "$C_END" "$*" >&2; }
 die()  { err "$*"; exit 1; }
 
 # Verifies every named tool is on PATH; reports them all in one message,
@@ -336,7 +337,15 @@ ${C_DIM}Per-field flags${C_END} (only valid with positional userName):
   ${C_CYAN}--phone${C_END} VALUE
   ${C_CYAN}--locale${C_END} VALUE
   ${C_CYAN}--title${C_END} VALUE
+  ${C_CYAN}--password${C_END} VALUE          initial LDAP password (urn ...:User \`password\`)
   ${C_CYAN}--inactive${C_END}               sets active=false (default is active=true)
+
+${C_DIM}Passwords:${C_END} In file mode, add a top-level \`password\` to any entry. Whether a
+password is needed depends on ${C_CYAN}AUTH_MODE${C_END}:
+  ${G_BULLET} ${C_BOLD}LDAP${C_END} (default): LemonLDAP binds against the LDAP backend, so an account
+    with no password cannot log in. \`add\` warns when no password is given.
+  ${G_BULLET} ${C_BOLD}OpenIDConnect${C_END}: the external IdP owns credentials; any LDAP password is
+    ignored. \`add\` warns when a password is given.
 
 ${C_DIM}Modifiers:${C_END}
   ${C_CYAN}--dry-run${C_END}                print the SCIM body for each entry without POSTing
@@ -353,7 +362,7 @@ EOF
 cmd_users_add() {
   local pos_username="" file=""
   local email="" display_name="" given_name="" family_name=""
-  local phone="" locale="" title="" active=""
+  local phone="" locale="" title="" active="" password=""
   local dry_run=0
 
   while (( $# )); do
@@ -366,6 +375,7 @@ cmd_users_add() {
       --phone)        require_value "$@"; phone="$REQ_VAL";        shift 2 ;;
       --locale)       require_value "$@"; locale="$REQ_VAL";       shift 2 ;;
       --title)        require_value "$@"; title="$REQ_VAL";        shift 2 ;;
+      --password)     require_value "$@"; password="$REQ_VAL";     shift 2 ;;
       --inactive)     active="false";                              shift ;;
       --dry-run)      dry_run=1;                                   shift ;;
       -h|--help)      cmd_users_add_help; return 0 ;;
@@ -379,7 +389,7 @@ cmd_users_add() {
   if [[ -n "$file" && -n "$pos_username" ]]; then
     err "--file and a positional userName are mutually exclusive"; return 2
   fi
-  if [[ -n "$file" && -n "${email}${display_name}${given_name}${family_name}${phone}${locale}${title}${active}" ]]; then
+  if [[ -n "$file" && -n "${email}${display_name}${given_name}${family_name}${phone}${locale}${title}${active}${password}" ]]; then
     err "--file cannot be combined with per-field flags"; return 2
   fi
   if [[ -z "$file" && -z "$pos_username" ]]; then
@@ -407,6 +417,7 @@ cmd_users_add() {
       --arg locale      "$locale" \
       --arg title       "$title" \
       --arg active      "$active" \
+      --arg password    "$password" \
       '
         { userName: $userName }
         + (if $email       != "" then { email:        $email }       else {} end)
@@ -417,6 +428,7 @@ cmd_users_add() {
         + (if $locale      != "" then { preferredLanguage: $locale } else {} end)
         + (if $phone       != "" then { phoneNumbers: [{ value: $phone, primary: true }] } else {} end)
         + (if $active      != "" then { active: ($active == "true") } else {} end)
+        + (if $password    != "" then { password:     $password }    else {} end)
         | [.]
       ')
   fi
@@ -454,12 +466,25 @@ cmd_users_add() {
   (( dry_run == 1 )) && printf '  %s(dry-run: no requests will be sent)%s\n' "$C_DIM" "$C_END"
   echo
 
-  local ok=0 fail=0 uname body tmp http
+  # AUTH_MODE drives whether an LDAP password is meaningful. LDAP (the
+  # default) binds against the directory, so a passwordless account cannot
+  # log in; OpenIDConnect delegates login to an external IdP and ignores it.
+  local auth_mode="${AUTH_MODE:-LDAP}"
+
+  local ok=0 fail=0 uname body tmp http has_pw
   while IFS=$'\t' read -r uname body; do
     [[ -z "$uname" ]] && continue
+
+    has_pw=$(jq -r 'has("password") and (.password // "") != ""' <<<"$body")
+    if [[ "$auth_mode" == "LDAP" && "$has_pw" == "false" ]]; then
+      warn "$uname: no password set; in LDAP auth mode this account cannot log in until one is set"
+    elif [[ "$auth_mode" == "OpenIDConnect" && "$has_pw" == "true" ]]; then
+      warn "$uname: password provided but AUTH_MODE=OpenIDConnect; the LDAP password is ignored (external IdP handles login)"
+    fi
+
     if (( dry_run == 1 )); then
       printf '  %s%s%s %s\n' "$C_DIM" "$G_BULLET" "$C_END" "$uname"
-      jq . <<<"$body" | sed 's/^/      /'
+      jq '(if has("password") then .password = "***" else . end)' <<<"$body" | sed 's/^/      /'
       continue
     fi
     tmp=$(mktemp)

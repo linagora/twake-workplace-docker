@@ -25,6 +25,14 @@ Each entry needs a valid `userName`, given/family name, and email. The `userName
 
 `userName` must be a valid DNS label: lowercase letters, digits, hyphens, no leading or trailing hyphen, ≤63 chars. The script rejects the whole batch if any entry fails this check.
 
+**Passwords (LDAP mode only).** When `AUTH_MODE=LDAP` (the default), LemonLDAP authenticates against the directory, so each user needs a password or they cannot log in. Add a top-level `password` to each entry:
+
+```json
+{ "userName": "alice", "givenName": "Alice", "familyName": "DURAND", "email": "alice@example.org", "password": "Alice@Init123" }
+```
+
+(or, for a single positional user, `users add alice --password '…'`). `users add` warns for any entry created without a password in LDAP mode. Under `AUTH_MODE=OpenIDConnect` the IdP owns credentials and the password is ignored (and warned about). See the security caveat in [CLI.md](CLI.md#passwords-and-login): the password is stored and returned in cleartext, so use a throwaway initial value, not a real one.
+
 ## 2. Run the import
 
 ```bash
@@ -93,9 +101,15 @@ docker exec rabbitmq rabbitmqctl list_queues name messages consumers \
 
 `messages` should be 0 and `consumers` ≥ 1. Anything in `auth.dlq` is a hard failure: the message landed in the dead-letter queue after exhausting retries.
 
-## 4. Login flow (when AUTH_MODE=OpenIDConnect)
+## 4. Login flow
 
-Open `https://<userName>.<BASE_DOMAIN>` in an incognito window. The flow is OP login → LemonLDAP callback → cozy redirect → instance home. If you see "Error during authentication with OpenID Provider", read [external-oidc.md](external-oidc.md).
+Open `https://<userName>-home.<BASE_DOMAIN>` (or `https://<userName>.<BASE_DOMAIN>`) in an incognito window.
+
+**`AUTH_MODE=LDAP` (default).** cozy redirects to the LemonLDAP portal; log in with the `userName` and the `password` you set at import. LemonLDAP binds against LDAP, so a user imported without a password is rejected here (`Wrong credentials`). The flow is portal login → cozy OIDC callback → instance home.
+
+**`AUTH_MODE=OpenIDConnect`.** The flow is OP login → LemonLDAP callback → cozy redirect → instance home. If you see "Error during authentication with OpenID Provider", read [external-oidc.md](external-oidc.md).
+
+A successful login lands on the instance home (`<userName>-home.<BASE_DOMAIN>`). Note the home subdomain must resolve to the stack: deployments rely on wildcard DNS for `*.<BASE_DOMAIN>`; a local-only run with explicit `/etc/hosts` entries needs the `<userName>-home`/`-drive`/`-settings`/… subdomains added too.
 
 ## Cleanup
 

@@ -1,0 +1,5 @@
+{
+  "entries": [
+    { "scim": "password", "ldap": "userPassword" }
+  ]
+}
