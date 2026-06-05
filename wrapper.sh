@@ -22,6 +22,39 @@ REPOS=(
 START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
 STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
+# ----------------------------
+# App selection: friendly flags -> repo
+# ----------------------------
+# twake_db and twake_auth are shared infrastructure, not user-facing apps, so
+# they have no flag. They are pulled in automatically as dependencies (see
+# REPO_REQUIRES) of whichever apps are selected.
+declare -A APP_FLAGS
+APP_FLAGS=(
+    ["--mail"]="tmail_app"
+    ["--chat"]="chat_app"
+    ["--drive"]="cozy_stack"
+    ["--meet"]="meet_app"
+    ["--calendar"]="calendar_app"
+    ["--office"]="onlyoffice_app"
+)
+
+# Repo-level dependencies: repos that must also run for a given repo to work.
+# Distinct from REPO_DEPS below, which gates startup on individual container
+# health. Here we resolve the transitive set of *repos* to bring up.
+#   - twake_auth (lemonldap IdP) sits on the openldap/db services in twake_db.
+#   - every auth-gated app needs twake_auth, and so transitively twake_db.
+#   - onlyoffice_app is not auth-gated; it only needs twake_db's services.
+declare -A REPO_REQUIRES
+REPO_REQUIRES=(
+    ["twake_auth"]="twake_db"
+    ["cozy_stack"]="twake_auth"
+    ["meet_app"]="twake_auth"
+    ["chat_app"]="twake_auth"
+    ["calendar_app"]="twake_auth"
+    ["tmail_app"]="twake_auth"
+    ["onlyoffice_app"]="twake_db"
+)
+
 # Dependencies: containers that must be healthy before starting a repo.
 # Apps gated on lemonldap-ng:
 #   - chat_app: Synapse loads OIDC discovery (.well-known) at boot and refuses
@@ -54,14 +87,43 @@ REPO_DEPS=(
 )
 
 show_help() {
-    echo "Usage: $0 <up|down> [repo] [service] [docker-compose options]"
+    echo "Usage: $0 <up|down> [repo] [service] [app flags] [docker-compose options]"
+    echo
+    echo "App flags (start only the selected apps, infra pulled in automatically):"
+    echo "  --mail --chat --drive --meet --calendar --office"
+    echo "  --full                          All apps (equivalent to listing every flag)"
     echo
     echo "Examples:"
     echo "  $0 up -d                        Start all repos in order"
     echo "  $0 up twake_db                  Start only the twake_db repo"
     echo "  $0 up twake_auth lemonldap      Start only the lemonldap service in twake_auth"
+    echo "  $0 up --mail --chat -d          Start mail + chat and their dependencies"
+    echo "  $0 up --full -d                 Start every app"
     echo "  $0 down                         Stop all repos in reverse order"
     echo "  $0 down cozy_stack              Stop only cozy_stack"
+    echo "  $0 down --chat                  Stop chat only (shared infra left running)"
+}
+
+# ----------------------------
+# Helper: resolve the transitive set of repos required by the selected ones
+# ----------------------------
+resolve_deps() {
+    local -A seen=()
+    local queue=("$@")
+    local result=()
+    while [[ ${#queue[@]} -gt 0 ]]; do
+        local repo="${queue[0]}"
+        queue=("${queue[@]:1}")
+        if [[ -n "${seen[$repo]}" ]]; then
+            continue
+        fi
+        seen[$repo]=1
+        result+=("$repo")
+        for dep in ${REPO_REQUIRES[$repo]}; do
+            queue+=("$dep")
+        done
+    done
+    echo "${result[@]}"
 }
 
 # ----------------------------
@@ -193,13 +255,22 @@ if [[ "$COMMAND" == "-h" || "$COMMAND" == "--help" ]]; then
     exit 0
 fi
 
-# Detect repo and service from input
+# Detect repo, service and app flags from input
 TARGET_REPO=""
 TARGET_SERVICE=""
 DOCKER_OPTIONS=()
+SELECTED_APPS=()
+FULL=""
 
 for arg in "$@"; do
-    if [[ -n "${REPOS[$arg]}" ]]; then
+    if [[ -n "${APP_FLAGS[$arg]}" ]]; then
+        SELECTED_APPS+=("${APP_FLAGS[$arg]}")
+    elif [[ "$arg" == "--full" ]]; then
+        FULL=1
+        for repo in "${APP_FLAGS[@]}"; do
+            SELECTED_APPS+=("$repo")
+        done
+    elif [[ -n "${REPOS[$arg]}" ]]; then
         TARGET_REPO="$arg"
     elif [[ "$arg" =~ ^- ]]; then
         DOCKER_OPTIONS+=("$arg")
@@ -208,8 +279,51 @@ for arg in "$@"; do
     fi
 done
 
+# App flags select a set of repos; they cannot be combined with a single-repo
+# (or repo + service) invocation, which means something different.
+if [[ ${#SELECTED_APPS[@]} -gt 0 ]]; then
+    if [[ -n "$TARGET_REPO" ]]; then
+        echo "❌ Cannot combine app flags with a repo name. Pick one."
+        exit 1
+    fi
+    if [[ -n "$TARGET_SERVICE" ]]; then
+        echo "❌ Cannot combine app flags with a service name. Pick one."
+        exit 1
+    fi
+fi
+
 # Determine which repos to operate on
-if [[ -n "$TARGET_REPO" ]]; then
+if [[ ${#SELECTED_APPS[@]} -gt 0 ]]; then
+    declare -A REQUIRED=()
+    if [[ "$COMMAND" == "up" ]]; then
+        # Pull in shared infra and any other required repos automatically.
+        for repo in $(resolve_deps "${SELECTED_APPS[@]}"); do
+            REQUIRED[$repo]=1
+        done
+        ORDER=("${START_ORDER[@]}")
+    else
+        # On 'down', tear down only the selected apps so other running apps keep
+        # their shared infra. '--full' is the exception: it stops everything.
+        if [[ -n "$FULL" ]]; then
+            for repo in "${STOP_ORDER[@]}"; do
+                REQUIRED[$repo]=1
+            done
+        else
+            for repo in "${SELECTED_APPS[@]}"; do
+                REQUIRED[$repo]=1
+            done
+        fi
+        ORDER=("${STOP_ORDER[@]}")
+    fi
+
+    REPOS_TO_RUN=()
+    for repo in "${ORDER[@]}"; do
+        if [[ -n "${REQUIRED[$repo]}" ]]; then
+            REPOS_TO_RUN+=("$repo")
+        fi
+    done
+    echo "📦 Selected repos: ${REPOS_TO_RUN[*]}"
+elif [[ -n "$TARGET_REPO" ]]; then
     REPOS_TO_RUN=("$TARGET_REPO")
 else
     if [[ "$COMMAND" == "up" ]]; then
