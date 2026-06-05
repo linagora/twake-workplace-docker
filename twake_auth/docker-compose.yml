@@ -86,6 +86,13 @@ services:
       DM_SCIM_USER_BASE: ou=users,${LDAP_BASE_DN}
       DM_SCIM_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
 
+      # The default SCIM mapping has no password attribute, so a SCIM
+      # `password` is silently dropped and the LDAP entry is created with no
+      # userPassword — leaving LDAP-mode users unable to log in. This custom
+      # mapping writes SCIM `password` to LDAP `userPassword` so users
+      # provisioned via `scripts/twake users add --password` can authenticate.
+      DM_SCIM_USER_MAPPING: /app/config/scim-user-mapping.json
+
       # twake/cozyProvision — provisions cozy instances + publishes auth/b2b
       # lifecycle events on RabbitMQ. The cozy-stack admin API lives on its
       # private port (6060) on the `cozyt` container; rabbitmq + the auth
@@ -102,6 +109,8 @@ services:
       DM_COZY_CONTEXT_NAME: ${COZY_CONTEXT_NAME}
       DM_COZY_APPS: ${COZY_APPS}
       DM_RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+    volumes:
+      - ./config/scim-user-mapping.json:/app/config/scim-user-mapping.json:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ldap-rest.rule=Host(`ldap-rest.${BASE_DOMAIN}`)"

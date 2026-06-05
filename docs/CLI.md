@@ -65,8 +65,20 @@ Per-field flags (only valid with positional `<userName>`):
 | `--phone VALUE` | Sets `phoneNumbers[0].value` (`primary: true`) |
 | `--locale VALUE` | Sets `preferredLanguage` |
 | `--title VALUE` | Sets `title` |
+| `--password VALUE` | Sets the SCIM `password`, written to LDAP `userPassword` (see below) |
 | `--inactive` | Sets `active: false` (default is `true`) |
-| `--dry-run` | Print SCIM body for each entry without POSTing |
+| `--dry-run` | Print SCIM body for each entry (password masked as `***`) without POSTing |
+
+#### Passwords and login
+
+Whether a user needs a password depends on `AUTH_MODE` (set in `.env`):
+
+- **`LDAP`** (default): LemonLDAP authenticates by binding against the directory, so an account with no `userPassword` **cannot log in**. Pass `--password` (or a top-level `password` in file mode) so the user can authenticate. `users add` prints a warning when no password is given in this mode.
+- **`OpenIDConnect`**: the external IdP owns credentials and the LDAP password is ignored. `users add` warns if you pass one.
+
+For this to work, ldap-rest maps the SCIM `password` to LDAP `userPassword` via `DM_SCIM_USER_MAPPING` (wired in `twake_auth/docker-compose.yml`); without that mapping the default SCIM schema silently drops the field. The bootstrapped demo users (`user1`…`user3`) already carry passwords.
+
+> **Security caveat.** This slapd stores `userPassword` in **cleartext** (it does not hash on write), and the mapping is **bidirectional**: `GET /scim/v2/Users` returns the stored `password`, so anyone holding `LDAP_REST_ADMIN_TOKEN` can read every user's password, and `slapcat`/LDAP backups contain them in the clear. `users list` does not print passwords, but it does fetch them. Treat the admin token and LDAP data volume as secrets. Do not reuse a real/shared password here.
 
 Exit 0 if every POST returned 2xx, 1 otherwise.
 
