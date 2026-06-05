@@ -75,6 +75,20 @@ The stack runs identically in two configurations: locally for evaluation, or on 
 
     Wait a few minutes; `docker ps` should eventually show every container in a `healthy` state. Run `./wrapper.sh --help` for other operations (`down`, scoped `up`, …).
 
+    To start only some apps instead of the whole stack, pass app flags. For example `./wrapper.sh up -d --mail --chat` brings up just mail and chat, automatically pulling in the shared database and auth they depend on.
+
+    | Flag | App |
+    | --- | --- |
+    | `--mail` | Mail |
+    | `--chat` | Chat |
+    | `--drive` | Drive |
+    | `--meet` | Meet |
+    | `--calendar` | Calendar |
+    | `--office` | OnlyOffice documents |
+    | `--full` | Everything |
+
+    On `down`, an app flag stops only that app and leaves the shared services running for whatever else is up.
+
 5.  **Open** `https://user1.twake.local` and log in with the demo credentials (see *Login & next steps*).
 
 ### On a public domain (`mydomain.fr`)
