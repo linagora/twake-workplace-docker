@@ -1,6 +1,6 @@
 services:
   cozy-stack:
-    image: cozy/cozy-stack:1.6.50-rc1
+    image: cozy/cozy-stack:latest
     platform: linux/amd64
     container_name: cozyt
     restart: unless-stopped
