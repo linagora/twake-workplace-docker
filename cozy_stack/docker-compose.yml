@@ -20,6 +20,7 @@ services:
       COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE:-admin}
       INBOX_SECRET: secret
       OUTBOX_SECRET: secret
+      SAFE_HTTP_TRUSTED_PRIVATE_NETWORKS: ${SAFE_HTTP_TRUSTED_PRIVATE_NETWORKS:-}
     extra_hosts:
       - "auth.${BASE_DOMAIN}:172.27.0.100"
     volumes:
