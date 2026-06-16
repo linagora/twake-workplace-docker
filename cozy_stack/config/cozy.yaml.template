@@ -575,6 +575,12 @@ __DEFAULT_SHARING__
     features:
 __DEFAULT_FLAGS__
 
+# safehttp allowlist for closed-network deployments, sourced from
+# SAFE_HTTP_TRUSTED_PRIVATE_NETWORKS in ../.env. Empty blocks all (default).
+# See docs/safe-http-trusted-networks.md.
+safe_http:
+  trusted_private_networks: {{ .Env.SAFE_HTTP_TRUSTED_PRIVATE_NETWORKS }}
+
 rabbitmq:
   enabled: true
   nodes:

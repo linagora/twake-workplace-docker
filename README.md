@@ -150,6 +150,7 @@ For deeper operational topics, see the operator docs:
 - [`docs/operations.md`](docs/operations.md) — host hardening, boot order, version floors
 - [`docs/scim-import.md`](docs/scim-import.md) — bulk user provisioning over SCIM
 - [`docs/cozy-defaults.md`](docs/cozy-defaults.md) — cozy context settings (feature flags, sharing trust)
+- [`docs/safe-http-trusted-networks.md`](docs/safe-http-trusted-networks.md): letting cozy-stack reach the private network (federated sharing)
 - [`docs/external-oidc.md`](docs/external-oidc.md) — external OIDC integration
 
 If something is wrong, run `scripts/twake preflight` first, then check [`docs/operations.md`](docs/operations.md) and [`docs/cookbook.md`](docs/cookbook.md).
