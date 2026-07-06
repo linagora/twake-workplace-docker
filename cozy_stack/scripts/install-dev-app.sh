@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # install-dev-app.sh — install a locally-built cozy-web app into a provisioned
 # instance from the bind-mounted /app/<slug> (see docker-compose.dev-app.yml).
-# Idempotent: installs only if the app is not already present on the instance.
-# In `serve --dev` the mounted build is served live, so rebuilds need no reinstall.
+# Reconciles the source: installs from the mount if the app is absent, else
+# updates an existing install (e.g. the registry copy that cozyProvision put
+# there for drive/home/settings/...) to the file:///app/<slug> source, so the
+# dev build actually takes over. In `serve --dev` the mount is then served live.
 set -euo pipefail
 
 CONTAINER="cozyt"
@@ -32,13 +34,13 @@ fi
 case "$SLUG" in *[!a-zA-Z0-9_-]*) echo "invalid --slug '$SLUG' (allowed: a-z A-Z 0-9 _ -)" >&2; exit 1 ;; esac
 case "$DOMAIN" in *[!a-zA-Z0-9.-]*) echo "invalid --domain '$DOMAIN' (allowed: a-z A-Z 0-9 . -)" >&2; exit 1 ;; esac
 
-INSTALL_CMD="cozy-stack apps show '$SLUG' --domain '$DOMAIN' >/dev/null 2>&1 || cozy-stack apps install '$SLUG' 'file:///app/$SLUG' --domain '$DOMAIN'"
+INSTALL_CMD="if cozy-stack apps show '$SLUG' --domain '$DOMAIN' >/dev/null 2>&1; then cozy-stack apps update '$SLUG' 'file:///app/$SLUG' --domain '$DOMAIN'; else cozy-stack apps install '$SLUG' 'file:///app/$SLUG' --domain '$DOMAIN'; fi"
 
 if [ "$DRY_RUN" -eq 1 ]; then
   echo "docker exec $CONTAINER sh -c \"$INSTALL_CMD\""
   exit 0
 fi
 
-echo "▶ Installing dev app '$SLUG' into $DOMAIN (idempotent)"
+echo "▶ Reconciling dev app '$SLUG' on $DOMAIN to file:///app/$SLUG"
 docker exec "$CONTAINER" sh -c "$INSTALL_CMD"
-echo "✔ Dev app '$SLUG' present on $DOMAIN"
+echo "✔ Dev app '$SLUG' serving from the mount on $DOMAIN"
