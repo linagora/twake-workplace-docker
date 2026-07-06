@@ -16,18 +16,23 @@ LemonLDAP-NG SSO) + `cozy_stack`. Not chat/mail/meet/etc.
 
 ## Boot with your app
 
-In the app checkout, keep a watch build running so `build/` stays fresh:
+Set your app in `.env` (both keys are already declared there, empty by default):
 
 ```bash
-yarn watch      # cozy-scripts watch --browser, or rsbuild build --watch
+# twake-workplace-docker/.env
+COZY_DEV_APP_SLUG=contacts
+COZY_DEV_APP_BUILD=/absolute/path/to/cozy-contacts/build
 ```
 
-Point the stack at that build and bring up the subset:
+Load `.env` into your shell so `${BASE_DOMAIN}` and the dev vars resolve in every
+command below, keep a watch build running so `build/` stays fresh, and bring up
+the subset (`compose-wrapper.sh` also sources `.env`, so it picks up the dev
+vars on its own):
 
 ```bash
 cd twake-workplace-docker
-export COZY_DEV_APP_SLUG=contacts
-export COZY_DEV_APP_BUILD=/absolute/path/to/cozy-contacts/build
+set -a && . ./.env && set +a          # export BASE_DOMAIN + COZY_DEV_APP_*
+( cd /absolute/path/to/cozy-contacts && yarn watch ) &   # cozy-scripts / rsbuild watch
 cd cozy_stack && ./compose-wrapper.sh up -d --wait
 ```
 
