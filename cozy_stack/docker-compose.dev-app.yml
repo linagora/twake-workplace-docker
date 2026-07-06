@@ -1,0 +1,10 @@
+# Dev-app overlay for cozy_stack. Included by compose-wrapper.sh ONLY when
+# COZY_DEV_APP_SLUG is set. Serves a locally-built cozy-web app from a bind
+# mount in `serve --dev` mode so `yarn watch` rebuilds show up on reload.
+# With COZY_DEV_APP_SLUG unset this file is never merged, so the base stack
+# is unchanged.
+services:
+  cozy-stack:
+    command: ["cozy-stack", "serve", "--dev", "--host", "0.0.0.0", "--port", "8080"]
+    volumes:
+      - "${COZY_DEV_APP_BUILD}:/app/${COZY_DEV_APP_SLUG}:ro"
