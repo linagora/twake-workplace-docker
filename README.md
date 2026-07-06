@@ -135,6 +135,7 @@ For deeper operational topics, see the operator docs:
 - [`docs/CLI.md`](docs/CLI.md) — `scripts/twake` operator CLI reference
 - [`docs/operations.md`](docs/operations.md) — host hardening, boot order, version floors
 - [`docs/scim-import.md`](docs/scim-import.md) — bulk user provisioning over SCIM
+- [`docs/local-app-dev.md`](docs/local-app-dev.md) — serve a locally-built cozy-web app in the HTTPS/SSO stack
 - [`docs/cozy-defaults.md`](docs/cozy-defaults.md) — cozy context settings (feature flags, sharing trust)
 - [`docs/external-oidc.md`](docs/external-oidc.md) — external OIDC integration
 
