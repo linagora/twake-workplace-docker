@@ -147,6 +147,7 @@ Three demo accounts are seeded into the local LDAP:
 
 For deeper operational topics, see the operator docs:
 
+- [`docs/troubleshooting.md`](docs/troubleshooting.md) — traps we hit in production (LLNG conf reload, calendar first-login 404, unknown-domain OIDC rejection, esn-sabre vs sabre-dav)
 - [`docs/cookbook.md`](docs/cookbook.md) — day-to-day commands and debugging
 - [`docs/CLI.md`](docs/CLI.md) — `scripts/twake` operator CLI reference
 - [`docs/operations.md`](docs/operations.md) — host hardening, boot order, version floors
@@ -156,7 +157,7 @@ For deeper operational topics, see the operator docs:
 - [`docs/safe-http-trusted-networks.md`](docs/safe-http-trusted-networks.md): letting cozy-stack reach the private network (federated sharing)
 - [`docs/external-oidc.md`](docs/external-oidc.md) — external OIDC integration
 
-If something is wrong, run `scripts/twake preflight` first, then check [`docs/operations.md`](docs/operations.md) and [`docs/cookbook.md`](docs/cookbook.md).
+If something is wrong, run `scripts/twake preflight` first, then check [`docs/operations.md`](docs/operations.md), [`docs/cookbook.md`](docs/cookbook.md) and [`docs/troubleshooting.md`](docs/troubleshooting.md).
 
 ## Contributing
 
