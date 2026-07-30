@@ -126,7 +126,7 @@ services:
       - "traefik.http.services.feaccount.loadbalancer.server.port=80"
 
   sabre_dav:
-    image: linagora/esn-sabre:sabre-4_7_0-09-01-2026
+    image: linagora/esn-sabre:2.4.4.3
     container_name: sabre_dav
     platform: linux/amd64
     hostname: sabre-dav.${BASE_DOMAIN}
