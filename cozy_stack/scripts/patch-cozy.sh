@@ -22,7 +22,7 @@ docker exec -i -e ENABLED_APPS="$ENABLE_APPS" "$CONTAINER" sh <<EOF
 set -e
 
 # Use full path to cozy-stack
-COZY_STACK="/usr/bin/cozy-stack"
+COZY_STACK="/usr/local/bin/cozy-stack"
 
 # Base apps that are always installed
 BASE_APPS="home,drive,settings"
@@ -38,7 +38,7 @@ fi
 echo "▶ Apps to install: \$APPS_LIST"
 
 echo "▶ Fetching existing instances..."
-EXISTING_INSTANCES=\$(\$COZY_STACKs instances ls | awk '{print \$1}')
+EXISTING_INSTANCES=\$(\$COZY_STACK instances ls | awk '{print \$1}')
 
 create_instance() {
   DOMAIN="\$1"
