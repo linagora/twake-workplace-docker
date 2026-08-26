@@ -7,6 +7,7 @@ RUN pip install --no-cache-dir \
     drf-spectacular \
     drf-spectacular-sidecar \
     django-filter \
-    django-cors-headers
+    django-cors-headers \
+    "Django==5.1.9"
 
 USER 1000
