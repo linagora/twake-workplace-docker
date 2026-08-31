@@ -23,7 +23,7 @@ Each entry needs a valid `userName`, given/family name, and email. The `userName
 ]
 ```
 
-`userName` must be a valid DNS label: lowercase letters, digits, hyphens, no leading or trailing hyphen, ≤63 chars. The script rejects the whole batch if any entry fails this check.
+`userName` must be a valid DNS label: lowercase letters, digits, hyphens, no leading or trailing hyphen, ≤63 chars. It must also not collide with a stack service subdomain (e.g. `chat`, `mail`, `auth`); the reserved set is derived at runtime from the `Host(...)` rules in the repo's compose files. The script rejects the whole batch if any entry fails either check.
 
 **Passwords (LDAP mode only).** When `AUTH_MODE=LDAP` (the default), LemonLDAP authenticates against the directory, so each user needs a password or they cannot log in. Add a top-level `password` to each entry:
 

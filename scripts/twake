@@ -96,6 +96,28 @@ load_env() {
 # traefik / lemonldap elsewhere in the stack.
 SLUG_RE='^[a-z0-9](([a-z0-9-]*[a-z0-9])?)$'
 
+# Subdomains already taken by stack services. Provisioning a user with one
+# of these slugs would create a DNS collision between the cozy instance
+# (https://<slug>.${BASE_DOMAIN}) and the service routed by traefik on the
+# same name. Derived at runtime from the `Host(...)` rules in every
+# docker-compose*.y*ml under the repo, so adding a service to compose
+# automatically extends the blocklist with no CLI change required.
+RESERVED_SLUGS=()
+reserved_slugs_load() {
+  (( ${#RESERVED_SLUGS[@]} > 0 )) && return 0
+  local files=()
+  shopt -s nullglob
+  files+=("$REPO_ROOT"/docker-compose*.y*ml "$REPO_ROOT"/*/docker-compose*.y*ml)
+  shopt -u nullglob
+  (( ${#files[@]} > 0 )) || die "no docker-compose*.y*ml files under $REPO_ROOT (cannot derive reserved subdomains)"
+  local raw
+  raw=$(grep -hEo 'Host\(`[a-z0-9-]+\.' "${files[@]}" 2>/dev/null \
+        | sed -E 's/^Host\(`//; s/\.$//' \
+        | sort -u) || true
+  [[ -n "$raw" ]] || die "no Host(\`<sub>.*\`) rules found in compose files (reserved-subdomain check would be empty)"
+  mapfile -t RESERVED_SLUGS <<<"$raw"
+}
+
 # Reads userNames on stdin (one per line). Prints all errors then exits 1
 # if any entry is invalid. Returns silently on success.
 validate_slugs() {
@@ -113,6 +135,29 @@ validate_slugs() {
   if (( ${#invalid[@]} > 0 )); then
     err "invalid userName(s):"
     printf '  - %s\n' "${invalid[@]}" >&2
+    exit 1
+  fi
+}
+
+# Reads userNames on stdin (one per line); errors if any matches a stack
+# service subdomain. Call only on the creation path: destroy / flags should
+# still work on legacy entries that pre-date this check.
+validate_not_reserved() {
+  reserved_slugs_load
+  # Slugs are DNS labels (no spaces or glob metachars), so the leading /
+  # trailing space sentinels make substring-containment a safe set check.
+  local haystack=" ${RESERVED_SLUGS[*]} "
+  local reserved=() u
+  while IFS= read -r u; do
+    [[ -z "$u" ]] && continue
+    [[ "$haystack" == *" $u "* ]] && reserved+=("$u")
+  done
+  if (( ${#reserved[@]} > 0 )); then
+    err "userName(s) conflict with a stack service subdomain:"
+    for u in "${reserved[@]}"; do
+      printf '  - %s (would shadow https://%s.%s)\n' \
+        "$u" "$u" "${BASE_DOMAIN:-<BASE_DOMAIN>}" >&2
+    done
     exit 1
   fi
 }
@@ -458,6 +503,7 @@ cmd_users_add() {
 
   if (( count > 0 )); then
     cut -f1 <<<"$lines" | validate_slugs
+    cut -f1 <<<"$lines" | validate_not_reserved
   fi
 
   printf '%s%s%s Provisioning %s%d user(s)%s\n' \
