@@ -1,4 +1,4 @@
-FROM livekit/livekit-server:v1.8.3
+FROM livekit/livekit-server:v1.13.4
 USER root
 
 # install curl for healthcheck
