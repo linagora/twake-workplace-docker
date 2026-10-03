@@ -20,6 +20,7 @@ chat_app/synapse/wellknownserver.conf
 chat_app/synapse/data/
 chat_app/synapse/media_store/
 chat_app/chat/config.json
+chat_app/tom/config.yaml
 calendar_app/conf-side-service/configuration.properties
 calendar_app/frontend/account/openpaas.js
 calendar_app/frontend/calendar/openpaas.js
