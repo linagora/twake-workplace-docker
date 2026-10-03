@@ -44,11 +44,7 @@ services:
       - "traefik.http.routers.matrixfromchat.priority=100"
 
   tom:
-    image: linagora/tom-server:v2026-04-30
-    # To build from source instead of pulling the published image, uncomment:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    image: linagora/tom-server:2.0.1
     restart: unless-stopped
     depends_on:
       synapse:
@@ -56,67 +52,10 @@ services:
     networks:
       - twake-network
     environment:
-      # - NODE_OPTIONS="--inspect=0.0.0.0:9229"
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-      - SERVER_NAME=${BASE_DOMAIN}
-      - BASE_URL=https://tom.${BASE_DOMAIN}
-      - OIDC_ISSUER=https://auth.${BASE_DOMAIN}
-      - TRUSTED_PROXIES=uniquelocal
-
-      - ADDITIONAL_FEATURES=true
-      # - FEDERATED_IDENTITY_SERVICES=fed.docker.localhost
-
-      # - CRON_SERVICE=true
-      # - UPDATE_FEDERATED_IDENTITY_HASHES_CRON=0-59/2 * * * *
-      # - UPDATE_USERS_CRON=1-59/2 * * * *
-
-      - DATABASE_ENGINE=pg
-      - DATABASE_HOST=postgres
-      - DATABASE_NAME=tom
-      - DATABASE_USER=twake
-      - DATABASE_PASSWORD=twake!1
-
-      - USERDB_ENGINE=ldap
-      - LDAP_URI=ldap://ldap
-      - LDAP_BASE=ou=users,${LDAP_BASE_DN}
-      - LDAP_FILTER=(objectClass=inetOrgPerson)
-      - LDAP_USER=cn=admin,${LDAP_BASE_DN}
-      - LDAP_PASSWORD=admin
-
-      - MATRIX_INTERNAL_HOST=http://synapse:8008
-      - MATRIX_SERVER=matrix.${BASE_DOMAIN}
-      - MATRIX_DATABASE_ENGINE=pg
-      - MATRIX_DATABASE_HOST=postgres
-      - MATRIX_DATABASE_NAME=synapse
-      - MATRIX_DATABASE_USER=synapse
-      - MATRIX_DATABASE_PASSWORD=synapse!1
-
-      - SMS_API_KEY=SOME_SECRET_KEY
-      - SMS_API_LOGIN=login@domain.com
-      - SMS_API_URL=https://api.octopush.com/v1/public
-
-      - TCHAT_ENABLE_INVITATIONS=true
-
-      - FEATURE_MATRIX_PROFILE_UPDATES_ALLOWED=''
-
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_VHOST=/
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
-      - RABBITMQ_TLS=false
-
-      - FEATURE_COMMON_SETTINGS_ENABLED=true
-      - FEATURE_COMMON_SETTINGS_QUEUE=chat.settings.updated.queue
-      - FEATURE_COMMON_SETTINGS_EXCHANGE="settings exchange"
-      - FEATURE_COMMON_SETTINGS_ROUTING_KEY="user.settings.updated"
-
-      - FEATURE_USER_DIRECTORY_ENABLED=true
-      - FEATURE_USER_PROFILE_DEFAULT_VISIBILITY=public
-      - FEATURE_USER_PROFILE_DEFAULT_VISIBLE_FIELDS=email,phone
-
-      - LOG_LEVEL=silly
-      - LOG_TRANSPORTS=Console
+    volumes:
+      # Rendered from tom/config.yaml.template by compose-wrapper.sh.
+      - ./tom/config.yaml:/data/config.yaml:ro
     extra_hosts:
       - "matrix.${BASE_DOMAIN}:172.27.0.100"  
     labels:

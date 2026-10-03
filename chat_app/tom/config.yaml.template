@@ -1,0 +1,59 @@
+# tom-server configuration, rendered by compose-wrapper.sh into config.yaml.
+# Reference: https://github.com/linagora/ToM-server/blob/main/docs/Configuration.md
+server:
+  name: "${BASE_DOMAIN}"
+  base_url: "https://tom.${BASE_DOMAIN}"
+  trust_x_forwarded_for: true
+  trusted_proxies: ["uniquelocal"]
+  additional_features: true
+
+urls:
+  auth: "https://auth.${BASE_DOMAIN}/"
+  chat: "https://chat.${BASE_DOMAIN}/web/"
+
+synapse:
+  server_url: "https://matrix.${BASE_DOMAIN}"
+  internal_host: "http://synapse:8008"
+  database:
+    host: "postgres"
+    name: "synapse"
+    user: "synapse"
+    password: "synapse!1"
+
+database:
+  host: "postgres"
+  name: "tom"
+  user: "twake"
+  password: "twake!1"
+
+ldap:
+  uri: "ldap://ldap"
+  base: "ou=users,${LDAP_BASE_DN}"
+  user: "cn=admin,${LDAP_BASE_DN}"
+  password: "admin"
+  filter: "(objectClass=inetOrgPerson)"
+
+sms:
+  api_url: "https://api.octopush.com/v1/public"
+  api_login: "login@domain.com"
+  api_key: "SOME_SECRET_KEY"
+
+oidc:
+  issuer: "https://auth.${BASE_DOMAIN}"
+
+twake_chat:
+  enable_invitations: true
+
+features:
+  common_settings:
+    enabled: true
+  matrix_profile_updates_allowed: false
+  user_profile:
+    default_visibility_settings:
+      visibility: "public"
+      visible_fields: ["email", "phone"]
+  user_directory:
+    enabled: true
+
+logger:
+  level: "debug"
