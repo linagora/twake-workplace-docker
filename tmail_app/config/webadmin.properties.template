@@ -27,7 +27,7 @@ https.enabled=false
 # Defaults to false
 # CORS enabled - both backend and Traefik handle it
 cors.enable=true
-cors.origin=https://mail.twake.local
+cors.origin=https://mail.${BASE_DOMAIN}
 
 # List of fully qualified class names that should be exposed over webadmin
 # in addition to your product default routes. Routes needs to be located
