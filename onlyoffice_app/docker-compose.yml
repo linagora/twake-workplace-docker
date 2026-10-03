@@ -16,8 +16,8 @@ services:
       - USE_FORWARDED_HEADERS=true
       - ALLOW_META_IP_ADDRESS=true
       - ALLOW_PRIVATE_IP_ADDRESS=true
-      - SSL_CERTIFICATE_PATH=/var/www/onlyoffice/Data/certs/root-ca.pem
-      - SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/root-ca.key
+      - SSL_CERTIFICATE_PATH=/var/www/onlyoffice/Data/certs/tls.crt
+      - SSL_KEY_PATH=/var/www/onlyoffice/Data/certs/tls.key
 
     labels:
       - "traefik.enable=true"
@@ -43,8 +43,10 @@ services:
        - /var/lib/onlyoffice/documentserver/App_Data/cache/files
        - /var/www/onlyoffice/documentserver-example/public/files
        - /usr/share/fonts
-       - ../twake_auth/traefik/ssl/root-ca.pem:/var/www/onlyoffice/Data/certs/root-ca.pem
-       - ../twake_auth/traefik/ssl/root-ca.key:/var/www/onlyoffice/Data/certs/root-ca.key
+       # The wildcard server certificate, not the CA: with CERT_MODE=letsencrypt
+       # root-ca.pem holds the Let's Encrypt chain and root-ca.key is not its key.
+       - ../twake_auth/traefik/ssl/twake-server-fullchain.pem:/var/www/onlyoffice/Data/certs/tls.crt:ro
+       - ../twake_auth/traefik/ssl/twake-server.key:/var/www/onlyoffice/Data/certs/tls.key:ro
     extra_hosts:
        - "user1.${BASE_DOMAIN}:172.27.0.100"
        - "user2.${BASE_DOMAIN}:172.27.0.100"
