@@ -1,0 +1,14 @@
+# OpenPaaS integration, as on staging: the calendar side-service is the
+# OpenPaaS API and sabre the DAV server (calendar_app). Enables the
+# CalDavCollect and CardDavCollectedContact mailets.
+
+# Contact events published by the side-service (default vhost)
+rabbitmq.uri=amqp://guest:guest@rabbitmq:5672
+
+openpaas.api.uri=http://tcalendar-side-service/api
+openpaas.admin.user=admin@${BASE_DOMAIN}
+openpaas.admin.password=admin
+
+dav.api.uri=http://sabre_dav
+dav.admin.user=admin
+dav.admin.password=secret123
