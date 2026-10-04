@@ -411,6 +411,20 @@
          "name" : "cn",
          "oidc_state" : "state",
          "preferred_username" : "uid"
+      },
+      "docs" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "preferred_username" : "uid"
+      },
+      "grist" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "preferred_username" : "uid"
       }
    },
    "oidcRPMetaDataMacros" : {
@@ -418,7 +432,9 @@
       "cozy" : {},
       "james" : {},
       "linshare" : {},
-      "meet" : {}
+      "meet" : {},
+      "docs" : {},
+      "grist" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -605,6 +621,69 @@
          "oidcRPMetaDataOptionsRequirePKCE" : 0,
          "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
          "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
+      },
+      "docs" : {
+         "oidcRPMetaDataOptionsAccessTokenClaims" : 1,
+         "oidcRPMetaDataOptionsAccessTokenEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthRequiredForAuthorize" : 0,
+         "oidcRPMetaDataOptionsAuthnRequireNonce" : 0,
+         "oidcRPMetaDataOptionsAuthnRequireState" : 0,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "docs",
+         "oidcRPMetaDataOptionsClientSecret" : "docs-secret",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 0,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsIdTokenEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsLogoutBypassConfirm" : 1,
+         "oidcRPMetaDataOptionsLogoutEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsLogoutSessionRequired" : 0,
+         "oidcRPMetaDataOptionsLogoutType" : "front",
+         "oidcRPMetaDataOptionsLogoutUrl" : "https://docs.${BASE_DOMAIN}/api/v1.0/logout-callback/",
+         "oidcRPMetaDataOptionsNoJwtHeader" : 0,
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://docs.${BASE_DOMAIN}/api/v1.0/logout-callback/",
+         "oidcRPMetaDataOptionsPublic" : 0,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://docs.${BASE_DOMAIN}/api/v1.0/callback/",
+         "oidcRPMetaDataOptionsRefreshToken" : 0,
+         "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 0,
+         "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
+      },
+      "grist" : {
+         "oidcRPMetaDataOptionsAccessTokenClaims" : 1,
+         "oidcRPMetaDataOptionsAccessTokenEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthRequiredForAuthorize" : 0,
+         "oidcRPMetaDataOptionsAuthnRequireNonce" : 0,
+         "oidcRPMetaDataOptionsAuthnRequireState" : 0,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "grist",
+         "oidcRPMetaDataOptionsClientSecret" : "grist-secret",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 0,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsIdTokenEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsLogoutBypassConfirm" : 1,
+         "oidcRPMetaDataOptionsLogoutEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsLogoutSessionRequired" : 0,
+         "oidcRPMetaDataOptionsLogoutType" : "front",
+         "oidcRPMetaDataOptionsNoJwtHeader" : 0,
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://grist.${BASE_DOMAIN}/signed-out",
+         "oidcRPMetaDataOptionsPublic" : 0,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://grist.${BASE_DOMAIN}/oauth2/callback",
+         "oidcRPMetaDataOptionsRefreshToken" : 0,
+         "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 0,
+         "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
+         "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -612,14 +691,18 @@
       "cozy" : {},
       "james" : {},
       "linshare" : {},
-      "meet" : {}
+      "meet" : {},
+      "docs" : {},
+      "grist" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
       "cozy" : {},
       "james" : {},
       "linshare" : {},
-      "meet" : {}
+      "meet" : {},
+      "docs" : {},
+      "grist" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

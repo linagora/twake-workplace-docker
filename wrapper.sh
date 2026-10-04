@@ -16,11 +16,13 @@ REPOS=(
     ["calendar_app"]="${BASE_DIR}/calendar_app"
     ["chat_app"]="${BASE_DIR}/chat_app"
     ["tmail_app"]="${BASE_DIR}/tmail_app"
+    ["docs_app"]="${BASE_DIR}/docs_app"
+    ["grist_app"]="${BASE_DIR}/grist_app"
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app")
-STOP_ORDER=("tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app" "docs_app" "grist_app")
+STOP_ORDER=("grist_app" "docs_app" "tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 # ----------------------------
 # App selection: friendly flags -> repo
@@ -36,6 +38,8 @@ APP_FLAGS=(
     ["--meet"]="meet_app"
     ["--calendar"]="calendar_app"
     ["--office"]="onlyoffice_app"
+    ["--docs"]="docs_app"
+    ["--grist"]="grist_app"
 )
 
 # Repo-level dependencies: repos that must also run for a given repo to work.
@@ -53,6 +57,8 @@ REPO_REQUIRES=(
     ["calendar_app"]="twake_auth"
     ["tmail_app"]="twake_auth"
     ["onlyoffice_app"]="twake_db"
+    ["docs_app"]="twake_auth"
+    ["grist_app"]="twake_auth"
 )
 
 # Dependencies: containers that must be healthy before starting a repo.
@@ -76,6 +82,9 @@ REPO_REQUIRES=(
 #     /healthcheck probes them, so until they are healthy the aggregate reports
 #     UNHEALTHY (503), the container never turns healthy, and the wrapper's
 #     health wait fails with "calendar health check failing".
+# docs_app and grist_app are confidential OIDC clients (docs, grist) and keep
+# their data in twake_db's postgres, valkey and minio. Grist also loads the
+# OIDC discovery at boot and stays down while the IdP is unreachable.
 declare -A REPO_DEPS
 REPO_DEPS=(
     ["onlyoffice_app"]="postgres rabbitmq"
@@ -84,13 +93,15 @@ REPO_DEPS=(
     ["meet_app"]="lemonldap-ng"
     ["tmail_app"]="lemonldap-ng"
     ["calendar_app"]="lemonldap-ng mongodb rabbitmq"
+    ["docs_app"]="lemonldap-ng postgres visio-valkey minio"
+    ["grist_app"]="lemonldap-ng postgres visio-valkey minio"
 )
 
 show_help() {
     echo "Usage: $0 <up|down> [repo] [service] [app flags] [docker-compose options]"
     echo
     echo "App flags (start only the selected apps, infra pulled in automatically):"
-    echo "  --mail --chat --drive --meet --calendar --office"
+    echo "  --mail --chat --drive --meet --calendar --office --docs --grist"
     echo "  --full                          All apps (equivalent to listing every flag)"
     echo
     echo "Examples:"

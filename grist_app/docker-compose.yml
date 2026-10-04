@@ -1,0 +1,96 @@
+# Grist (open-source build) on grist.${BASE_DOMAIN}, with LemonLDAP as OIDC
+# provider. Each user gets a personal site, https://grist.${BASE_DOMAIN}/o/docs/.
+# Home database in the shared postgres (database grist, created by twake_db's
+# db-ensure), document snapshots and attachments in the shared MinIO.
+services:
+  # Creates the versioned bucket Grist requires in the shared MinIO. Idempotent.
+  grist-minio-init:
+    image: bitnamilegacy/minio-client:2025.7.21-debian-12-r3
+    restart: "no"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set twake http://minio:9000 vW9xY2zA5bC8dE1fG4hJ3kL hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+        mc mb --ignore-existing twake/grist-docs
+        mc version enable twake/grist-docs
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  grist:
+    image: gristlabs/grist-oss:1.7.20
+    container_name: grist
+    environment:
+      APP_HOME_URL: https://grist.${BASE_DOMAIN}
+      GRIST_ORG_IN_PATH: "true"
+      # Skip the first-run "Quick setup" gate: everything is configured here.
+      GRIST_IN_SERVICE: "true"
+      GRIST_FORCE_LOGIN: "true"
+      GRIST_ANON_PLAYGROUND: "false"
+      GRIST_TELEMETRY_LEVEL: "off"
+      GRIST_ADMIN_EMAIL: admin@${BASE_DOMAIN}
+      GRIST_SESSION_SECRET: ThisIsAnExampleKeyForDevPurposeOnly
+      GRIST_SANDBOX_FLAVOR: gvisor
+
+      TYPEORM_TYPE: postgres
+      TYPEORM_HOST: postgres
+      TYPEORM_PORT: 5432
+      TYPEORM_DATABASE: grist
+      TYPEORM_USERNAME: grist
+      TYPEORM_PASSWORD: grist
+      REDIS_URL: redis://:valkeypass@valkey:6379/7
+
+      # Same MinIO credentials as tmail_app/config/blob.properties.
+      GRIST_DOCS_S3_ENDPOINT: minio
+      GRIST_DOCS_S3_PORT: 9000
+      GRIST_DOCS_S3_USE_SSL: "false"
+      GRIST_DOCS_S3_BUCKET: grist-docs
+      GRIST_DOCS_S3_ACCESS_KEY: vW9xY2zA5bC8dE1fG4hJ3kL
+      GRIST_DOCS_S3_SECRET_KEY: hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+      GRIST_EXTERNAL_ATTACHMENTS_MODE: snapshots
+
+      # The issuer must match LemonLDAP's, trailing slash included.
+      GRIST_OIDC_IDP_ISSUER: https://auth.${BASE_DOMAIN}/
+      GRIST_OIDC_IDP_CLIENT_ID: grist
+      GRIST_OIDC_IDP_CLIENT_SECRET: grist-secret
+      GRIST_OIDC_IDP_SCOPES: "openid email profile"
+      # LemonLDAP does not release email_verified.
+      GRIST_OIDC_SP_IGNORE_EMAIL_VERIFIED: "true"
+      # given_name + family_name, the default, repeats the last name: the demo
+      # users' givenName is their full name.
+      GRIST_OIDC_SP_PROFILE_NAME_ATTR: name
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
+    volumes:
+      - grist_data:/persist
+      - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
+    restart: unless-stopped
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    depends_on:
+      grist-minio-init:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grist.rule=Host(`grist.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.grist.entrypoints=websecure"
+      - "traefik.http.routers.grist.tls=true"
+      - "traefik.http.services.grist.loadbalancer.server.port=8484"
+    networks:
+      - twake-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8484/status?db=1&redis=1').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  grist_data:
+    driver: local
+
+networks:
+  twake-network:
+    external: true
