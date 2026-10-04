@@ -49,7 +49,7 @@ cd twake_auth
 ./compose-wrapper.sh up -d
 ```
 
-The wrapper picks the OIDC template, fetches the discovery doc, and splices it into `lmConf-1.json` along with the client credentials. If switching from `LDAP` to `OpenIDConnect` mode on a running stack, see [`twake_auth/README.md`](../twake_auth/README.md) for the cached-config wipe step.
+The wrapper picks the OIDC template, fetches the discovery doc, and splices it into `lmConf-1.json` along with the client credentials. Switching from `LDAP` to `OpenIDConnect` mode on a running stack needs nothing more: the wrapper imports the new config into LemonLDAP (see [`twake_auth/README.md`](../twake_auth/README.md)).
 
 ## Provision users
 

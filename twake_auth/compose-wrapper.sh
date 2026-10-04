@@ -113,39 +113,75 @@ if [ "$ACTION" != "up" ]; then
   exit 0
 fi
 
-echo "⏳ Waiting for LemonLDAP to be healthy (timeout 5 min)..."
-ELAPSED=0
-MAX_WAIT=300
-while [ "$ELAPSED" -lt "$MAX_WAIT" ]; do
-  STATUS=$(sudo docker inspect \
-    --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
-    "lemonldap-ng" 2>/dev/null || echo "starting")
+# wait_lemonldap_healthy — block until the lemonldap-ng container reports
+# healthy, exit on unhealthy or after 5 minutes.
+wait_lemonldap_healthy() {
+  echo "⏳ Waiting for LemonLDAP to be healthy (timeout 5 min)..."
+  local ELAPSED=0
+  local MAX_WAIT=300
+  while [ "$ELAPSED" -lt "$MAX_WAIT" ]; do
+    STATUS=$(sudo docker inspect \
+      --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' \
+      "lemonldap-ng" 2>/dev/null || echo "starting")
 
-  case "$STATUS" in
-    healthy)
-      echo "✔ LemonLDAP is healthy"
-      break
-      ;;
-    unhealthy)
-      echo "❌ LemonLDAP is unhealthy. Check logs: docker logs lemonldap-ng"
-      exit 1
-      ;;
-    ""|starting)
-      echo "… LemonLDAP status: starting (${ELAPSED}s / ${MAX_WAIT}s)"
-      sleep 5
-      ELAPSED=$((ELAPSED + 5))
-      ;;
-    *)
-      echo "… LemonLDAP status: $STATUS (${ELAPSED}s / ${MAX_WAIT}s)"
-      sleep 5
-      ELAPSED=$((ELAPSED + 5))
-      ;;
-  esac
-done
+    case "$STATUS" in
+      healthy)
+        echo "✔ LemonLDAP is healthy"
+        return
+        ;;
+      unhealthy)
+        echo "❌ LemonLDAP is unhealthy. Check logs: docker logs lemonldap-ng"
+        exit 1
+        ;;
+      ""|starting)
+        echo "… LemonLDAP status: starting (${ELAPSED}s / ${MAX_WAIT}s)"
+        ;;
+      *)
+        echo "… LemonLDAP status: $STATUS (${ELAPSED}s / ${MAX_WAIT}s)"
+        ;;
+    esac
+    sleep 5
+    ELAPSED=$((ELAPSED + 5))
+  done
 
-if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
   echo "❌ Timeout: LemonLDAP did not become healthy in ${MAX_WAIT}s. Check: docker logs lemonldap-ng"
   exit 1
-fi
+}
+
+# import_lmconf — make LemonLDAP serve the rendered config/lmConf-1.json.
+# LemonLDAP serves the newest lmConf-N.json of its config volume, and the key
+# rotation below stores a new one on every up, so the bind-mounted lmConf-1.json
+# is only read on a fresh volume: a new OIDC client or claim in the templates
+# would otherwise never reach a running stack. When the render changed since
+# the last import, store it as a new config version, keeping the current
+# signing keys so that the tokens and JWKS already handed out stay valid.
+LMCONF_CLI=/usr/share/lemonldap-ng/bin/lemonldap-ng-cli
+LMCONF_IMPORTED=/var/lib/lemonldap-ng/conf/.imported-lmConf-1.sha256
+import_lmconf() {
+  local rendered imported merged
+  rendered=$(sha256sum config/lmConf-1.json | cut -d' ' -f1)
+  imported=$(sudo docker exec lemonldap-ng cat "$LMCONF_IMPORTED" 2>/dev/null || true)
+  if [ "$rendered" = "$imported" ]; then
+    return
+  fi
+
+  echo "Importing config/lmConf-1.json into LemonLDAP..."
+  merged=$(sudo docker exec lemonldap-ng "$LMCONF_CLI" save 2>/dev/null \
+    | jq --slurpfile rendered config/lmConf-1.json \
+        '$rendered[0] + with_entries(select(.key | test("^oidcService(Old|New)?(PrivateKey|PublicKey|KeyId|KeyType)")))')
+  if ! echo "$merged" | sudo docker exec -i lemonldap-ng "$LMCONF_CLI" -yes 1 restore - >/dev/null 2>&1; then
+    echo "❌ Failed to import config/lmConf-1.json. Check: docker exec lemonldap-ng $LMCONF_CLI -yes 1 restore /var/lib/lemonldap-ng/conf/lmConf-1.json"
+    exit 1
+  fi
+  echo "$rendered" | sudo docker exec -i lemonldap-ng sh -c "cat > $LMCONF_IMPORTED"
+
+  # The portal only looks for a new version every checkTime (600 s).
+  sudo docker restart lemonldap-ng >/dev/null
+  wait_lemonldap_healthy
+  echo "✔ config/lmConf-1.json imported"
+}
+
+wait_lemonldap_healthy
+import_lmconf
 
 sudo docker exec lemonldap-ng bash -c "/usr/share/lemonldap-ng/bin/rotateOidcKeys" || true

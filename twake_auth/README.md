@@ -74,13 +74,7 @@ Run the wrapper. It picks the right template based on `AUTH_MODE`, fetches the d
 ./compose-wrapper.sh up -d
 ```
 
-If lemonldap-ng has been up before in the other mode, **wipe its config volume first**. Once lemonldap boots it caches its config inside the container as `lmConf-2.json` and refuses to pick up changes to the bind-mounted `lmConf-1.json` until that cached file is gone:
-
-```bash
-docker compose --env-file ../.env stop lemonldap
-docker compose --env-file ../.env rm -fv lemonldap
-./compose-wrapper.sh up -d
-```
+LemonLDAP serves the newest `lmConf-N.json` of its config volume, not the bind-mounted `lmConf-1.json` (the key rotation run on every `up` stores a new version). So on every `up`, when the rendered `lmConf-1.json` changed since the last import (new mode, new OIDC client or claim in the templates), the wrapper imports it as a new config version with `lemonldap-ng-cli restore`, keeping the current signing keys, and restarts lemonldap-ng. No need to wipe the config volume.
 
 To render the config without touching the container (handy while iterating on `.env`):
 
