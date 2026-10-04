@@ -84,10 +84,10 @@ For each instance, `oidc_id` should equal the `userName`:
 docker exec cozyt cozy-stack instances ls --json | jq 'select(.oidc_id != null) | {domain, oidc_id}'
 ```
 
-**Cozy-stack consumed the events.** Tail the cozyt log around the import. You want a `skipping passphrase update` line per user (the OIDC bypass) and a `created organization contact` line for each cross-instance pairing:
+**Cozy-stack consumed the events.** Tail the cozyt log around the import. You want a `no passphrase hash` line per user (ldap-rest sends `user.created` without one) and a `synced organization contact` line for each cross-instance pairing:
 
 ```bash
-docker logs --since 5m cozyt 2>&1 | grep -E "user\.created|skipping passphrase|organization contact|nacking"
+docker logs --since 5m cozyt 2>&1 | grep -E "user\.created|no passphrase hash|organization contact|nacking"
 ```
 
 A failed message ends with `nacking message`; on `1.6.50-rc1+` the only common nack is `organization has no instances`, which only fires if the instance lookup races the consumer (rare and self-healing on the next message).
