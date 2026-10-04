@@ -13,7 +13,7 @@ services:
       - twake-network
 
   synapse:
-    image: matrixdotorg/synapse:v1.119.0
+    image: matrixdotorg/synapse:v1.152.1
     restart: unless-stopped
     user: "root"
     entrypoint: ["/bin/sh", "-c", "update-ca-certificates && exec /start.py"]
@@ -69,7 +69,7 @@ services:
       - "traefik.http.routers.tomfromchat.priority=100" 
 
   tom-bridge-init:
-    image: matrixdotorg/synapse:v1.119.0
+    image: matrixdotorg/synapse:v1.152.1
     restart: "no"
     depends_on:
       synapse:
@@ -151,7 +151,7 @@ services:
       - "traefik.http.services.fed.loadbalancer.server.port=3000"
 
   chat:
-    image: linagora/twake-web
+    image: linagora/twake-web:v2.22.5
     restart: unless-stopped
     volumes:
       - ./chat/config.json:/usr/share/nginx/html/web/config.json

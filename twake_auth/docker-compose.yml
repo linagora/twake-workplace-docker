@@ -1,6 +1,6 @@
 services:
   lemonldap:
-    image: yadd/lemonldap-ng-full:2026-01-23
+    image: yadd/lemonldap-ng-full:lts-2.21
     platform: linux/amd64
     container_name: lemonldap-ng
     volumes:

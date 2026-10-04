@@ -1,6 +1,10 @@
 services:
   onlyoffice-documentserver:
-    image: onlyoffice/documentserver:8.0.1 
+    # Same OnlyOffice build (9.4.0-129) as the Twake fork
+    # (github.com/linagora/onlyoffice-twake), which is on a private registry:
+    # set ONLYOFFICE_IMAGE in .env to use it, e.g.
+    # harbor.linagora.com/twake-workplace/onlyoffice:9.4.0-noanalytics
+    image: ${ONLYOFFICE_IMAGE:-onlyoffice/documentserver:9.4.0.1}
     container_name: onlyoffice-documentserver
     environment:
       - DB_TYPE=postgres

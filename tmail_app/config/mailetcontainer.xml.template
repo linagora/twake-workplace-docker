@@ -131,18 +131,6 @@
                 <destinationAttribute>icalendar2</destinationAttribute>
                 <onMailetException>ignore</onMailetException>
             </mailet>
-            <mailet match="All" class="com.linagora.tmail.mailet.SenderICALToJsonAttribute">
-                <source>icalendar2</source>
-                <destination>icalendarAsJson2</destination>
-                <rawSource>rawIcalendar2</rawSource>
-                <onMailetException>ignore</onMailetException>
-            </mailet>
-            <mailet match="All" class="com.linagora.tmail.mailet.OpenPaasAmqpForwardAttribute">
-                <exchange>james:events</exchange>
-                <exchange_type>fanout</exchange_type>
-                <attribute>icalendarAsJson2</attribute>
-                <onMailetException>ignore</onMailetException>
-            </mailet>
 
 
             <mailet match="All" class="RemoveMimeHeader">
@@ -186,12 +174,6 @@
             <mailet match="HasMailAttribute=senderIsLocal" class="ContactExtractor">
                 <attribute>extractedContacts</attribute>
                 <onMatchException>nomatch</onMatchException>
-                <onMailetException>ignore</onMailetException>
-            </mailet>
-            <mailet match="All" class="com.linagora.tmail.mailet.OpenPaasAmqpForwardAttribute">
-                <exchange>collector:email</exchange>
-                <exchange_type>fanout</exchange_type>
-                <attribute>extractedContacts</attribute>
                 <onMailetException>ignore</onMailetException>
             </mailet>
             <mailet match="All" class="com.linagora.tmail.mailets.IndexContacts">
@@ -276,12 +258,6 @@
                 <source>icalendar</source>
                 <destination>icalendarAsJson</destination>
                 <rawSource>rawIcalendar</rawSource>
-                <onMailetException>ignore</onMailetException>
-            </mailet>
-            <mailet match="All" class="com.linagora.tmail.mailet.OpenPaasAmqpForwardAttribute">
-                <exchange>james:events</exchange>
-                <exchange_type>fanout</exchange_type>
-                <attribute>icalendarAsJson</attribute>
                 <onMailetException>ignore</onMailetException>
             </mailet>
             <!-- End of ICAL pipeline -->

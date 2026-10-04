@@ -32,7 +32,7 @@ services:
       retries: 5
   # ==================== TMail Backend ====================
   tmail-backend:
-    image: linagora/tmail-backend:distributed-1.0.13
+    image: linagora/tmail-backend:distributed-1.0.19.1
     container_name: tmail-backend
     hostname: tmail-backend
     restart: always
@@ -129,7 +129,7 @@ services:
 
   # ==================== TMail Web UI ====================
   tmail-web:
-    image: linagora/tmail-web:v0.23.0
+    image: linagora/tmail-web:v0.30.0
     container_name: tmail-web
     hostname: tmail-web
     restart: always
