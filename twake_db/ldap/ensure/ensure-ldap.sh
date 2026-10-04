@@ -17,11 +17,27 @@ if ! ldapsearch -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -b cn=Subschema -s 
   ldapadd -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -f /schema/03-twake-user.ldif
 fi
 
+# twakeInstance schema (twakeCreatedEventAt), required by ldap-rest's twake/instances
+if ! ldapsearch -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -b cn=Subschema -s base -LLL \
+    objectClasses | grep -q "NAME 'twakeInstance'"; then
+  echo "Adding the twakeInstance schema"
+  ldapadd -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -f /schema/04-twake-instance.ldif
+fi
+
+# Accounts written before twake/instances lack the classes its writes need, and
+# ldap-rest only repairs the classes its flat schema declares for ou=users
+for OC in twakeUser twakeInstance; do
+  ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "ou=users,${LDAP_BASE_DN}" \
+    -s one -LLL -o ldif-wrap=no "(!(objectClass=${OC}))" 1.1 \
+    | awk -v oc="$OC" '/^dn::? /{print; print "changetype: modify"; print "add: objectClass"; print "objectClass: " oc; print ""}' \
+    | ldapmodify -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW"
+done
+
 # workplace FQDN of the demo users, exported as the workplaceFqdn OIDC claim
 for USER in user1 user2 user3; do
   DN="uid=${USER},ou=users,${LDAP_BASE_DN}"
   ENTRY=$(ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "$DN" -s base -LLL \
-    objectClass workspaceUrl 2>/dev/null || true)
+    workspaceUrl 2>/dev/null || true)
   [ -n "$ENTRY" ] || continue
   if echo "$ENTRY" | grep -q '^workspaceUrl:'; then
     continue
@@ -30,11 +46,6 @@ for USER in user1 user2 user3; do
   {
     echo "dn: $DN"
     echo "changetype: modify"
-    if ! echo "$ENTRY" | grep -qi '^objectClass: twakeUser$'; then
-      echo "add: objectClass"
-      echo "objectClass: twakeUser"
-      echo "-"
-    fi
     echo "add: workspaceUrl"
     echo "workspaceUrl: ${USER}.${BASE_DOMAIN}"
   } | ldapmodify -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW"
