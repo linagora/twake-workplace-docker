@@ -1,0 +1,107 @@
+# Front of La Suite Docs, adapted from the upstream production template
+# (docker/files/production/etc/nginx/conf.d/default.conf.template, v5.7.0).
+# Traefik terminates TLS and routes docs.${BASE_DOMAIN} here.
+
+upstream docs_backend {
+    server docs-backend:8000 fail_timeout=0;
+}
+
+upstream docs_frontend {
+    server 127.0.0.1:3000 fail_timeout=0;
+}
+
+server {
+    listen 8083;
+    server_name docs.${BASE_DOMAIN};
+    charset utf-8;
+
+    client_max_body_size 10m;
+    server_tokens off;
+
+    location @proxy_to_docs_backend {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_redirect off;
+        proxy_pass http://docs_backend;
+    }
+
+    location @proxy_to_docs_frontend {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_redirect off;
+        proxy_pass http://docs_frontend;
+    }
+
+    location / {
+        try_files $uri @proxy_to_docs_frontend;
+    }
+
+    location /api {
+        try_files $uri @proxy_to_docs_backend;
+    }
+
+    location /admin {
+        try_files $uri @proxy_to_docs_backend;
+    }
+
+    location /external_api {
+        try_files $uri @proxy_to_docs_backend;
+    }
+
+    location /static {
+        try_files $uri @proxy_to_docs_backend;
+    }
+
+    location /collaboration/ws/ {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+
+        proxy_pass http://docs-y-provider:4444;
+
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Origin $http_origin;
+        proxy_set_header Host $host;
+    }
+
+    location /collaboration/api/ {
+        proxy_pass http://docs-y-provider:4444;
+        proxy_set_header Host $host;
+    }
+
+    # Media are read from the shared MinIO once the backend has authorized the
+    # request and signed it.
+    location /media/ {
+        auth_request /media-auth;
+        auth_request_set $authHeader $upstream_http_authorization;
+        auth_request_set $authDate $upstream_http_x_amz_date;
+        auth_request_set $authContentSha256 $upstream_http_x_amz_content_sha256;
+
+        proxy_set_header Authorization $authHeader;
+        proxy_set_header X-Amz-Date $authDate;
+        proxy_set_header X-Amz-Content-SHA256 $authContentSha256;
+
+        proxy_pass http://minio:9000/docs-media-storage/;
+        proxy_set_header Host minio:9000;
+
+        add_header Content-Security-Policy "default-src 'none'" always;
+    }
+
+    location /media-auth {
+        proxy_pass http://docs_backend/api/v1.0/documents/media-auth/;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Original-URL $request_uri;
+
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header X-Original-Method $request_method;
+    }
+}

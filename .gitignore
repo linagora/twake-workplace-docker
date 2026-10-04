@@ -11,6 +11,7 @@ tmail_app/config/openpaas.properties
 tmail_app/tmail-web-conf/.env
 meet_app/config/nginx.conf
 meet_app/config/livekit.yaml
+docs_app/config/nginx.conf
 linshare_app/config/backend/linshare.extra.properties
 linshare_app/config/user-ui/config.js
 cozy_stack/config/cozy.yaml

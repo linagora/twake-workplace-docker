@@ -1,0 +1,175 @@
+# La Suite Docs (upstream release, not the Cozy fork), on docs.${BASE_DOMAIN},
+# with LemonLDAP as OIDC provider. Data lives in the shared postgres (database
+# docs, created by twake_db's db-ensure), valkey and MinIO.
+x-docs-backend-env: &docs-backend-env
+  DJANGO_CONFIGURATION: Production
+  DJANGO_SETTINGS_MODULE: impress.settings
+  DJANGO_SECRET_KEY: ThisIsAnExampleKeyForDevPurposeOnly
+  DJANGO_ALLOWED_HOSTS: docs.${BASE_DOMAIN},docs-backend,localhost
+  DJANGO_CSRF_TRUSTED_ORIGINS: https://docs.${BASE_DOMAIN}
+  LOGGING_LEVEL_HANDLERS_CONSOLE: INFO
+  WEB_CONCURRENCY: 2
+
+  DB_HOST: postgres
+  DB_NAME: docs
+  DB_USER: docs
+  DB_PASSWORD: docs
+  DB_PORT: 5432
+
+  REDIS_URL: redis://:valkeypass@valkey:6379/5
+  DJANGO_CELERY_BROKER_URL: redis://:valkeypass@valkey:6379/6
+
+  DJANGO_EMAIL_HOST: tmail-backend
+  DJANGO_EMAIL_PORT: 25
+  DJANGO_EMAIL_FROM: noreply@${MAIL_DOMAIN}
+  DJANGO_EMAIL_BRAND_NAME: Twake Docs
+  DJANGO_EMAIL_URL_APP: https://docs.${BASE_DOMAIN}
+  DJANGO_EMAIL_LOGO_IMG: https://docs.${BASE_DOMAIN}/assets/logo-suite-numerique.png
+
+  # Same MinIO credentials as tmail_app/config/blob.properties.
+  AWS_S3_ENDPOINT_URL: http://minio:9000
+  AWS_S3_ACCESS_KEY_ID: vW9xY2zA5bC8dE1fG4hJ3kL
+  AWS_S3_SECRET_ACCESS_KEY: hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+  AWS_S3_REGION_NAME: us-east-1
+  AWS_STORAGE_BUCKET_NAME: docs-media-storage
+  MEDIA_BASE_URL: https://docs.${BASE_DOMAIN}
+  STORAGES_STATICFILES_BACKEND: django.contrib.staticfiles.storage.StaticFilesStorage
+
+  OIDC_RP_CLIENT_ID: docs
+  OIDC_RP_CLIENT_SECRET: docs-secret
+  OIDC_RP_SCOPES: "openid email profile"
+  OIDC_RP_SIGN_ALGO: RS256
+  OIDC_OP_AUTHORIZATION_ENDPOINT: https://auth.${BASE_DOMAIN}/oauth2/authorize
+  OIDC_OP_TOKEN_ENDPOINT: https://auth.${BASE_DOMAIN}/oauth2/token
+  OIDC_OP_USER_ENDPOINT: https://auth.${BASE_DOMAIN}/oauth2/userinfo
+  OIDC_OP_JWKS_ENDPOINT: https://auth.${BASE_DOMAIN}/oauth2/jwks
+  OIDC_OP_LOGOUT_ENDPOINT: https://auth.${BASE_DOMAIN}/oauth2/logout
+  OIDC_REDIRECT_ALLOWED_HOSTS: '["https://docs.${BASE_DOMAIN}"]'
+  OIDC_REDIRECT_REQUIRE_HTTPS: True
+  OIDC_VERIFY_SSL: False
+  OIDC_USERINFO_FULLNAME_FIELDS: name
+  OIDC_USERINFO_SHORTNAME_FIELD: given_name
+  LOGIN_REDIRECT_URL: https://docs.${BASE_DOMAIN}
+  LOGIN_REDIRECT_URL_FAILURE: https://docs.${BASE_DOMAIN}
+  LOGOUT_REDIRECT_URL: https://docs.${BASE_DOMAIN}
+
+  Y_PROVIDER_API_BASE_URL: http://docs-y-provider:4444/api/
+  Y_PROVIDER_API_KEY: docs-y-provider-api-key
+  COLLABORATION_API_URL: http://docs-y-provider:4444/collaboration/api/
+  COLLABORATION_SERVER_SECRET: docs-collaboration-secret
+
+services:
+  # Creates the versioned media bucket in the shared MinIO. Idempotent.
+  docs-minio-init:
+    image: bitnamilegacy/minio-client:2025.7.21-debian-12-r3
+    restart: "no"
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        mc alias set twake http://minio:9000 vW9xY2zA5bC8dE1fG4hJ3kL hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+        mc mb --ignore-existing twake/docs-media-storage
+        mc version enable twake/docs-media-storage
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  docs-backend:
+    image: lasuite/impress-backend:v5.7.0
+    container_name: docs-backend
+    command:
+      - /bin/sh
+      - -c
+      - python manage.py migrate --no-input && exec uvicorn --app-dir=/app --host=0.0.0.0 --timeout-graceful-shutdown=300 --limit-max-requests=20000 --lifespan=off impress.asgi:application
+    environment: *docs-backend-env
+    restart: unless-stopped
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    depends_on:
+      docs-minio-init:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/__lbheartbeat__')\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  # Asynchronous tasks (invitation mails, access requests...).
+  docs-celery:
+    image: lasuite/impress-backend:v5.7.0
+    container_name: docs-celery
+    command: ["celery", "-A", "impress.celery_app", "worker", "-l", "INFO"]
+    environment: *docs-backend-env
+    restart: unless-stopped
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    depends_on:
+      docs-backend:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  # Collaboration server. It checks the access of each websocket against the
+  # backend through the public URL: the backend only answers over https.
+  docs-y-provider:
+    image: lasuite/impress-y-provider:v5.7.0
+    container_name: docs-y-provider
+    environment:
+      COLLABORATION_SERVER_ORIGIN: https://docs.${BASE_DOMAIN}
+      COLLABORATION_SERVER_SECRET: docs-collaboration-secret
+      COLLABORATION_BACKEND_BASE_URL: https://docs.${BASE_DOMAIN}
+      COLLABORATION_LOGGING: "true"
+      Y_PROVIDER_API_KEY: docs-y-provider-api-key
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
+    volumes:
+      - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
+    restart: unless-stopped
+    extra_hosts:
+      - "docs.${BASE_DOMAIN}:172.27.0.100"
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4444/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # Static frontend, also the reverse proxy of the whole app (see
+  # config/nginx.conf.template), as in the upstream compose example.
+  docs-frontend:
+    image: lasuite/impress-frontend:v5.7.0
+    container_name: docs-frontend
+    user: "101"
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: ["nginx", "-g", "daemon off;"]
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/conf.d/docs.conf:ro
+    restart: unless-stopped
+    depends_on:
+      docs-backend:
+        condition: service_healthy
+      docs-y-provider:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docs.rule=Host(`docs.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.docs.entrypoints=websecure"
+      - "traefik.http.routers.docs.tls=true"
+      - "traefik.http.services.docs.loadbalancer.server.port=8083"
+    networks:
+      - twake-network
+
+networks:
+  twake-network:
+    external: true

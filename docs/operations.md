@@ -23,13 +23,17 @@ Start order:
 6. `calendar_app`
 7. `chat_app`
 8. `tmail_app`
+9. `docs_app`
+10. `grist_app`
 
-Five stacks depend on `lemonldap-ng` being healthy before they start:
+Seven stacks depend on `lemonldap-ng` being healthy before they start:
 
 - `chat_app` — Synapse loads the OIDC discovery doc at boot and refuses to start if the IdP is unreachable.
 - `cozy_stack` — confidential OIDC client (`IDCOZY`) with `disable_password_authentication=true`, so OIDC is the only login path.
 - `meet_app` — confidential client (`visio`) that exchanges the auth code with `client_secret` server-side.
 - `tmail_app`, `calendar_app` — public clients with lazy introspection, gated as a precaution so the first login is never racing the IdP startup.
+- `docs_app` — confidential client (`docs`), like `meet_app`.
+- `grist_app` — confidential client (`grist`). Grist fetches the OIDC discovery doc at boot and fails to start if the IdP is unreachable.
 
 To start the stacks manually:
 
@@ -42,6 +46,8 @@ cd meet_app       && ./compose-wrapper.sh up -d                 && cd ..
 cd calendar_app   && ./compose-wrapper.sh up -d                 && cd ..
 cd chat_app       && ./compose-wrapper.sh up -d                 && cd ..
 cd tmail_app      && ./compose-wrapper.sh up -d                 && cd ..
+cd docs_app       && ./compose-wrapper.sh up -d                 && cd ..
+cd grist_app      && docker compose --env-file ../.env up -d    && cd ..
 ```
 
 Wait for `lemonldap-ng` to report `healthy` (`docker ps`) before continuing past `twake_auth`.
