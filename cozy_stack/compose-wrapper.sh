@@ -21,6 +21,14 @@ pick_default() {
   fi
 }
 
+# The whole render happens in $RENDERED, a scratch file next to cozy.yaml.
+# cozy.yaml itself is only written once the render is complete, and in place:
+# it is bind-mounted as a single file, so the container keeps the inode it was
+# started with. Replacing the file (mv) or writing it in several passes left a
+# running container on a stale, half-rendered copy, and `cozy-stack` commands
+# run with docker exec then failed with "Unable to parse configuration file".
+RENDERED=config/cozy.yaml.rendering
+
 # splice replaces a marker line in the rendered cozy.yaml with the contents
 # of $2, indented by $3 spaces. Both the template and the spliced files go
 # through envsubst for $BASE_DOMAIN expansion. The body is passed through
@@ -33,14 +41,14 @@ splice() {
   SPLICE_BODY=$(envsubst '$BASE_DOMAIN' < "$file" | sed "s/^/${pad}/")
   export SPLICE_BODY
   awk -v m="$marker" 'BEGIN{r=ENVIRON["SPLICE_BODY"]} $0 == m {print r; next} {print}' \
-    config/cozy.yaml > config/cozy.yaml.tmp
+    "$RENDERED" > "$RENDERED.splice"
   unset SPLICE_BODY
-  mv config/cozy.yaml.tmp config/cozy.yaml
+  mv "$RENDERED.splice" "$RENDERED"
 }
 
 if [ "$ACTION" = "up" ] || [ "$ACTION" = "render" ]; then
   echo "Processing configuration..."
-  envsubst '$BASE_DOMAIN' < ./config/cozy.yaml.template > config/cozy.yaml
+  envsubst '$BASE_DOMAIN' < ./config/cozy.yaml.template > "$RENDERED"
 
   flags_file=$(pick_default default-flags)
   sharing_file=$(pick_default default-sharing)
@@ -49,11 +57,6 @@ if [ "$ACTION" = "up" ] || [ "$ACTION" = "render" ]; then
   splice '__DEFAULT_FLAGS__'   "$flags_file"   6
   splice '__DEFAULT_SHARING__' "$sharing_file" 6
 
-  # cozy-stack runs inside the container as a non-root uid (3552). The bind-
-  # mounted config has to be readable by it regardless of the host operator's
-  # umask, so force a sane mode after the splice.
-  chmod 644 config/cozy.yaml
-
   # Fail fast on an incomplete render. cozy.yaml is bind-mounted verbatim into
   # the container, so a half-rendered file silently breaks the stack: leftover
   # __DEFAULT_ markers make cozy-stack fail to parse the config, and an empty
@@ -61,21 +64,29 @@ if [ "$ACTION" = "up" ] || [ "$ACTION" = "render" ]; then
   # like https://auth./oauth2/authorize that only surface as broken login.
   # Catch both here, before docker ever sees the file.
   render_errors=""
-  if grep -q '__DEFAULT_' config/cozy.yaml; then
+  if grep -q '__DEFAULT_' "$RENDERED"; then
     render_errors="${render_errors}\n  - leftover __DEFAULT_ markers (splice did not run)"
   fi
-  if grep -q '\${BASE_DOMAIN}' config/cozy.yaml; then
+  if grep -q '\${BASE_DOMAIN}' "$RENDERED"; then
     render_errors="${render_errors}\n  - literal \${BASE_DOMAIN} (envsubst did not run)"
   fi
-  if grep -qE 'https://[a-z0-9-]*\./' config/cozy.yaml; then
+  if grep -qE 'https://[a-z0-9-]*\./' "$RENDERED"; then
     render_errors="${render_errors}\n  - empty BASE_DOMAIN (rendered e.g. https://auth./); is ../.env present with BASE_DOMAIN set?"
   fi
   if [ -n "$render_errors" ]; then
-    echo "ERROR: config/cozy.yaml render is incomplete:" >&2
+    echo "ERROR: config/cozy.yaml render is incomplete (cozy.yaml left untouched):" >&2
     printf "%b\n" "$render_errors" >&2
-    rm -f config/cozy.yaml
+    rm -f "$RENDERED"
     exit 1
   fi
+
+  # Truncate and rewrite in place (no mv), see $RENDERED above.
+  cat "$RENDERED" > config/cozy.yaml
+  rm -f "$RENDERED"
+  # cozy-stack runs inside the container as a non-root uid (3552). The bind-
+  # mounted config has to be readable by it regardless of the host operator's
+  # umask, so force a sane mode.
+  chmod 644 config/cozy.yaml
 
   if [ "$ACTION" = "render" ]; then exit 0; fi
 fi

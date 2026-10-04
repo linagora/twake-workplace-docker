@@ -60,6 +60,18 @@ create_instance() {
   fi
 }
 
+# apps install fails when the app is already there, which made a second run of
+# the patcher exit on "Application with same slug already exists".
+install_app() {
+  SLUG="\$1"
+  APP_DOMAIN="\$2"
+  if cozy-stack apps show "\$SLUG" --domain "\$APP_DOMAIN" >/dev/null 2>&1; then
+    echo "✔ \$SLUG already installed on \$APP_DOMAIN"
+  else
+    cozy-stack apps install "\$SLUG" --domain "\$APP_DOMAIN"
+  fi
+}
+
 # Same users and names as twake_db/ldap/bootstrap/users.ldif.template
 create_instance "user1.$BASE_DOMAIN" "user1@$BASE_DOMAIN" "User One"
 create_instance "user2.$BASE_DOMAIN" "user2@$BASE_DOMAIN" "User Two"
@@ -71,21 +83,21 @@ echo "▶ Adding optional apps and Applying feature flags..."
 for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
   if echo ",\$ENABLED_APPS," | grep -q ",linshare,"; then
     echo "▶ Installing linshare app for \$DOMAIN"
-    cozy-stack apps install linshare --domain "\$DOMAIN"
+    install_app linshare "\$DOMAIN"
     cozy-stack feature flags --domain "\$DOMAIN" \
       '{"linshare.embedded-app-url": "https://linshare.$BASE_DOMAIN/new/"}'
   fi
 
   if echo ",\$ENABLED_APPS," | grep -q ",mail,"; then
     echo "▶ Installing mail app for \$DOMAIN"
-    cozy-stack apps install mail --domain "\$DOMAIN"
+    install_app mail "\$DOMAIN"
     cozy-stack feature flags --domain "\$DOMAIN" \\
       '{"mail.embedded-app-url": "https://mail.$BASE_DOMAIN"}'
   fi  
   
   if echo ",\$ENABLED_APPS," | grep -q ",chat,"; then
     echo "▶ Installing chat app for \$DOMAIN"
-    cozy-stack apps install chat --domain "\$DOMAIN"
+    install_app chat "\$DOMAIN"
     cozy-stack feature flags --domain "\$DOMAIN" \
       '{"chat.embedded-app-url": "https://chat.$BASE_DOMAIN"}'
   fi
