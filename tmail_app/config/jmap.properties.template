@@ -53,3 +53,7 @@ emailRecoveryAction.maxEmailRecoveryPerRequest=1000000
 emailRecoveryAction.restorationHorizon=15d
 websocket.ping.interval=20
 support.httpLink=https://${BASE_DOMAIN}/support
+
+# Twake Workplace settings: the language comes from common-settings over
+# RabbitMQ (twp.* in rabbitmq.properties) and is read-only in TMail.
+settings.readonly.properties.providers=com.linagora.tmail.james.jmap.settings.TWPReadOnlyPropertyProvider

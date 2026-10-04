@@ -4,9 +4,6 @@ set -e
 # Use environment variable or fallback
 CONTAINER="${CONTAINER:-cozyt}"
 
-# List of users as plain space-separated string
-USERS="user1:user1@$BASE_DOMAIN user2:user2@$BASE_DOMAIN user3:user3@$BASE_DOMAIN"
-
 ENABLE_APPS="${ENABLE_APPS:-}"
 ENABLE_APPS=$(echo "$ENABLE_APPS" | sed 's/"//g')
 echo "▶ Enabled apps: $ENABLE_APPS"
@@ -43,25 +40,30 @@ EXISTING_INSTANCES=\$(\$COZY_STACK instances ls | awk '{print \$1}')
 create_instance() {
   DOMAIN="\$1"
   EMAIL="\$2"
-  APPS_LIST="\$3"
+  PUBLIC_NAME="\$3"
   if echo "\$EXISTING_INSTANCES" | grep -qx "\$DOMAIN"; then
     echo "✔ Instance \$DOMAIN already exists"
+    # Also repairs the instances created with a quoted email and no public
+    # name, which common-settings rejects.
+    cozy-stack instances modify \
+      --email "\$EMAIL" \
+      --public-name "\$PUBLIC_NAME" \
+      "\$DOMAIN"
   else
     echo "➕ Creating instance \$DOMAIN"
     cozy-stack instances add \
       --apps home,drive,notes,settings,dataproxy \
-      --email \"\$EMAIL\" \
+      --email "\$EMAIL" \
+      --public-name "\$PUBLIC_NAME" \
       --context-name default \
       "\$DOMAIN"
   fi
 }
 
-# Loop over users using plain sh
-for user in $USERS; do
-  DOMAIN=\$(echo "\$user" | cut -d: -f1).\$BASE_DOMAIN
-  EMAIL=\$(echo "\$user" | cut -d: -f2)
-  create_instance "\$DOMAIN" "\$EMAIL"
-done
+# Same users and names as twake_db/ldap/bootstrap/users.ldif.template
+create_instance "user1.$BASE_DOMAIN" "user1@$BASE_DOMAIN" "User One"
+create_instance "user2.$BASE_DOMAIN" "user2@$BASE_DOMAIN" "User Two"
+create_instance "user3.$BASE_DOMAIN" "user3@$BASE_DOMAIN" "User Three"
 
 
 

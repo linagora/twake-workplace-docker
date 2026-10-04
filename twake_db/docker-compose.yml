@@ -148,6 +148,57 @@ services:
       - "traefik.enable=false"  
     entrypoint: ["/bin/bash", "/etc/rabbitmq/rabbitmq-init.sh"]  
 
+  # Creates the databases added after the first start of the postgres volume
+  # (docker-entrypoint-initdb.d only runs on an empty one). Idempotent.
+  db-ensure:
+    image: postgres:16
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    volumes:
+      - ./postgres/ensure:/ensure:ro
+    command: sh -c 'for f in /ensure/*.sql; do psql -v ON_ERROR_STOP=1 -f "$$f" || exit 1; done'
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  # Twake Workplace common settings: cozy-stack writes the user settings here,
+  # and the service publishes them as user.settings.updated on the settings
+  # exchange for TMail and tom-bridge.
+  common-settings:
+    image: ghcr.io/linagora/twake-workplace-common-settings:v0.0.10
+    container_name: common-settings
+    restart: unless-stopped
+    depends_on:
+      db-ensure:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://common_settings:common_settings@postgres:5432/common_settings
+      SECRET_API_KEY: ${COMMON_SETTINGS_API_KEY}
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      RABBITMQ_EXCHANGE: settings
+      RABBITMQ_SETTINGS_INPUT_QUEUE: user.settings.input
+      RABBITMQ_SETTINGS_INPUT_ROUTING_KEY: user.settings.update
+      RABBITMQ_SETTINGS_OUTPUT_ROUTING_KEY: user.settings.updated
+      IDENTITY_PROVIDER_URL: https://auth.${BASE_DOMAIN}
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
+    volumes:
+      - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
   cassandra:
     image: bitnamilegacy/cassandra:4.1.7
     container_name: cassandra

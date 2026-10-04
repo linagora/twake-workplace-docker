@@ -21,6 +21,8 @@ chat_app/synapse/data/
 chat_app/synapse/media_store/
 chat_app/chat/config.json
 chat_app/tom/config.yaml
+chat_app/tom-bridge/config.yaml
+chat_app/tom-bridge/registration.yaml
 calendar_app/conf-side-service/configuration.properties
 calendar_app/frontend/account/openpaas.js
 calendar_app/frontend/calendar/openpaas.js

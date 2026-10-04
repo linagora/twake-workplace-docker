@@ -1,0 +1,31 @@
+# tom-bridge configuration, rendered by compose-wrapper.sh into config.yaml.
+# Reference: https://github.com/linagora/ToM-Bridge/blob/main/config.example.yaml
+homeserverUrl: "http://synapse:8008"
+domain: "${BASE_DOMAIN}"
+registrationPath: "/data/registration.yaml"
+
+synapse:
+  # Synapse forbids users to change their display name and avatar
+  # (enable_set_displayname/enable_set_avatar_url: false), so profile updates
+  # go through the admin API: the bot is made admin by tom-bridge-init.
+  adminRetryMode: "exclusive"
+
+database:
+  engine: "pg"
+  host: "postgres"
+  name: "tombridge"
+  user: "twake"
+  password: "twake!1"
+  ssl: false
+  vacuumDelay: 3600
+
+rabbitmq:
+  host: "rabbitmq"
+  port: 5672
+  username: "${RABBITMQ_USER}"
+  password: "${RABBITMQ_PASSWORD}"
+  vhost: "/"
+  tls: false
+  queue: "chat.settings.updated.queue"
+  exchange: "settings"
+  routingKey: "user.settings.updated"

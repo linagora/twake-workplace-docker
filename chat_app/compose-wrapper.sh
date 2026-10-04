@@ -19,6 +19,13 @@ envsubst '$BASE_DOMAIN' < ./synapse/wellknownclient.conf.template > ./synapse/we
 envsubst '$BASE_DOMAIN' < ./synapse/wellknownserver.conf.template > ./synapse/wellknownserver.conf
 envsubst '$BASE_DOMAIN' < ./chat/config.json.template > ./chat/config.json
 envsubst '$BASE_DOMAIN $LDAP_BASE_DN' < ./tom/config.yaml.template > ./tom/config.yaml
+envsubst '$BASE_DOMAIN $RABBITMQ_USER $RABBITMQ_PASSWORD' < ./tom-bridge/config.yaml.template > ./tom-bridge/config.yaml
+# The application service tokens are generated once and kept: Synapse and the
+# bridge must agree on them across restarts.
+if [ ! -f ./tom-bridge/registration.yaml ]; then
+  TOM_BRIDGE_AS_TOKEN=$(openssl rand -hex 32) TOM_BRIDGE_HS_TOKEN=$(openssl rand -hex 32) \
+    envsubst '$TOM_BRIDGE_AS_TOKEN $TOM_BRIDGE_HS_TOKEN' < ./tom-bridge/registration.yaml.template > ./tom-bridge/registration.yaml
+fi
 
 # Check if file was created
 if [ ! -f "./synapse/homeserver-postgres.yaml" ]; then
@@ -38,6 +45,10 @@ if [ ! -f "./chat/config.json" ]; then
     exit 1
 fi
 if [ ! -f "./tom/config.yaml" ]; then
+    echo "Failed to create configuration file"
+    exit 1
+fi
+if [ ! -f "./tom-bridge/config.yaml" ] || [ ! -f "./tom-bridge/registration.yaml" ]; then
     echo "Failed to create configuration file"
     exit 1
 fi
