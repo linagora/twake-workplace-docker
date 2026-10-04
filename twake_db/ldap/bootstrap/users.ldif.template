@@ -49,6 +49,8 @@ dn: uid=user1,ou=users,${LDAP_BASE_DN}
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
+objectClass: twakeUser
+workspaceUrl: user1.${BASE_DOMAIN}
 uid: user1
 cn: User One
 sn: One
@@ -69,6 +71,8 @@ dn: uid=user2,ou=users,${LDAP_BASE_DN}
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
+objectClass: twakeUser
+workspaceUrl: user2.${BASE_DOMAIN}
 uid: user2
 cn: User Two
 sn: Two
@@ -89,6 +93,8 @@ dn: uid=user3,ou=users,${LDAP_BASE_DN}
 objectClass: inetOrgPerson
 objectClass: posixAccount
 objectClass: shadowAccount
+objectClass: twakeUser
+workspaceUrl: user3.${BASE_DOMAIN}
 uid: user3
 cn: User Three
 sn: Three
