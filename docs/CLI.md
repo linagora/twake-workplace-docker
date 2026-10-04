@@ -23,6 +23,7 @@ What's actually required, per command:
 | `preflight` | `BASE_DOMAIN`, `LDAP_REST_ADMIN_TOKEN`, `COZY_ADMIN_PASSPHRASE`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` (presence-only — preflight just verifies they're set) | `jq`, `curl`, `docker` |
 | `users add` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN` | `jq`, `curl` |
 | `users destroy` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN` | `jq`, `curl` |
+| `users ensure` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN`, `LDAP_BASE_DN` | `jq`, `curl` |
 | `users list` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN`, `COZY_ADMIN_PASSPHRASE` | `jq`, `curl`, `docker` |
 | `flags show` / `set` / `unset` | `BASE_DOMAIN`, `COZY_ADMIN_PASSPHRASE` | `jq`, `docker` |
 | `mq tap` | `RABBITMQ_USER`, `RABBITMQ_PASSWORD` | `jq`, `docker` |
@@ -100,6 +101,24 @@ In file mode only the `userName` field of each entry is read.
 
 Refuses to run unattended without `--yes`. Exit 0 if every user was destroyed (or already gone), 1 otherwise.
 
+### `users ensure` — create missing cozy instances
+
+```
+scripts/twake users ensure <userName> [<userName> ...]
+scripts/twake users ensure --file <path>
+```
+
+Calls `POST /api/v1/twake/instances/ensure` on ldap-rest for each account. ldap-rest creates the instance if it is missing, writes its address on the account, and publishes `user.created`. An account that already has its instance is left as is, so it is safe to re-run. Use it on the `scim_only` rows of `users list`.
+
+| Result | Meaning |
+| --- | --- |
+| `ready` | The instance exists |
+| `pending` | Requested, not built yet; retry later |
+| `not found` | No such account |
+| `FAIL (502)` | cozy-stack refused or is unreachable; see the ldap-rest logs |
+
+In file mode only the `userName` field of each entry is read. Exit 0 if every account is ready, 1 otherwise.
+
 ### `users list` — joined SCIM × cozy view
 
 ```
@@ -111,7 +130,7 @@ Surfaces orphans on either side. Cozy instances are filtered to `${BASE_DOMAIN}`
 | Status | Meaning |
 | --- | --- |
 | `ok` | Present on both sides |
-| `scim_only` | LDAP entry exists, no cozy instance — provisioning failed silently; check `auth.dlq` and cozyt logs |
+| `scim_only` | LDAP entry exists, no cozy instance — provisioning failed; check ldap-rest and cozyt logs, then run `users ensure` |
 | `cozy_only` | Cozy instance exists, no LDAP entry — stale tenant from a past import that bypassed the destroy flow |
 
 | Flag | Effect |
@@ -186,7 +205,7 @@ Caveats: ~1s latency (polled, not pushed); no history replay; the temp queue sel
 | Variable | Default | Used by |
 | --- | --- | --- |
 | `ENV_FILE` | `<repo>/.env` | every command |
-| `LDAP_REST_HOST` | `https://ldap-rest.${BASE_DOMAIN}` | `users add`, `users destroy`, `users list` |
+| `LDAP_REST_HOST` | `https://ldap-rest.${BASE_DOMAIN}` | `users add`, `users destroy`, `users ensure`, `users list` |
 | `COZY_CONTAINER` | `cozyt` | `users list`, `flags *` |
 | `RABBITMQ_CONTAINER` | `rabbitmq` | `mq tap` |
 | `PROBE_LABEL` | `__preflight` | `preflight` |

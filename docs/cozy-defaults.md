@@ -1,6 +1,6 @@
 # Cozy default context settings
 
-In this stack, every instance provisioned through cozyProvision is created in the `default` context (see `COZY_CONTEXT_NAME` in `.env`). Cozy-stack reads context-keyed config from two top-level blocks in the rendered `cozy.yaml`: `authentication.default` and `contexts.default`. The first lives inline in `cozy_stack/config/cozy.yaml.template`. The second is composed at render time from `default-sharing.yaml` and `default-flags.yaml` (each overridable via a `*.local.yaml` sibling).
+In this stack, every instance ldap-rest provisions is created in the `default` context (see `COZY_CONTEXT_NAME` in `.env`). Cozy-stack reads context-keyed config from two top-level blocks in the rendered `cozy.yaml`: `authentication.default` and `contexts.default`. The first lives inline in `cozy_stack/config/cozy.yaml.template`. The second is composed at render time from `default-sharing.yaml` and `default-flags.yaml` (each overridable via a `*.local.yaml` sibling).
 
 ## Authentication: forced OIDC
 

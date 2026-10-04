@@ -62,7 +62,7 @@ services:
       # left out for now — they need webadmin tokens that aren't wired in
       # this PR; add them in a follow-up once those backends are reachable.
       DM_PLUGINS: >-
-        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organizations;core/scim/scim;core/twake/cozyProvision
+        core/auth/token;core/ldap/flatGeneric;core/ldap/groups;core/ldap/organizations;core/scim/scim;core/twake/instances
 
       # auth/token — two named tokens.
       # Syntax: <token>:<name>, comma-separated (logged as "user: <name>" on each request).
@@ -85,6 +85,9 @@ services:
       # scim — SCIM 2.0 endpoint at /scim/v2/*
       DM_SCIM_USER_BASE: ou=users,${LDAP_BASE_DN}
       DM_SCIM_GROUP_BASE: ou=groups,${LDAP_BASE_DN}
+      # twakeUser and twakeInstance hold the attributes twake/instances writes
+      # back after creating the instance (workspaceUrl, twakeCreatedEventAt).
+      DM_SCIM_USER_OBJECT_CLASSES: top,inetOrgPerson,organizationalPerson,person,twakeUser,twakeInstance
 
       # The default SCIM mapping has no password attribute, so a SCIM
       # `password` is silently dropped and the LDAP entry is created with no
@@ -93,21 +96,27 @@ services:
       # provisioned via `scripts/twake users add --password` can authenticate.
       DM_SCIM_USER_MAPPING: /app/config/scim-user-mapping.json
 
-      # twake/cozyProvision — provisions cozy instances + publishes auth/b2b
-      # lifecycle events on RabbitMQ. The cozy-stack admin API lives on its
-      # private port (6060) on the `cozyt` container; rabbitmq + the auth
-      # / b2b exchanges are declared at boot by
-      # twake_db/rabbitmq/entrypoint.sh.
-      # ContextName must match an `authentication.<name>` block in
-      # cozy.yaml so per-context settings (forced OIDC, etc.) apply.
-      # Apps is the autoinstall list passed to POST /instances.
-      DM_COZY_ADMIN_URL: http://cozyt:6060
-      DM_COZY_ADMIN_USER: admin
-      DM_COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE}
-      DM_COZY_ORG_ID: ${COZY_ORG_ID}
-      DM_COZY_ORG_DOMAIN: ${BASE_DOMAIN}
-      DM_COZY_CONTEXT_NAME: ${COZY_CONTEXT_NAME}
-      DM_COZY_APPS: ${COZY_APPS}
+      # twake/instances — every SCIM user gets a cozy instance named after
+      # its uid, announced with user.created on the auth exchange (declared
+      # at boot by twake_db/rabbitmq/entrypoint.sh); deleting the account
+      # destroys the instance. An account created another way lacks the
+      # classes above until ldap-ensure adds them on the next up; then run
+      # `scripts/twake users ensure`.
+      DM_TWAKE_INSTANCE_PROVIDER: cozy-stack
+      # A DN expression ends with `;`, since a DN holds commas.
+      DM_TWAKE_INSTANCE_DN: ^uid=[^,]+,ou=users,${LDAP_BASE_DN}$$;
+      # workspaceUrl is what LemonLDAP exports as the workplaceFqdn claim.
+      DM_TWAKE_INSTANCE_FQDN_ATTRIBUTE: workspaceUrl
+      DM_TWAKE_INSTANCE_COZY_URL: http://cozyt:6060
+      DM_TWAKE_INSTANCE_COZY_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE}
+      DM_TWAKE_INSTANCE_COZY_DOMAIN: ${BASE_DOMAIN}
+      DM_TWAKE_INSTANCE_COZY_ORG_ID: ${COZY_ORG_ID}
+      DM_TWAKE_INSTANCE_COZY_ORG_DOMAIN: ${BASE_DOMAIN}
+      # Must match an `authentication.<name>` block in cozy.yaml so
+      # per-context settings (forced OIDC, etc.) apply.
+      DM_TWAKE_INSTANCE_COZY_CONTEXT: ${COZY_CONTEXT_NAME}
+      # Autoinstall list passed to POST /instances.
+      DM_TWAKE_INSTANCE_COZY_APPS: ${COZY_APPS}
       DM_RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
     volumes:
       - ./config/scim-user-mapping.json:/app/config/scim-user-mapping.json:ro

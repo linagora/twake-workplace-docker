@@ -2,7 +2,7 @@
 # install-dev-app.sh — install a locally-built cozy-web app into a provisioned
 # instance from the bind-mounted /app/<slug> (see docker-compose.dev-app.yml).
 # Reconciles the source: installs from the mount if the app is absent, else
-# updates an existing install (e.g. the registry copy that cozyProvision put
+# updates an existing install (e.g. the registry copy that ldap-rest put
 # there for drive/home/settings/...) to the file:///app/<slug> source, so the
 # dev build actually takes over. In `serve --dev` the mount is then served live.
 set -euo pipefail
