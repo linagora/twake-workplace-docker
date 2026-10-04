@@ -14,6 +14,7 @@
 #   scripts/twake users --help             # user lifecycle namespace
 #   scripts/twake users add --help         # provision one user
 #   scripts/twake users destroy --help     # tear down user(s)
+#   scripts/twake users ensure --help      # repair missing cozy instances
 #   scripts/twake users list --help        # joined SCIM × cozy report
 #   scripts/twake flags --help            # cozy feature flags namespace
 #   scripts/twake flags show --help       # show effective flags
@@ -115,6 +116,15 @@ validate_slugs() {
     printf '  - %s\n' "${invalid[@]}" >&2
     exit 1
   fi
+}
+
+# Appends the userName of each entry of a `users add` file to the caller's
+# `names` array.
+names_from_file() {
+  [[ -f "$1" ]] || die "file not found: $1"
+  mapfile -t -O "${#names[@]}" names \
+    < <(jq -r '(if type=="array" then . else [.] end) | .[].userName // empty' "$1")
+  (( ${#names[@]} > 0 )) || die "no userNames found in $1"
 }
 
 # =============================================================================
@@ -286,6 +296,7 @@ ${C_BOLD}twake users${C_END} ${C_DIM}— manage SCIM users and their cozy instan
 ${C_DIM}Subcommands:${C_END}
   ${C_CYAN}add${C_END}        Provision one user (or a small batch from --file)
   ${C_RED}destroy${C_END}    Tear down user(s) end-to-end (SCIM + cozy)
+  ${C_CYAN}ensure${C_END}     Create the cozy instance of user(s) that have none
   ${C_CYAN}list${C_END}       Joined view of SCIM users × cozy instances
 
 ${C_DIM}Help for a subcommand:${C_END}
@@ -299,6 +310,7 @@ cmd_users() {
   case "$sub" in
     add)          cmd_users_add "$@" ;;
     destroy)      cmd_users_destroy "$@" ;;
+    ensure)       cmd_users_ensure "$@" ;;
     list)         cmd_users_list "$@" ;;
     -h|--help|"") cmd_users_help ;;
     *)            err "unknown 'users' subcommand: $sub"; cmd_users_help >&2; return 2 ;;
@@ -578,13 +590,7 @@ cmd_users_destroy() {
   : "${BASE_DOMAIN:?required (set in .env or export it)}"
   local host="${LDAP_REST_HOST:-https://ldap-rest.${BASE_DOMAIN}}"
 
-  if [[ -n "$file" ]]; then
-    [[ -f "$file" ]] || die "file not found: $file"
-    while IFS= read -r u; do
-      [[ -n "$u" ]] && names+=("$u")
-    done < <(jq -r '(if type=="array" then . else [.] end) | .[].userName // empty' "$file")
-    (( ${#names[@]} > 0 )) || die "no userNames found in $file"
-  fi
+  [[ -n "$file" ]] && names_from_file "$file"
 
   printf '%s\n' "${names[@]}" | validate_slugs
 
@@ -637,6 +643,114 @@ cmd_users_destroy() {
 }
 
 # -----------------------------------------------------------------------------
+# users ensure
+# -----------------------------------------------------------------------------
+
+cmd_users_ensure_help() {
+  cat <<EOF
+${C_BOLD}twake users ensure${C_END} ${C_DIM}— create the cozy instance of user(s) that have none.${C_END}
+
+${C_DIM}Usage:${C_END}
+  scripts/twake users ensure <userName> [<userName> ...]
+  scripts/twake users ensure --file users.json
+
+In file mode the file is the same JSON array used by \`users add\` — only
+the \`userName\` field of each entry is read.
+
+Calls \`POST /api/v1/twake/instances/ensure\` on ldap-rest for each account.
+ldap-rest creates the missing instance, writes its address on the account
+and announces it with \`user.created\`. An account that already has its
+instance is left as is. Use it on the \`scim_only\` rows of \`users list\`.
+
+  ${C_GREEN}ready${C_END}      the instance exists
+  ${C_YELLOW}pending${C_END}    requested, not built yet; retry later
+  ${C_RED}not found${C_END}  no such account
+  ${C_RED}FAIL${C_END}       cozy-stack refused or is unreachable; see the ldap-rest logs
+
+${C_DIM}Modifiers:${C_END}
+  ${C_CYAN}-h, --help${C_END}     this message
+
+${C_DIM}Environment:${C_END}
+  ${C_CYAN}LDAP_REST_HOST${C_END}   alternate ldap-rest URL
+                   (default: https://ldap-rest.\${BASE_DOMAIN})
+
+${C_DIM}Exit code:${C_END} 0 if every account is ready, 1 otherwise.
+EOF
+}
+
+cmd_users_ensure() {
+  local names=() file=""
+
+  while (( $# )); do
+    case "$1" in
+      --file)     require_value "$@"; file="$REQ_VAL"; shift 2 ;;
+      -h|--help)  cmd_users_ensure_help; return 0 ;;
+      -*)         err "unknown option: $1"; return 2 ;;
+      *)          names+=("$1"); shift ;;
+    esac
+  done
+
+  if [[ -n "$file" && ${#names[@]} -gt 0 ]]; then
+    err "--file and positional userNames are mutually exclusive"; return 2
+  fi
+  if [[ -z "$file" && ${#names[@]} -eq 0 ]]; then
+    err "provide at least one userName, or --file"; cmd_users_ensure_help >&2; return 2
+  fi
+
+  require_tools jq curl
+  load_env
+  : "${LDAP_REST_ADMIN_TOKEN:?required (set in .env or export it)}"
+  : "${BASE_DOMAIN:?required (set in .env or export it)}"
+  : "${LDAP_BASE_DN:?required (set in .env or export it)}"
+  local host="${LDAP_REST_HOST:-https://ldap-rest.${BASE_DOMAIN}}"
+
+  [[ -n "$file" ]] && names_from_file "$file"
+
+  printf '%s\n' "${names[@]}" | validate_slugs
+
+  printf '%s%s%s Ensuring %s%d instance(s)%s\n' \
+    "$C_BOLD" "$G_ARROW" "$C_END" "$C_BOLD" "${#names[@]}" "$C_END"
+  echo
+
+  local ready=0 fail=0 u tmp http state
+  for u in "${names[@]}"; do
+    tmp=$(mktemp)
+    http=$(curl -k -sS -o "$tmp" -w "%{http_code}" \
+      -X POST "$host/api/v1/twake/instances/ensure" \
+      -H "Authorization: Bearer $LDAP_REST_ADMIN_TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -nc --arg dn "uid=$u,ou=users,$LDAP_BASE_DN" '{dn: $dn}')" || true)
+    state=$(jq -r '.state // empty' "$tmp" 2>/dev/null || true)
+    if [[ "$http" == 200 && "$state" == ready ]]; then
+      printf '  %s%s%s %-24s %s%s.%s%s\n' \
+        "$C_GREEN" "$G_OK" "$C_END" "$u" "$C_DIM" "$u" "$BASE_DOMAIN" "$C_END"
+      ready=$((ready + 1))
+    elif [[ "$http" == 200 ]]; then
+      printf '  %s%s%s %-24s %s%s%s\n' \
+        "$C_YELLOW" "$G_WARN" "$C_END" "$u" "$C_YELLOW" "${state:-unknown}" "$C_END"
+      fail=$((fail + 1))
+    elif [[ "$http" == 404 ]]; then
+      printf '  %s%s%s %-24s %snot found (%s)%s\n' \
+        "$C_RED" "$G_FAIL" "$C_END" "$u" "$C_RED" "$http" "$C_END"
+      fail=$((fail + 1))
+    else
+      printf '  %s%s%s %-24s %sFAIL (%s)%s\n' \
+        "$C_RED" "$G_FAIL" "$C_END" "$u" "$C_RED" "$http" "$C_END"
+      sed 's/^/      /' "$tmp"; echo
+      fail=$((fail + 1))
+    fi
+    rm -f "$tmp"
+  done
+
+  echo
+  printf '%sDone:%s %s%d ready%s, %s%d not ready%s\n' \
+    "$C_BOLD" "$C_END" \
+    "$C_GREEN" "$ready" "$C_END" \
+    "$C_RED" "$fail" "$C_END"
+  (( fail == 0 ))
+}
+
+# -----------------------------------------------------------------------------
 # users list
 # -----------------------------------------------------------------------------
 
@@ -647,7 +761,8 @@ ${C_BOLD}twake users list${C_END} ${C_DIM}— joined view of SCIM users × cozy 
 Surfaces orphans on either side:
   ${C_GREEN}ok${C_END}           Present on both sides.
   ${C_YELLOW}scim_only${C_END}    LDAP entry exists, no cozy instance.
-               Provisioning failed silently; check \`auth.dlq\` and cozyt logs.
+               Provisioning failed; check ldap-rest and cozyt logs, then
+               retry with \`users ensure <userName>\`.
   ${C_YELLOW}cozy_only${C_END}    Cozy instance exists, no LDAP entry.
                Stale tenant from a past import that bypassed the destroy flow.
 
@@ -1285,6 +1400,7 @@ ${C_DIM}Commands:${C_END}
   ${C_CYAN}preflight${C_END}            Pre-boot host sanity check
   ${C_CYAN}users add${C_END}            Provision a SCIM user (creates the cozy instance)
   ${C_RED}users destroy${C_END}        Tear down user(s): SCIM DELETE + cozy destroy
+  ${C_CYAN}users ensure${C_END}         Create the cozy instance of user(s) that have none
   ${C_CYAN}users list${C_END}           Joined view of SCIM users × cozy instances
   ${C_CYAN}flags show${C_END}           Display effective feature flags on an instance
   ${C_CYAN}flags set${C_END}            Upsert per-instance flag overrides
