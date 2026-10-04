@@ -69,18 +69,17 @@ services:
       - "traefik.http.routers.feexcal.rule=Host(`excal.${BASE_DOMAIN}`)"
       - "traefik.http.services.feexcal.loadbalancer.server.port=80"
 
+  # Twake Contacts (twake-contacts-frontend). No release tag published yet.
   fe-contacts:
-    image: linagora/esn-frontend-contacts:17-01-2025
+    image: linagora/twake-contacts-web:branch-master
     hostname: contacts.${BASE_DOMAIN}
     restart: unless-stopped
     platform: linux/amd64
     depends_on:
       tcalendar-side-service:
         condition: service_healthy
-    environment:
-      - OPENPAAS_URL=https://tcalendar-side-service.${BASE_DOMAIN}
     volumes:
-      - ./frontend/contacts/openpaas.js:/usr/share/nginx/html/assets/env/openpaas.js
+      - ./frontend/contacts/env.js:/usr/share/nginx/html/.env.js
     networks:
       - twake-network
     labels:
