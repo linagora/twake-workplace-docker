@@ -171,6 +171,9 @@
             -->
 
             <!-- Beginning of contact pipeline -->
+            <!-- Contacts of local senders' recipients go to their "collected"
+                 CardDAV address book (sabre), as on staging. -->
+            <mailet match="HasMailAttribute=senderIsLocal" class="com.linagora.tmail.mailet.CardDavCollectedContact"/>
             <mailet match="HasMailAttribute=senderIsLocal" class="ContactExtractor">
                 <attribute>extractedContacts</attribute>
                 <onMatchException>nomatch</onMatchException>
@@ -259,6 +262,11 @@
                 <destination>icalendarAsJson</destination>
                 <rawSource>rawIcalendar</rawSource>
                 <onMailetException>ignore</onMailetException>
+            </mailet>
+            <!-- Invitations and replies received by mail are applied to the
+                 recipient's calendar (sabre), as on staging. -->
+            <mailet match="All" class="com.linagora.tmail.mailet.CalDavCollect">
+                <source>icalendarAsJson</source>
             </mailet>
             <!-- End of ICAL pipeline -->
 

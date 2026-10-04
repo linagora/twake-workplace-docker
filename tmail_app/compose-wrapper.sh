@@ -18,6 +18,7 @@ envsubst '$BASE_DOMAIN' < config/jmap.properties.template > config/jmap.properti
 envsubst '$BASE_DOMAIN' < config/mailetcontainer.xml.template > config/mailetcontainer.xml
 envsubst '$BASE_DOMAIN' < tmail-web-conf/.env.template > tmail-web-conf/.env
 envsubst '$BASE_DOMAIN' < config/webadmin.properties.template > config/webadmin.properties
+envsubst '$BASE_DOMAIN' < config/openpaas.properties.template > config/openpaas.properties
 
 # Check if file was created
 if [ ! -f "config/smtpserver.xml" ]; then
