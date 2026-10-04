@@ -1,0 +1,14 @@
+# Synapse application service registration of tom-bridge, rendered once by
+# compose-wrapper.sh with random tokens into registration.yaml.
+id: common-settings-bridge
+url: null
+as_token: "${TOM_BRIDGE_AS_TOKEN}"
+hs_token: "${TOM_BRIDGE_HS_TOKEN}"
+sender_localpart: twp_bot
+namespaces:
+  users:
+    - exclusive: false
+      regex: "@.*"
+  rooms: []
+  aliases: []
+rate_limited: false

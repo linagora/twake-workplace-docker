@@ -29,6 +29,7 @@ services:
       - ./synapse/homeserver-postgres.yaml:/config/homeserver.yaml:ro
       - ./synapse/matrix.signing.key:/config/matrix.signing.key:ro
       - ./synapse/matrix.log.config:/config/matrix.log.config:ro
+      - ./tom-bridge/registration.yaml:/config/tom-bridge-registration.yaml:ro
       - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
     networks:
       - twake-network
@@ -66,6 +67,36 @@ services:
       - "traefik.http.routers.tomfromchat.rule=Host(`chat.${BASE_DOMAIN}`) && PathPrefix(`/_twake`)"
       - "traefik.http.routers.tomfromchat.entrypoints=websecure"
       - "traefik.http.routers.tomfromchat.priority=100" 
+
+  tom-bridge-init:
+    image: matrixdotorg/synapse:v1.119.0
+    restart: "no"
+    depends_on:
+      synapse:
+        condition: service_started
+    entrypoint: ["/bin/sh", "/ensure-bot-admin.sh"]
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
+    volumes:
+      - ./tom-bridge/ensure-bot-admin.sh:/ensure-bot-admin.sh:ro
+      - ./tom-bridge/registration.yaml:/config/tom-bridge-registration.yaml:ro
+    networks:
+      - twake-network
+
+  # Applies the user.settings.updated events of common-settings (display
+  # name, avatar, email, phone) to the Matrix profiles.
+  tom-bridge:
+    image: linagora/tom-bridge:1.0.2
+    restart: unless-stopped
+    depends_on:
+      tom-bridge-init:
+        condition: service_completed_successfully
+    volumes:
+      # Rendered by compose-wrapper.sh.
+      - ./tom-bridge/config.yaml:/data/config.yaml:ro
+      - ./tom-bridge/registration.yaml:/data/registration.yaml:ro
+    networks:
+      - twake-network
 
   fed:
     image: linagora/tom-federated-identity-service:v2026-04-15
