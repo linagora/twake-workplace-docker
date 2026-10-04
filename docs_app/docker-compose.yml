@@ -52,6 +52,12 @@ x-docs-backend-env: &docs-backend-env
   LOGIN_REDIRECT_URL: https://docs.${BASE_DOMAIN}
   LOGIN_REDIRECT_URL_FAILURE: https://docs.${BASE_DOMAIN}
   LOGOUT_REDIRECT_URL: https://docs.${BASE_DOMAIN}
+  # No landing page with a login button: anonymous visitors go straight to
+  # the SSO, which signs them in without a click when a session exists.
+  FRONTEND_HOMEPAGE_FEATURE_ENABLED: False
+  # Document pages stay reachable anonymously (public links): try a
+  # prompt=none login first so that SSO users land on them signed in.
+  FRONTEND_SILENT_LOGIN_ENABLED: True
 
   Y_PROVIDER_API_BASE_URL: http://docs-y-provider:4444/api/
   Y_PROVIDER_API_KEY: docs-y-provider-api-key
