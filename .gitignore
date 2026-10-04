@@ -13,6 +13,7 @@ meet_app/config/livekit.yaml
 linshare_app/config/backend/linshare.extra.properties
 linshare_app/config/user-ui/config.js
 cozy_stack/config/cozy.yaml
+cozy_stack/config/cozy.yaml.rendering*
 cozy_stack/config/*.local.yaml
 chat_app/synapse/homeserver-postgres.yaml
 chat_app/synapse/wellknownclient.conf
