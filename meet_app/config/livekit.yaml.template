@@ -11,6 +11,10 @@ rtc:
 turn:
   enabled: true
   udp_port: 443
+  # Since 1.12 the built-in TURN refuses to relay to private addresses unless
+  # allowed: the SFU is on the docker network.
+  allow_restricted_peer_cidrs:
+    - 172.27.0.0/16
 
 keys:
 #  <LIVEKIT_API_KEY>: <LIVEKIT_API_SECRET>

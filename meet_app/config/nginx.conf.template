@@ -1,42 +1,39 @@
-
 server {
-  listen 80;
+  listen 8080;
   server_name meet.${BASE_DOMAIN};
-  #server_name localhost;
-  #ssl_certificate     /etc/ssl/private/twake-server.pem;
-  #ssl_certificate_key /etc/ssl/certs/twake-server.key;
+  server_tokens off;
 
-  #ssl_protocols TLSv1.2 TLSv1.3;
   root /usr/share/nginx/html;
 
-  location ^~ /api/ {
-    proxy_pass http://backend:8000;
+  # API, Django admin and its static files go to the LaSuite Meet backend, as
+  # the staging ingress does.
+  location ~ ^/(api/|admin|static/) {
+    proxy_pass http://visio-backend:8000;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Host $host;
-    proxy_set_header X-Forwarded-Port $server_port;
     proxy_set_header X-Forwarded-Proto https;
-
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-}
+  }
+
+  location = /.well-known/windows-app-web-link {
+    default_type application/json;
+    alias /usr/share/nginx/html/.well-known/windows-app-web-link;
+    add_header Content-Disposition "attachment; filename=windows-app-web-link";
+  }
+
   # Serve static files with caching
   location ~* ^/assets/.*\.(css|js|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-      expires 30d;
-      add_header Cache-Control "public, max-age=2592000";
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
   }
 
-  # Serve static files
   location / {
-      try_files $uri $uri/ /index.html;
-      # Add no-cache headers
-      add_header Cache-Control "no-cache, no-store, must-revalidate";
-      add_header Pragma "no-cache";  # HTTP 1.0 header for backward compatibility
-      add_header Expires 0;
+    try_files $uri $uri/ /index.html;
+    add_header Cache-Control "no-cache, no-store, must-revalidate";
+    add_header Pragma "no-cache";
+    add_header Expires 0;
   }
 
-  # Optionally, handle 404 errors by redirecting to index.html
   error_page 404 =200 /index.html;
-
-
-
 }
