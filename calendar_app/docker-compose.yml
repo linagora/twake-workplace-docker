@@ -1,6 +1,8 @@
 services:
+  # Same images as the Twake Workplace staging (infra twake-workplace-apps,
+  # chart twake-calendar-side-service 0.1.27-rc3).
   tcalendar-frontend:
-    image: linagora/twake-calendar-web:branch-master
+    image: linagora/twake-calendar-web:1.0.0-rc6
     platform: linux/amd64
     container_name: twake_calendar_frontend
     restart: unless-stopped
@@ -13,11 +15,12 @@ services:
       - ./frontend/env.js:/usr/share/nginx/html/.env.js
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.newcalendar.rule=Host(`calendar-ng.${BASE_DOMAIN}`)"
+      # calendar-ng is kept so existing links and shortcuts still work.
+      - "traefik.http.routers.newcalendar.rule=Host(`calendar.${BASE_DOMAIN}`) || Host(`calendar-ng.${BASE_DOMAIN}`)"
       - "traefik.http.services.newcalendar.loadbalancer.server.port=80"
 
   tcalendar-side-service:
-    image: linagora/twake-calendar-side-service:branch-master
+    image: linagora/twake-calendar-side-service:2.4.1.2
     container_name: tcalendar-side-service
     platform: linux/amd64
     hostname: tcalendar-side-service.${BASE_DOMAIN}
@@ -49,37 +52,16 @@ services:
     depends_on:
       - sabre_dav
 
-  fe-calendar:
-    image: linagora/esn-frontend-calendar:govmu-02
-    hostname: calendar.${BASE_DOMAIN}
-    restart: unless-stopped
-    platform: linux/amd64
-    depends_on:
-      tcalendar-side-service:
-        condition: service_healthy
-    environment:
-      - OPENPAAS_URL=https://tcalendar-side-service.${BASE_DOMAIN}
-    volumes:
-      - ./frontend/calendar/openpaas.js:/usr/share/nginx/html/assets/env/openpaas.js
-    networks:
-      - twake-network
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.fecalendar.rule=Host(`calendar.${BASE_DOMAIN}`)"
-      - "traefik.http.services.fecalendar.loadbalancer.server.port=80"
-
   fe-excal:
-    image: linagora/esn-frontend-calendar-public:main
+    image: linagora/twake-calendar-public:1.0.0-rc5
     hostname: excal.${BASE_DOMAIN}
     restart: unless-stopped
     platform: linux/amd64
     depends_on:
       tcalendar-side-service:
         condition: service_healthy
-    environment:
-      - OPENPAAS_URL=https://tcalendar-side-service.${BASE_DOMAIN}
     volumes:
-      - ./frontend/calendar/openpaas.js:/usr/share/nginx/html/assets/env/openpaas.js
+      - ./frontend/excal/env.js:/usr/share/nginx/html/.env.js
     networks:
       - twake-network
     labels:
@@ -126,7 +108,7 @@ services:
       - "traefik.http.services.feaccount.loadbalancer.server.port=80"
 
   sabre_dav:
-    image: linagora/esn-sabre:sabre-4_7_0-09-01-2026
+    image: linagora/esn-sabre:2.4.1
     container_name: sabre_dav
     platform: linux/amd64
     hostname: sabre-dav.${BASE_DOMAIN}
