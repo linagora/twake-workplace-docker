@@ -86,8 +86,9 @@ docker compose up -d
 
 You can now access the applications:
 
--   Calendar: https://calendar.twake.local
--   New calendar: https://calendar-ng.twake.local
+-   Calendar (Twake Calendar web): https://calendar.twake.local
+    (`https://calendar-ng.twake.local` still works)
+-   Public event pages (excal): https://excal.twake.local
 -   Contacts: https://contacts.twake.local/contacts/
 -   Account: https://account.twake.local
 

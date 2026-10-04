@@ -16,7 +16,7 @@ if [ "$ACTION" = "up" ]; then
 echo "Processing configuration..."
 envsubst '$BASE_DOMAIN $MAIL_DOMAIN' < ./conf-side-service/configuration.properties.template > ./conf-side-service/configuration.properties
 envsubst '$BASE_DOMAIN' < ./frontend/account/openpaas.js.template > ./frontend/account/openpaas.js
-envsubst '$BASE_DOMAIN' < ./frontend/calendar/openpaas.js.template > ./frontend/calendar/openpaas.js
+envsubst '$BASE_DOMAIN' < ./frontend/excal/env.js.template > ./frontend/excal/env.js
 envsubst '$BASE_DOMAIN' < ./frontend/contacts/openpaas.js.template > ./frontend/contacts/openpaas.js
 envsubst '$BASE_DOMAIN' < ./frontend/env.js.template > ./frontend/env.js
 
@@ -29,7 +29,7 @@ if [ ! -f "./frontend/account/openpaas.js" ]; then
     echo "Failed to create configuration file"
     exit 1
 fi
-if [ ! -f "./frontend/calendar/openpaas.js" ]; then
+if [ ! -f "./frontend/excal/env.js" ]; then
     echo "Failed to create configuration file"
     exit 1
 fi
