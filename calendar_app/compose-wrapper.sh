@@ -17,7 +17,7 @@ echo "Processing configuration..."
 envsubst '$BASE_DOMAIN $MAIL_DOMAIN' < ./conf-side-service/configuration.properties.template > ./conf-side-service/configuration.properties
 envsubst '$BASE_DOMAIN' < ./frontend/account/openpaas.js.template > ./frontend/account/openpaas.js
 envsubst '$BASE_DOMAIN' < ./frontend/excal/env.js.template > ./frontend/excal/env.js
-envsubst '$BASE_DOMAIN' < ./frontend/contacts/openpaas.js.template > ./frontend/contacts/openpaas.js
+envsubst '$BASE_DOMAIN' < ./frontend/contacts/env.js.template > ./frontend/contacts/env.js
 envsubst '$BASE_DOMAIN' < ./frontend/env.js.template > ./frontend/env.js
 
 # Check if file was created
@@ -33,7 +33,7 @@ if [ ! -f "./frontend/excal/env.js" ]; then
     echo "Failed to create configuration file"
     exit 1
 fi
-if [ ! -f "./frontend/contacts/openpaas.js" ]; then
+if [ ! -f "./frontend/contacts/env.js" ]; then
     echo "Failed to create configuration file"
     exit 1
 fi

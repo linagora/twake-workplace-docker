@@ -29,5 +29,5 @@ chat_app/tom-bridge/registration.yaml
 calendar_app/conf-side-service/configuration.properties
 calendar_app/frontend/account/openpaas.js
 calendar_app/frontend/excal/env.js
-calendar_app/frontend/contacts/openpaas.js
+calendar_app/frontend/contacts/env.js
 calendar_app/frontend/env.js

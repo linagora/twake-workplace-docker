@@ -89,7 +89,7 @@ You can now access the applications:
 -   Calendar (Twake Calendar web): https://calendar.twake.local
     (`https://calendar-ng.twake.local` still works)
 -   Public event pages (excal): https://excal.twake.local
--   Contacts: https://contacts.twake.local/contacts/
+-   Contacts (Twake Contacts): https://contacts.twake.local
 -   Account: https://account.twake.local
 
 
