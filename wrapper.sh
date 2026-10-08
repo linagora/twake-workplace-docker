@@ -18,11 +18,12 @@ REPOS=(
     ["tmail_app"]="${BASE_DIR}/tmail_app"
     ["docs_app"]="${BASE_DIR}/docs_app"
     ["grist_app"]="${BASE_DIR}/grist_app"
+    ["linshare_app"]="${BASE_DIR}/linshare_app"
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "calendar_app" "chat_app" "tmail_app" "docs_app" "grist_app")
-STOP_ORDER=("grist_app" "docs_app" "tmail_app" "chat_app" "calendar_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "tmail_app" "calendar_app" "chat_app"  "docs_app" "grist_app" "linshare_app")
+STOP_ORDER=("linshare_app" "grist_app" "docs_app" "chat_app" "calendar_app" "tmail_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 # ----------------------------
 # App selection: friendly flags -> repo
@@ -40,6 +41,7 @@ APP_FLAGS=(
     ["--office"]="onlyoffice_app"
     ["--docs"]="docs_app"
     ["--grist"]="grist_app"
+    ["--linshare"]="linshare_app"
 )
 
 # Repo-level dependencies: repos that must also run for a given repo to work.
@@ -59,6 +61,7 @@ REPO_REQUIRES=(
     ["onlyoffice_app"]="twake_db"
     ["docs_app"]="twake_auth"
     ["grist_app"]="twake_auth"
+    ["linshare_app"]="twake_auth"
 )
 
 # Dependencies: containers that must be healthy before starting a repo.
@@ -95,6 +98,7 @@ REPO_DEPS=(
     ["calendar_app"]="lemonldap-ng mongodb rabbitmq"
     ["docs_app"]="lemonldap-ng postgres visio-valkey minio"
     ["grist_app"]="lemonldap-ng postgres visio-valkey minio"
+    ["linshare_app"]="lemonldap-ng postgres mongodb"
 )
 
 show_help() {

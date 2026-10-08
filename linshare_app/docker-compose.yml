@@ -21,7 +21,7 @@ services:
             - "auth.${BASE_DOMAIN}:172.27.0.100"    
         environment:
             # These variables are mandatory
-            - SMTP_HOST=linshare_mail
+            - SMTP_HOST=tmail-backend
             - SMTP_PORT=25
             - CLAMAV_HOST=linshare_clamav
             - POSTGRES_HOST=postgres
@@ -34,6 +34,7 @@ services:
             - MONGODB_USER=mongoroot
             - MONGODB_PASSWORD=password
             - THUMBNAIL_ENABLE=true
+            - THUMBNAIL_HOST=thumbnail-server
             - START_DEBUG=1
             - DEBUG=1
             - LS_DEBUG=1
