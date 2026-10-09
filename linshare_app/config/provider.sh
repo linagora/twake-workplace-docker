@@ -16,10 +16,17 @@ done
 
 echo "✔ LinShare admin API is ready"
 
+# Check if TOPDOMAIN 'top1' exists
+EXISTING=$(curl -s -k -u "root@localhost.localdomain:adminlinshare" "$BASE_URL/domains" \
+  -H "accept: application/json" | jq -r '.[] | select(.name=="top1") | .uuid')
 
+if [[ -n "$EXISTING" ]]; then
+    echo "✅ TOPDOMAIN 'top1' already exists (UUID: $EXISTING). Skipping rest of the script."
+    exit 0
+fi
 # Create TOPDOMAIN
 echo "Creating TOPDOMAIN..."
-TOPDOMAIN_RESPONSE=$(curl -s -kv -u "root@localhost.localdomain:adminlinshare" "$BASE_URL/domains" \
+TOPDOMAIN_RESPONSE=$(curl -s -k -u "root@localhost.localdomain:adminlinshare" "$BASE_URL/domains" \
   -H "accept: application/json, text/plain, */*" \
   -H "content-type: application/json" \
   --data-raw '{"name":"top1","parent":{"name":"LinShareRootDomain","uuid":"LinShareRootDomain"},"type":"TOPDOMAIN"}')
@@ -33,7 +40,7 @@ echo "Created TOPDOMAIN with UUID: $DOMAIN_UUID"
 
 #Create OIDC Provider for the domain
 echo "Creating OIDC Provider..."
-OIDC_RESPONSE=$(curl -s -kv -u "root@localhost.localdomain:adminlinshare" "$BASE_URL/domains/$DOMAIN_UUID/user_providers" \
+OIDC_RESPONSE=$(curl -s -k -u "root@localhost.localdomain:adminlinshare" "$BASE_URL/domains/$DOMAIN_UUID/user_providers" \
   -H "accept: application/json, text/plain, */*" \
   -H "content-type: application/json" \
   --data-raw '{"type":"OIDC_PROVIDER","domainDiscriminator":"domain_discriminator"}')
