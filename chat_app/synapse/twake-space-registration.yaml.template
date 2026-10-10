@@ -1,0 +1,21 @@
+# Synapse application service registration of the Twake Space backend, which
+# gets the events of the Matrix space of each space (feed messages, reactions,
+# mentions). Rendered by compose-wrapper.sh from the root .env
+# (TWAKE_SPACE_MATRIX_*).
+id: twake-space
+url: http://twake-space-backend:8080
+as_token: "${TWAKE_SPACE_MATRIX_AS_TOKEN}"
+hs_token: "${TWAKE_SPACE_MATRIX_HS_TOKEN}"
+# The account tom-bridge adds to each Matrix space (twakeSpaceUserId);
+# twake-space-init registers it
+sender_localpart: twakespace
+namespaces:
+  users:
+    - exclusive: true
+      regex: '@twakespace:${BASE_DOMAIN_REGEX}$'
+  rooms: []
+  # The Matrix spaces tom-bridge creates, which it reserves
+  aliases:
+    - exclusive: false
+      regex: '#twake-space-.*:${BASE_DOMAIN_REGEX}$'
+rate_limited: false

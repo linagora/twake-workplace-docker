@@ -1,5 +1,6 @@
-# Synapse application service registration of tom-bridge, rendered once by
-# compose-wrapper.sh with random tokens into registration.yaml.
+# Synapse application service registration of tom-bridge, rendered by
+# compose-wrapper.sh into registration.yaml; its random tokens are generated
+# once and kept.
 id: common-settings-bridge
 url: null
 as_token: "${TOM_BRIDGE_AS_TOKEN}"
@@ -10,5 +11,9 @@ namespaces:
     - exclusive: false
       regex: "@.*"
   rooms: []
-  aliases: []
+  # The Matrix spaces of Twake Space spaces and their General rooms
+  # (spaces block of the config): Synapse refuses to create them otherwise
+  aliases:
+    - exclusive: true
+      regex: '#twake-space-.*:${BASE_DOMAIN_REGEX}$'
 rate_limited: false

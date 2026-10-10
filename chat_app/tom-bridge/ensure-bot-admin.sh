@@ -1,8 +1,15 @@
 #!/bin/sh
-# Makes the tom-bridge bot (@twp_bot) a Synapse admin, so that it can update
-# the profiles through the admin API. Idempotent; runs in the Synapse image
-# before the bridge starts.
+# Registers the sender of an application service (REGISTRATION, tom-bridge's by
+# default) and, unless ADMIN=false, makes it a Synapse admin: the tom-bridge
+# bot (@twp_bot) updates the profiles through the admin API. Idempotent; runs
+# in the Synapse image.
 set -e
+
+export REGISTRATION="${REGISTRATION:-/config/tom-bridge-registration.yaml}"
+if ! grep -q '^as_token: *"[^"]' "$REGISTRATION"; then
+  echo "$REGISTRATION has no as_token: nothing to register"
+  exit 0
+fi
 
 until python -c 'import urllib.request; urllib.request.urlopen("http://synapse:8008/health")' 2>/dev/null; do
   echo "Waiting for Synapse..."
@@ -16,7 +23,7 @@ python - <<'PY'
 import json, os, urllib.error, urllib.request
 import psycopg2
 
-registration = open("/config/tom-bridge-registration.yaml").read().splitlines()
+registration = open(os.environ["REGISTRATION"]).read().splitlines()
 fields = {k.strip(): v.strip().strip('"') for k, _, v in (l.partition(":") for l in registration) if v}
 localpart, token = fields["sender_localpart"], fields["as_token"]
 
@@ -34,6 +41,8 @@ except urllib.error.HTTPError as e:
         raise
     print("@%s already registered" % localpart)
 
+if os.environ.get("ADMIN") == "false":
+    raise SystemExit(0)
 user_id = "@%s:%s" % (localpart, os.environ["BASE_DOMAIN"])
 conn = psycopg2.connect(host="postgres", dbname="synapse", user="synapse", password="synapse!1")
 with conn, conn.cursor() as cur:

@@ -1,0 +1,34 @@
+# Chat tab: Synapse of chat_app pushes the room events to the backend
+# (application service chat_app/synapse/twake-space-registration.yaml).
+# compose-wrapper.sh adds this file when TWAKE_SPACE_MATRIX_AS_TOKEN is set.
+services:
+  # Registers @twakespace, the sender of that application service, which
+  # tom-bridge adds to each Matrix space but never creates. Exits 0 when the
+  # account already exists.
+  twake-space-init:
+    image: matrixdotorg/synapse:v1.152.1
+    restart: "no"
+    # The image's healthcheck probes a Synapse this container does not run
+    healthcheck:
+      disable: true
+    entrypoint: ["/bin/sh", "/ensure-bot-admin.sh"]
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
+      - REGISTRATION=/config/twake-space-registration.yaml
+      - ADMIN=false
+    volumes:
+      - ../chat_app/tom-bridge/ensure-bot-admin.sh:/ensure-bot-admin.sh:ro
+      - ../chat_app/synapse/twake-space-registration.yaml:/config/twake-space-registration.yaml:ro
+    networks:
+      - twake-network
+
+  twake-space-backend:
+    depends_on:
+      twake-space-init:
+        condition: service_completed_successfully
+    environment:
+      MATRIX_HOMESERVER_URL: http://synapse:8008
+      MATRIX_SERVER_NAME: ${BASE_DOMAIN}
+      MATRIX_AS_TOKEN: ${TWAKE_SPACE_MATRIX_AS_TOKEN}
+      MATRIX_HS_TOKEN: ${TWAKE_SPACE_MATRIX_HS_TOKEN}
+      SECRETS_KEY: ${TWAKE_SPACE_SECRETS_KEY}

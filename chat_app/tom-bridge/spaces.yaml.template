@@ -1,0 +1,12 @@
+# Matrix space of each Twake Space space (docs/Spaces.md of ToM-Bridge),
+# appended to config.yaml by compose-wrapper.sh when TOM_BRIDGE_SPACES=true:
+# only a tom-bridge image with linagora/ToM-Bridge#10 reads it. A single
+# installation binds the space events on the `space` exchange directly.
+spaces:
+  exchange: "space"
+  routingKey: "twake.space.#"
+  queue: "chat.space.queue"
+  activityExchange: "activity"
+  localpartFrom: "uid"
+  syncRequestExchange: "space"
+  organizationId: "${ORGANIZATION_ID}"

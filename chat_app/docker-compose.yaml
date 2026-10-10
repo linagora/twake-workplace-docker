@@ -30,6 +30,7 @@ services:
       - ./synapse/matrix.signing.key:/config/matrix.signing.key:ro
       - ./synapse/matrix.log.config:/config/matrix.log.config:ro
       - ./tom-bridge/registration.yaml:/config/tom-bridge-registration.yaml:ro
+      - ./synapse/twake-space-registration.yaml:/config/twake-space-registration.yaml:ro
       - ../twake_auth/traefik/ssl/root-ca.crt:/usr/local/share/ca-certificates/root-ca.crt:ro
     networks:
       - twake-network
@@ -71,6 +72,9 @@ services:
   tom-bridge-init:
     image: matrixdotorg/synapse:v1.152.1
     restart: "no"
+    # The image's healthcheck probes a Synapse this container does not run
+    healthcheck:
+      disable: true
     depends_on:
       synapse:
         condition: service_started
@@ -86,7 +90,7 @@ services:
   # Applies the user.settings.updated events of common-settings (display
   # name, avatar, email, phone) to the Matrix profiles.
   tom-bridge:
-    image: linagora/tom-bridge:1.0.2
+    image: ${TOM_BRIDGE_IMAGE:-linagora/tom-bridge:1.0.2}
     restart: unless-stopped
     depends_on:
       tom-bridge-init:
