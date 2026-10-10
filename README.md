@@ -149,6 +149,8 @@ Three demo accounts are seeded into the local LDAP:
 | `https://user2.twake.local` | `user2` | `user2`  |
 | `https://user3.twake.local` | `user3` | `user3`  |
 
+Every account belongs to one organization, `ORGANIZATION_ID` in `.env` (`twake-demo` by default), with `user1` as its owner. Each `up` puts accounts created since, for instance with `scripts/twake users add`, in it as members. LemonLDAP keeps it in the `organizationId` and `organizationRole` session attributes, for the OIDC clients that ask for them (as `org_id` and `org_role`).
+
 For deeper operational topics, see the operator docs:
 
 - [`docs/cookbook.md`](docs/cookbook.md) — day-to-day commands and debugging

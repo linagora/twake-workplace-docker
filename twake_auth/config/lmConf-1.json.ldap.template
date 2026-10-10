@@ -271,7 +271,9 @@
       "mail" : "mail",
       "sn" : "sn",
       "uid" : "uid",
-      "workplaceFqdn" : "workspaceUrl"
+      "workplaceFqdn" : "workspaceUrl",
+      "organizationId" : "twakeOrganizationId",
+      "organizationRole" : "twakeOrganizationRole"
    },
    "ldapGroupAttributeName" : "member",
    "ldapGroupAttributeNameGroup" : "dn",
