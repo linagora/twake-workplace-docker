@@ -145,6 +145,61 @@ services:
     depends_on:
       - tmail-backend
 
+  # ==================== Twake Mail (React) ====================
+  # The React Twake Mail (github.com/Crash--/twake-mail-frontend) on
+  # mail-react.${BASE_DOMAIN}, with the team mailbox facade that Twake Space
+  # frames. The default image is the one it is to be published as; until then
+  # set TWAKE_MAIL_REACT_IMAGE. Only started with the mail-react profile
+  # (COMPOSE_PROFILES in .env).
+  tmail-web-react:
+    image: ${TWAKE_MAIL_REACT_IMAGE:-ghcr.io/linagora/twake-mail-frontend:0.1.0}
+    profiles: [mail-react]
+    container_name: tmail-web-react
+    restart: unless-stopped
+    user: "101"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks:
+      - twake-network
+    volumes:
+      - ./tmail-web-react/env.js:/usr/share/nginx/html/.env.js:ro
+    environment:
+      LISTEN_PORT: "8080"
+      # The SSO, and each user's Cozy for the Drive picker
+      CSP_CONNECT_SRC: "https://*.${BASE_DOMAIN}"
+      CSP_FRAME_SRC: "https://*.${BASE_DOMAIN}"
+      # Framed by the Cozy Mail app and by Twake Space
+      CSP_FRAME_ANCESTORS: "'self' https://*.${BASE_DOMAIN}"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      # Above the router of the Cozy instances (*.${BASE_DOMAIN})
+      - "traefik.http.routers.mail-react.rule=Host(`mail-react.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.mail-react.entrypoints=websecure"
+      - "traefik.http.routers.mail-react.tls=true"
+      - "traefik.http.routers.mail-react.priority=100"
+      - "traefik.http.routers.mail-react.service=mail-react"
+      - "traefik.http.services.mail-react.loadbalancer.server.port=8080"
+      # JMAP on the same origin, no CORS: the prefix headers make tmail-backend
+      # advertise URLs of this host in the JMAP session
+      # (dynamic.jmap.prefix.resolution.enabled in jmap.properties)
+      - "traefik.http.routers.mail-react-jmap.rule=Host(`mail-react.${BASE_DOMAIN}`) && (PathPrefix(`/jmap`) || PathPrefix(`/upload`) || PathPrefix(`/download`) || PathPrefix(`/eventSource`) || Path(`/.well-known/jmap`))"
+      - "traefik.http.routers.mail-react-jmap.entrypoints=websecure"
+      - "traefik.http.routers.mail-react-jmap.tls=true"
+      - "traefik.http.routers.mail-react-jmap.priority=200"
+      - "traefik.http.routers.mail-react-jmap.service=tmail-jmap"
+      - "traefik.http.routers.mail-react-jmap.middlewares=mail-react-jmap-prefix"
+      - "traefik.http.middlewares.mail-react-jmap-prefix.headers.customrequestheaders.X-JMAP-PREFIX=https://mail-react.${BASE_DOMAIN}"
+      - "traefik.http.middlewares.mail-react-jmap-prefix.headers.customrequestheaders.X-JMAP-WEBSOCKET-PREFIX=wss://mail-react.${BASE_DOMAIN}"
+    depends_on:
+      - tmail-backend
+
   # ==================== phpLDAPadmin (LDAP UI) ====================
   phpldapadmin:
     image: osixia/phpldapadmin:0.9.0

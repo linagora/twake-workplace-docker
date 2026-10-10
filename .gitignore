@@ -9,6 +9,7 @@ tmail_app/config/usersrepository.xml
 tmail_app/config/webadmin.properties
 tmail_app/config/openpaas.properties
 tmail_app/tmail-web-conf/.env
+tmail_app/tmail-web-react/env.js
 meet_app/config/nginx.conf
 meet_app/config/livekit.yaml
 docs_app/config/nginx.conf

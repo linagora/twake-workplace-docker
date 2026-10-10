@@ -92,7 +92,7 @@ for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
     echo "▶ Installing mail app for \$DOMAIN"
     install_app mail "\$DOMAIN"
     cozy-stack feature flags --domain "\$DOMAIN" \\
-      '{"mail.embedded-app-url": "https://mail.$BASE_DOMAIN"}'
+      '{"mail.embedded-app-url": "${COZY_MAIL_APP_URL:-https://mail.$BASE_DOMAIN}"}'
   fi  
   
   if echo ",\$ENABLED_APPS," | grep -q ",chat,"; then
