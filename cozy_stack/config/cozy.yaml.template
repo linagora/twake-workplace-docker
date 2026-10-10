@@ -133,6 +133,13 @@ authentication:
       allow_oauth_token: true
       logout_url: https://auth.${BASE_DOMAIN}/oauth2/logout
       id_token_jwk_url: https://auth.${BASE_DOMAIN}/oauth2/jwks
+      # The React Twake Mail (OIDC client twake-mail-react) swaps its ID token
+      # for a token of the mail app, to use the Drive intents (file picker)
+      # from the composer.
+      allow_app_token_exchange: true
+      app_token_exchange:
+        twake-mail-react:
+          software_id: registry://mail
 # jobs parameters to configure the job system
 jobs:
   # path to the imagemagick convert binary
@@ -457,7 +464,7 @@ csp_allowlist:
   # img:    https://allowed.domain.com/
   # style:  https://allowed.domain.com/
   # font:   https://allowed.domain.com/
-  frame: "https://linshare.${BASE_DOMAIN} https://mail.${BASE_DOMAIN}"
+  frame: "https://linshare.${BASE_DOMAIN} https://mail.${BASE_DOMAIN} https://mail-react.${BASE_DOMAIN}"
 
   # It is also possible to configure the CSP policy per context. The values are
   # cumulative with the global csp allowlist.

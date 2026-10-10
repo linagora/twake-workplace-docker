@@ -425,6 +425,14 @@
          "given_name" : "givenName",
          "name" : "cn",
          "preferred_username" : "uid"
+      },
+      "twake-mail-react" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "preferred_username" : "uid",
+         "workplaceFqdn" : "workplaceFqdn"
       }
    },
    "oidcRPMetaDataMacros" : {
@@ -434,7 +442,8 @@
       "linshare" : {},
       "meet" : {},
       "docs" : {},
-      "grist" : {}
+      "grist" : {},
+      "twake-mail-react" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -684,6 +693,32 @@
          "oidcRPMetaDataOptionsRequirePKCE" : 0,
          "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
          "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
+      },
+      "twake-mail-react" : {
+         "oidcRPMetaDataOptionsAccessTokenClaims" : 1,
+         "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS512",
+         "oidcRPMetaDataOptionsAdditionalAudiences" : "james",
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 1,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthnLevel" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twake-mail-react",
+         "oidcRPMetaDataOptionsDisplayName" : "Twake Mail (React)",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS512",
+         "oidcRPMetaDataOptionsLogoutBypassConfirm" : 0,
+         "oidcRPMetaDataOptionsLogoutSessionRequired" : 1,
+         "oidcRPMetaDataOptionsLogoutType" : "back",
+         "oidcRPMetaDataOptionsLogoutUrl" : "https://jmap.${BASE_DOMAIN}/add-revoked-token",
+         "oidcRPMetaDataOptionsOfflineSessionExpiration" : 2592000,
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://mail-react.${BASE_DOMAIN}/",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://mail-react.${BASE_DOMAIN}/callback https://mail-react.${BASE_DOMAIN}/intents/callback",
+         "oidcRPMetaDataOptionsRefreshToken" : 1,
+         "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 1
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -693,7 +728,8 @@
       "linshare" : {},
       "meet" : {},
       "docs" : {},
-      "grist" : {}
+      "grist" : {},
+      "twake-mail-react" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
@@ -702,7 +738,8 @@
       "linshare" : {},
       "meet" : {},
       "docs" : {},
-      "grist" : {}
+      "grist" : {},
+      "twake-mail-react" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

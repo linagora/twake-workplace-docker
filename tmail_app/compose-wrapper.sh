@@ -17,6 +17,7 @@ envsubst '$BASE_DOMAIN' < config/domainlist.xml.template > config/domainlist.xml
 envsubst '$BASE_DOMAIN' < config/jmap.properties.template > config/jmap.properties
 envsubst '$BASE_DOMAIN' < config/mailetcontainer.xml.template > config/mailetcontainer.xml
 envsubst '$BASE_DOMAIN' < tmail-web-conf/.env.template > tmail-web-conf/.env
+envsubst '$BASE_DOMAIN' < tmail-web-react/env.js.template > tmail-web-react/env.js
 envsubst '$BASE_DOMAIN' < config/webadmin.properties.template > config/webadmin.properties
 envsubst '$BASE_DOMAIN' < config/openpaas.properties.template > config/openpaas.properties
 
