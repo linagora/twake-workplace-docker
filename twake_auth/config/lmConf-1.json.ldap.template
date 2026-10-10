@@ -425,6 +425,13 @@
          "given_name" : "givenName",
          "name" : "cn",
          "preferred_username" : "uid"
+      },
+      "twake-chat-react" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "preferred_username" : "uid"
       }
    },
    "oidcRPMetaDataMacros" : {
@@ -434,7 +441,8 @@
       "linshare" : {},
       "meet" : {},
       "docs" : {},
-      "grist" : {}
+      "grist" : {},
+      "twake-chat-react" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -684,6 +692,21 @@
          "oidcRPMetaDataOptionsRequirePKCE" : 0,
          "oidcRPMetaDataOptionsUserInfoEncContentEncAlg" : "A256GCM",
          "oidcRPMetaDataOptionsUserinfoRequireHeaderToken" : 0
+      },
+      "twake-chat-react" : {
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthnLevel" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twake-chat-react",
+         "oidcRPMetaDataOptionsDisplayName" : "Twake Chat (React)",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS512",
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://chat-react.${BASE_DOMAIN}/",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://chat-react.${BASE_DOMAIN}/oidc/callback",
+         "oidcRPMetaDataOptionsRequirePKCE" : 1
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -693,7 +716,8 @@
       "linshare" : {},
       "meet" : {},
       "docs" : {},
-      "grist" : {}
+      "grist" : {},
+      "twake-chat-react" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
@@ -702,7 +726,8 @@
       "linshare" : {},
       "meet" : {},
       "docs" : {},
-      "grist" : {}
+      "grist" : {},
+      "twake-chat-react" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

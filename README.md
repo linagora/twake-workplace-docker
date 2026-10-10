@@ -62,7 +62,7 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     127.0.0.1  user1.twake.local user1-home.twake.local user1-linshare.twake.local user1-drive.twake.local user1-settings.twake.local user1-mail.twake.local user1-chat.twake.local user1-notes.twake.local user1-dataproxy.twake.local
     127.0.0.1  user2.twake.local user2-home.twake.local user2-linshare.twake.local user2-drive.twake.local user2-settings.twake.local user2-mail.twake.local user2-chat.twake.local user2-notes.twake.local user2-dataproxy.twake.local
     127.0.0.1  user3.twake.local user3-home.twake.local user3-linshare.twake.local user3-drive.twake.local user3-settings.twake.local user3-mail.twake.local user3-chat.twake.local user3-notes.twake.local user3-dataproxy.twake.local
-    127.0.0.1  chat.twake.local matrix.twake.local tom.twake.local fed.twake.local traefik.twake.local calendar-ng.twake.local livekit.twake.local docs.twake.local grist.twake.local
+    127.0.0.1  chat.twake.local matrix.twake.local tom.twake.local fed.twake.local traefik.twake.local calendar-ng.twake.local livekit.twake.local docs.twake.local grist.twake.local chat-react.twake.local
     ```
 
     </details>
@@ -92,6 +92,8 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     | `--full` | Everything |
 
     On `down`, an app flag stops only that app and leaves the shared services running for whatever else is up.
+
+    Some apps run from images that are not public yet, so they are off by default: list their profile in `COMPOSE_PROFILES` in `.env` to start them with their project. `chat-react` is the React Twake Chat on `chat-react.twake.local`, part of `chat_app`. Its Drive picker and Mail composer need `COZY_CHAT_APP_URL=https://chat-react.twake.local` in `.env`, which leaves the Chat tile of the Cozy home empty (the React Chat refuses that frame).
 
 5.  **Open** `https://user1.twake.local` and log in with the demo credentials (see *Login & next steps*).
 

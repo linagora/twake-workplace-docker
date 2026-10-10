@@ -133,6 +133,13 @@ authentication:
       allow_oauth_token: true
       logout_url: https://auth.${BASE_DOMAIN}/oauth2/logout
       id_token_jwk_url: https://auth.${BASE_DOMAIN}/oauth2/jwks
+      # The React Twake Chat (OIDC client twake-chat-react) swaps its ID token
+      # for a token of the chat app, for the Drive picker and Mail composer
+      # intents. The stack accepts its origin from chat.embedded-app-url.
+      allow_app_token_exchange: true
+      app_token_exchange:
+        twake-chat-react:
+          software_id: registry://chat
 # jobs parameters to configure the job system
 jobs:
   # path to the imagemagick convert binary
