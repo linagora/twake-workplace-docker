@@ -273,7 +273,8 @@
       "uid" : "uid",
       "workplaceFqdn" : "workspaceUrl",
       "organizationId" : "twakeOrganizationId",
-      "organizationRole" : "twakeOrganizationRole"
+      "organizationRole" : "twakeOrganizationRole",
+      "uuid" : "entryUUID"
    },
    "ldapGroupAttributeName" : "member",
    "ldapGroupAttributeNameGroup" : "dn",
@@ -462,7 +463,18 @@
          "name" : "cn",
          "preferred_username" : "uid",
          "workplaceFqdn" : "workplaceFqdn"
-      }
+      },
+      "twaketasks" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "org_id" : "organizationId",
+         "org_role" : "organizationRole",
+         "preferred_username" : "uid",
+         "uuid" : "uuid"
+      },
+      "twaketasks-backend" : {}
    },
    "oidcRPMetaDataMacros" : {
       "calendar" : {},
@@ -472,7 +484,9 @@
       "meet" : {},
       "docs" : {},
       "grist" : {},
-      "twake-mail-react" : {}
+      "twake-mail-react" : {},
+      "twaketasks" : {},
+      "twaketasks-backend" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -748,6 +762,37 @@
          "oidcRPMetaDataOptionsRefreshToken" : 1,
          "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 1
+      },
+      "twaketasks" : {
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthnLevel" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twaketasks",
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsLogoutBypassConfirm" : 1,
+         "oidcRPMetaDataOptionsLogoutSessionRequired" : 1,
+         "oidcRPMetaDataOptionsLogoutType" : "back",
+         "oidcRPMetaDataOptionsLogoutUrl" : "http://twake-tasks-backend:8080/api/auth/backchannel-logout",
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://tasks.${BASE_DOMAIN}/",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://tasks.${BASE_DOMAIN}/auth/callback",
+         "oidcRPMetaDataOptionsRefreshToken" : 1,
+         "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 1
+      },
+      "twaketasks-backend" : {
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twaketasks-backend",
+         "oidcRPMetaDataOptionsClientSecret" : "twaketasks-backend-secret",
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsPublic" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 0
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -758,7 +803,9 @@
       "meet" : {},
       "docs" : {},
       "grist" : {},
-      "twake-mail-react" : {}
+      "twake-mail-react" : {},
+      "twaketasks" : {},
+      "twaketasks-backend" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
@@ -768,7 +815,9 @@
       "meet" : {},
       "docs" : {},
       "grist" : {},
-      "twake-mail-react" : {}
+      "twake-mail-react" : {},
+      "twaketasks" : {},
+      "twaketasks-backend" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

@@ -1,0 +1,78 @@
+# Twake Tasks (linagora/twake-tasks) on tasks.${BASE_DOMAIN}, standalone and in
+# the Tasks tab of Twake Space (/embed/projects/<id>, with its overlay
+# /embed/overlay.html over the page of Twake Space).
+#
+# With the space integration on, it creates the project of every space it
+# hears of (twake.space.* on the `space` exchange) and tells Twake Space with
+# com.twake.tasks.space.provisioned.v1 on `activity`.
+services:
+  twake-tasks-backend:
+    image: ${TWAKE_TASKS_BACKEND_IMAGE:-ghcr.io/linagora/twake-tasks-backend:0.2.13}
+    container_name: twake-tasks-backend
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      # Not a superuser: Tasks relies on row level security
+      DATABASE_URL: postgres://twake_tasks:twake_tasks@postgres:5432/twake_tasks
+      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      APP_URL: https://tasks.${BASE_DOMAIN}
+      OIDC_ISSUER: https://auth.${BASE_DOMAIN}/
+      OIDC_CLIENT_ID: twaketasks-backend
+      OIDC_CLIENT_SECRET: twaketasks-backend-secret
+      SPACE_INTEGRATION: "true"
+      # The nightly reconciliation reads the spaces from ldap-rest's B2B
+      # routes, which the public ldap-rest has not: it fails and changes nothing
+      LDAP_REST_URL: http://ldap-rest:8081
+      LDAP_REST_SERVICE_ID: twake-tasks
+      LDAP_REST_SECRET: twake-tasks-ldap-rest-secret-for-local-dev
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
+    volumes:
+      - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health/ready').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  twake-tasks-frontend:
+    image: ${TWAKE_TASKS_FRONTEND_IMAGE:-ghcr.io/linagora/twake-tasks-frontend:0.2.14}
+    container_name: twake-tasks-frontend
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      twake-tasks-backend:
+        condition: service_healthy
+    environment:
+      API_UPSTREAM: http://twake-tasks-backend:8080
+      SSO_BASE_URL: https://auth.${BASE_DOMAIN}/
+      SSO_CLIENT_ID: twaketasks
+      SSO_SCOPE: openid email profile
+      SSO_REDIRECT_URI: https://tasks.${BASE_DOMAIN}/auth/callback
+      SSO_POST_LOGOUT_REDIRECT: https://tasks.${BASE_DOMAIN}/
+      # Twake Space frames /embed/* and the overlay, and hears their messages
+      TWAKE_SPACE_ORIGIN: https://space.${BASE_DOMAIN}
+      CSP_FRAME_ANCESTORS: https://space.${BASE_DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.twake-tasks.rule=Host(`tasks.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.twake-tasks.entrypoints=websecure"
+      - "traefik.http.routers.twake-tasks.tls=true"
+      - "traefik.http.routers.twake-tasks.priority=100"
+      - "traefik.http.services.twake-tasks.loadbalancer.server.port=8080"
+    networks:
+      - twake-network
+
+networks:
+  twake-network:
+    external: true
