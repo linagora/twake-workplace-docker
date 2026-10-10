@@ -56,7 +56,7 @@ REPO_REQUIRES=(
     ["cozy_stack"]="twake_auth"
     ["meet_app"]="twake_auth"
     ["chat_app"]="twake_auth"
-    ["calendar_app"]="twake_auth"
+    ["calendar_app"]="twake_auth tmail_app"
     ["tmail_app"]="twake_auth"
     ["onlyoffice_app"]="twake_db"
     ["docs_app"]="twake_auth"
@@ -85,6 +85,7 @@ REPO_REQUIRES=(
 #     /healthcheck probes them, so until they are healthy the aggregate reports
 #     UNHEALTHY (503), the container never turns healthy, and the wrapper's
 #     health wait fails with "calendar health check failing".
+#   - opensearch: the side-service resolves it at boot, and tmail_app runs it.
 # docs_app and grist_app are confidential OIDC clients (docs, grist) and keep
 # their data in twake_db's postgres, valkey and minio. Grist also loads the
 # OIDC discovery at boot and stays down while the IdP is unreachable.
@@ -95,7 +96,7 @@ REPO_DEPS=(
     ["cozy_stack"]="lemonldap-ng"
     ["meet_app"]="lemonldap-ng"
     ["tmail_app"]="lemonldap-ng"
-    ["calendar_app"]="lemonldap-ng mongodb rabbitmq"
+    ["calendar_app"]="lemonldap-ng mongodb rabbitmq opensearch"
     ["docs_app"]="lemonldap-ng postgres visio-valkey minio"
     ["grist_app"]="lemonldap-ng postgres visio-valkey minio"
     ["linshare_app"]="lemonldap-ng postgres mongodb"

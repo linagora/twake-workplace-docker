@@ -88,6 +88,14 @@ services:
       - "traefik.http.routers.mail-backend-jmap.priority=300"
       - "traefik.http.routers.mail-backend-jmap.service=tmail-jmap"
 
+      # JMAP blobs and push (/upload, /download, /eventSource)
+      - "traefik.http.routers.mail-backend-jmap-blobs.rule=Host(`jmap.${BASE_DOMAIN}`) && (PathPrefix(`/upload`) || PathPrefix(`/download`) || PathPrefix(`/eventSource`))"
+      - "traefik.http.routers.mail-backend-jmap-blobs.entrypoints=websecure"
+      - "traefik.http.routers.mail-backend-jmap-blobs.tls=true"
+      - "traefik.http.routers.mail-backend-jmap-blobs.middlewares=cors-headers@file"
+      - "traefik.http.routers.mail-backend-jmap-blobs.priority=300"
+      - "traefik.http.routers.mail-backend-jmap-blobs.service=tmail-jmap"
+
       # WebFinger default (non-OpenID queries) → TMail Backend (priority 200)
       - "traefik.http.routers.mail-backend-webfinger.rule=Host(`jmap.${BASE_DOMAIN}`) && Path(`/.well-known/webfinger`)"
       - "traefik.http.routers.mail-backend-webfinger.entrypoints=websecure"
