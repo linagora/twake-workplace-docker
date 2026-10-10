@@ -1,0 +1,91 @@
+# Twake Space (linagora/twake-space) on space.${BASE_DOMAIN}: the spaces of an
+# organization, each tab showing one app in a frame (Tasks, Mail, Chat, Drive).
+# See docs/space-and-tasks.md.
+services:
+  twake-space-backend:
+    image: ${TWAKE_SPACE_BACKEND_IMAGE:-ghcr.io/linagora/twake-space-backend:0.1.19}
+    container_name: twake-space-backend
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      DATABASE_URL: postgres://twake_space:twake_space@postgres:5432/twake_space
+      AMQP_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      # The public ldap-rest has no organization nor user routes (they come
+      # with the B2B plugin): the seed writes the organization in the database
+      LDAP_REST_URL: http://ldap-rest:8081
+      LDAP_REST_SERVICE_ID: twake-space
+      LDAP_REST_SECRET: twake-space-ldap-rest-secret-for-local-dev
+      # Issuer of LemonLDAP, trailing slash included
+      OIDC_ISSUER: https://auth.${BASE_DOMAIN}/
+      OIDC_CLIENT_ID: twakespace-backend
+      OIDC_CLIENT_SECRET: twakespace-backend-secret
+      # The backend drops chat without a homeserver (docker-compose.chat.yml)
+      SPACE_APPS: chat,tasks,mail
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
+    volumes:
+      - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
+    extra_hosts:
+      - "auth.${BASE_DOMAIN}:172.27.0.100"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health/ready').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  twake-space-frontend:
+    image: ${TWAKE_SPACE_FRONTEND_IMAGE:-ghcr.io/linagora/twake-space-frontend:0.1.42}
+    container_name: twake-space-frontend
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      twake-space-backend:
+        condition: service_healthy
+    environment:
+      API_URL: /api
+      API_UPSTREAM: http://twake-space-backend:8080
+      SSO_BASE_URL: https://auth.${BASE_DOMAIN}/
+      SSO_CLIENT_ID: twakespace
+      SSO_SCOPE: openid email profile
+      SSO_REDIRECT_URI: https://space.${BASE_DOMAIN}/auth/callback
+      SSO_POST_LOGOUT_REDIRECT: https://space.${BASE_DOMAIN}/
+      TASKS_URL: https://tasks.${BASE_DOMAIN}
+      # The Mail tab frames the team mailbox facade of the React Twake Mail
+      # (/embed/team-mailboxes/<id>), which the Flutter one has not: empty,
+      # the tab says Mail is not set up
+      MAIL_URL: ${TWAKE_SPACE_MAIL_URL:-}
+      # The Chat tab frames /embed/rooms/<Matrix space> of the React Twake Chat
+      # (linagora/twake-space-chat, service chat-react of chat_app): empty,
+      # the tab says Chat is not set up
+      CHAT_URL: ${TWAKE_SPACE_CHAT_URL:-}
+      # The Calendar tab frames /embed/calendars/<id>, not released yet: empty,
+      # the tab says Calendar is not set up
+      CALENDAR_URL: ${TWAKE_SPACE_CALENDAR_URL:-}
+      # The Drive tab frames each person's Drive (<slug>-drive.${BASE_DOMAIN}),
+      # whose origins join frame-src. The variable replaces the default 'self'
+      DRIVE_URL: https://{slug}-drive.{domain}/
+      CSP_FRAME_SRC: "'self' https://*.${BASE_DOMAIN}"
+      # Avatars of the common settings, served by each user's Cozy
+      CSP_IMG_SRC: https://*.${BASE_DOMAIN}
+    labels:
+      - "traefik.enable=true"
+      # Above the router of the Cozy instances (*.${BASE_DOMAIN})
+      - "traefik.http.routers.twake-space.rule=Host(`space.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.twake-space.entrypoints=websecure"
+      - "traefik.http.routers.twake-space.tls=true"
+      - "traefik.http.routers.twake-space.priority=100"
+      - "traefik.http.services.twake-space.loadbalancer.server.port=8080"
+    networks:
+      - twake-network
+
+networks:
+  twake-network:
+    external: true

@@ -133,6 +133,12 @@ authentication:
       allow_oauth_token: true
       logout_url: https://auth.${BASE_DOMAIN}/oauth2/logout
       id_token_jwk_url: https://auth.${BASE_DOMAIN}/oauth2/jwks
+      # The calendar SPA (OIDC client twake-calendar) swaps its ID token for a
+      # token of the calendar app, to serve the Cozy intents.
+      allow_app_token_exchange: true
+      app_token_exchange:
+        twake-calendar:
+          software_id: registry://calendar
 # jobs parameters to configure the job system
 jobs:
   # path to the imagemagick convert binary

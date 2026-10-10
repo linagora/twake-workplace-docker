@@ -16,16 +16,18 @@ Once the stack is up, end users have access to:
 - **Grist** — spreadsheets that work as relational databases
 - **Calendar** — shared calendaring
 - **Meet** — WebRTC video conferencing
+- **Tasks**: task boards, standalone or inside Twake Space
+- **Space**: team spaces whose tabs embed the apps (see [`docs/space-and-tasks.md`](docs/space-and-tasks.md))
 
 Authentication and routing are handled transparently behind a single sign-on portal.
 
 ## What runs under the hood
 
-The stack is split into eleven Docker Compose projects grouped by layer:
+The stack is split into thirteen Docker Compose projects grouped by layer:
 
 - **Data layer (`twake_db`)** — PostgreSQL, MongoDB, CouchDB, OpenLDAP, Valkey/Redis, RabbitMQ
 - **Auth & proxy (`twake_auth`)** — Traefik (reverse proxy + SSL), LemonLDAP-NG (SSO and OIDC provider), Docker socket proxy
-- **Apps** — `chat_app` (Matrix Synapse + Tom server), `tmail_app` (JMAP mail), `linshare_app` (file sharing + admin UIs + ClamAV), `onlyoffice_app` (document editing), `calendar_app` (shared calendar), `meet_app` (LiveKit + Django backend + frontend), `docs_app` (La Suite Docs: backend, Celery worker, collaboration server, frontend), `grist_app` (Grist), `cozy_stack` (personal cloud platform)
+- **Apps** — `chat_app` (Matrix Synapse + Tom server), `tmail_app` (JMAP mail), `linshare_app` (file sharing + admin UIs + ClamAV), `onlyoffice_app` (document editing), `calendar_app` (shared calendar), `meet_app` (LiveKit + Django backend + frontend), `docs_app` (La Suite Docs: backend, Celery worker, collaboration server, frontend), `grist_app` (Grist), `tasks_app` (Twake Tasks), `space_app` (Twake Space), `cozy_stack` (personal cloud platform)
 
 Each project has its own `docker-compose.yml` and a `compose-wrapper.sh` that re-renders configuration files from the root `.env` on every start, so no domain value is hardcoded.
 
@@ -62,7 +64,7 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     127.0.0.1  user1.twake.local user1-home.twake.local user1-linshare.twake.local user1-drive.twake.local user1-settings.twake.local user1-mail.twake.local user1-chat.twake.local user1-notes.twake.local user1-dataproxy.twake.local
     127.0.0.1  user2.twake.local user2-home.twake.local user2-linshare.twake.local user2-drive.twake.local user2-settings.twake.local user2-mail.twake.local user2-chat.twake.local user2-notes.twake.local user2-dataproxy.twake.local
     127.0.0.1  user3.twake.local user3-home.twake.local user3-linshare.twake.local user3-drive.twake.local user3-settings.twake.local user3-mail.twake.local user3-chat.twake.local user3-notes.twake.local user3-dataproxy.twake.local
-    127.0.0.1  chat.twake.local matrix.twake.local tom.twake.local fed.twake.local traefik.twake.local calendar-ng.twake.local livekit.twake.local docs.twake.local grist.twake.local
+    127.0.0.1  chat.twake.local matrix.twake.local tom.twake.local fed.twake.local traefik.twake.local calendar-ng.twake.local livekit.twake.local docs.twake.local grist.twake.local tasks.twake.local space.twake.local
     ```
 
     </details>
@@ -89,7 +91,9 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     | `--office` | OnlyOffice documents |
     | `--docs` | La Suite Docs |
     | `--grist` | Grist |
-    | `--full` | Everything |
+    | `--tasks` | Twake Tasks |
+    | `--full` | Everything but Twake Space |
+    | `--space` | Twake Space, with Tasks, Mail and Chat (its images are not public yet, so only this flag starts it) |
 
     On `down`, an app flag stops only that app and leaves the shared services running for whatever else is up.
 
@@ -149,6 +153,8 @@ Three demo accounts are seeded into the local LDAP:
 | `https://user2.twake.local` | `user2` | `user2`  |
 | `https://user3.twake.local` | `user3` | `user3`  |
 
+Every account belongs to one organization, `ORGANIZATION_ID` in `.env` (`twake-demo` by default), with `user1` as its owner. Each `up` puts accounts created since, for instance with `scripts/twake users add`, in it as members. LemonLDAP keeps it in the `organizationId` and `organizationRole` session attributes, for the OIDC clients that ask for them (as `org_id` and `org_role`).
+
 For deeper operational topics, see the operator docs:
 
 - [`docs/cookbook.md`](docs/cookbook.md) — day-to-day commands and debugging
@@ -159,6 +165,7 @@ For deeper operational topics, see the operator docs:
 - [`docs/cozy-defaults.md`](docs/cozy-defaults.md) — cozy context settings (feature flags, sharing trust)
 - [`docs/safe-http-trusted-networks.md`](docs/safe-http-trusted-networks.md): letting cozy-stack reach the private network (federated sharing)
 - [`docs/external-oidc.md`](docs/external-oidc.md) — external OIDC integration
+- [`docs/space-and-tasks.md`](docs/space-and-tasks.md): Twake Space and Twake Tasks, organization mode, demo spaces
 
 If something is wrong, run `scripts/twake preflight` first, then check [`docs/operations.md`](docs/operations.md) and [`docs/cookbook.md`](docs/cookbook.md).
 

@@ -17,6 +17,13 @@ if ! ldapsearch -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -b cn=Subschema -s 
   ldapadd -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -f /schema/03-twake-user.ldif
 fi
 
+# twakeOrganizationMember schema (twakeOrganizationId, twakeOrganizationRole)
+if ! ldapsearch -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -b cn=Subschema -s base -LLL \
+    objectClasses | grep -q "NAME 'twakeOrganizationMember'"; then
+  echo "Adding the twakeOrganizationMember schema"
+  ldapadd -x -H "$URI" -D "$CONFIG_DN" -w "$CONFIG_PW" -f /schema/05-twake-organization.ldif
+fi
+
 # workplace FQDN of the demo users, exported as the workplaceFqdn OIDC claim
 for USER in user1 user2 user3; do
   DN="uid=${USER},ou=users,${LDAP_BASE_DN}"
@@ -37,5 +44,36 @@ for USER in user1 user2 user3; do
     fi
     echo "add: workspaceUrl"
     echo "workspaceUrl: ${USER}.${BASE_DOMAIN}"
+  } | ldapmodify -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW"
+done
+
+# Organization mode: every account belongs to ORGANIZATION_ID, exported as the
+# org_id OIDC claim (Twake Space and Twake Tasks refuse users without it).
+# user1 owns it.
+for USER in $(ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "ou=users,${LDAP_BASE_DN}" \
+    -s one -LLL uid | sed -n 's/^uid: //p'); do
+  DN="uid=${USER},ou=users,${LDAP_BASE_DN}"
+  ENTRY=$(ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "$DN" -s base -LLL \
+    objectClass twakeOrganizationId 2>/dev/null || true)
+  [ -n "$ENTRY" ] || continue
+  if echo "$ENTRY" | grep -q "^twakeOrganizationId: ${ORGANIZATION_ID}\$"; then
+    continue
+  fi
+  ROLE=member
+  [ "$USER" = user1 ] && ROLE=owner
+  echo "Putting $DN in the organization ${ORGANIZATION_ID} ($ROLE)"
+  {
+    echo "dn: $DN"
+    echo "changetype: modify"
+    if ! echo "$ENTRY" | grep -qi '^objectClass: twakeOrganizationMember$'; then
+      echo "add: objectClass"
+      echo "objectClass: twakeOrganizationMember"
+      echo "-"
+    fi
+    echo "replace: twakeOrganizationId"
+    echo "twakeOrganizationId: ${ORGANIZATION_ID}"
+    echo "-"
+    echo "replace: twakeOrganizationRole"
+    echo "twakeOrganizationRole: ${ROLE}"
   } | ldapmodify -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW"
 done
