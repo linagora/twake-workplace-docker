@@ -33,6 +33,7 @@ services:
     environment:
       LDAP_BASE_DN: ${LDAP_BASE_DN}
       BASE_DOMAIN: ${BASE_DOMAIN}
+      ORGANIZATION_ID: ${ORGANIZATION_ID:-twake-demo}
     volumes:
       - ./ldap/ensure/ensure-ldap.sh:/ensure-ldap.sh:ro
       - ./ldap/schema:/schema:ro
