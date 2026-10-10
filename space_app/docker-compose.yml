@@ -66,6 +66,9 @@ services:
       # (linagora/twake-space-chat, service chat-react of chat_app): empty,
       # the tab says Chat is not set up
       CHAT_URL: ${TWAKE_SPACE_CHAT_URL:-}
+      # The Calendar tab frames /embed/calendars/<id>, not released yet: empty,
+      # the tab says Calendar is not set up
+      CALENDAR_URL: ${TWAKE_SPACE_CALENDAR_URL:-}
       # The Drive tab frames each person's Drive (<slug>-drive.${BASE_DOMAIN}),
       # whose origins join frame-src. The variable replaces the default 'self'
       DRIVE_URL: https://{slug}-drive.{domain}/

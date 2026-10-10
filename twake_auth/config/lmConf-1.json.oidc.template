@@ -477,7 +477,13 @@
          "preferred_username" : "uid",
          "uuid" : "uuid"
       },
-      "twakespace-backend" : {}
+      "twakespace-backend" : {},
+      "calendar-ng" : {
+         "email" : "mail",
+         "name" : "cn",
+         "preferred_username" : "uid",
+         "workplaceFqdn" : "workplaceFqdn"
+      }
    },
    "oidcRPMetaDataMacros" : {
       "calendar" : {},
@@ -490,7 +496,8 @@
       "twaketasks" : {},
       "twaketasks-backend" : {},
       "twakespace" : {},
-      "twakespace-backend" : {}
+      "twakespace-backend" : {},
+      "calendar-ng" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -802,6 +809,28 @@
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsPublic" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 0
+      },
+      "calendar-ng" : {
+         "oidcRPMetaDataOptionsAccessTokenClaims" : 1,
+         "oidcRPMetaDataOptionsAccessTokenJWT" : 1,
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAdditionalAudiences" : "openpaas",
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twake-calendar",
+         "oidcRPMetaDataOptionsDisplayName" : "Twake Calendar",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsLogoutBypassConfirm" : 0,
+         "oidcRPMetaDataOptionsLogoutSessionRequired" : 1,
+         "oidcRPMetaDataOptionsLogoutType" : "front",
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://calendar.${BASE_DOMAIN}?logout=1 https://calendar-ng.${BASE_DOMAIN}?logout=1",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://calendar.${BASE_DOMAIN}/callback https://calendar.${BASE_DOMAIN}/intents/callback https://calendar-ng.${BASE_DOMAIN}/callback",
+         "oidcRPMetaDataOptionsRefreshToken" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 1
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -815,7 +844,8 @@
       "twaketasks" : {},
       "twaketasks-backend" : {},
       "twakespace" : {},
-      "twakespace-backend" : {}
+      "twakespace-backend" : {},
+      "calendar-ng" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
@@ -828,7 +858,8 @@
       "twaketasks" : {},
       "twaketasks-backend" : {},
       "twakespace" : {},
-      "twakespace-backend" : {}
+      "twakespace-backend" : {},
+      "calendar-ng" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

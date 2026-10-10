@@ -2,7 +2,7 @@ services:
   # Same images as the Twake Workplace staging (infra twake-workplace-apps,
   # chart twake-calendar-side-service 0.1.27-rc3).
   tcalendar-frontend:
-    image: linagora/twake-calendar-web:1.0.0-rc6
+    image: ${CALENDAR_FRONTEND_IMAGE:-linagora/twake-calendar-web:1.0.0-rc6}
     platform: linux/amd64
     container_name: twake_calendar_frontend
     restart: unless-stopped
@@ -11,6 +11,12 @@ services:
         condition: service_healthy
     networks:
       - twake-network
+    environment:
+      # The Cozy apps that start a Calendar intent frame /intents
+      INTENTS_FRAME_ANCESTORS: "https://*.${BASE_DOMAIN}"
+      # Twake Space (team calendar route /embed/calendars/<id>) and the Cozy
+      # Calendar app (calendar.embedded-app-url) frame the app
+      FRAME_ANCESTORS: "https://*.${BASE_DOMAIN}"
     volumes:
       - ./frontend/env.js:/usr/share/nginx/html/.env.js
     labels:
