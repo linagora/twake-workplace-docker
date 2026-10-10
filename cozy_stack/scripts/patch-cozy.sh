@@ -99,7 +99,7 @@ for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
     echo "▶ Installing chat app for \$DOMAIN"
     install_app chat "\$DOMAIN"
     cozy-stack feature flags --domain "\$DOMAIN" \
-      '{"chat.embedded-app-url": "https://chat.$BASE_DOMAIN"}'
+      '{"chat.embedded-app-url": "${COZY_CHAT_APP_URL:-https://chat.$BASE_DOMAIN}"}'
   fi
 
   cozy-stack feature flags --domain "\$DOMAIN" \

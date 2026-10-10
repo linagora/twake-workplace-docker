@@ -168,7 +168,48 @@ services:
       - "traefik.http.routers.chat.rule=Host(`chat.${BASE_DOMAIN}`) && PathPrefix(`/web`)"
       - "traefik.http.routers.chat.entrypoints=websecure"
       - "traefik.http.services.chat.loadbalancer.server.port=80"
-      
+
+  # The React Twake Chat (linagora/twake-space-chat), whose /embed/rooms/<id>
+  # fills the Chat tab of Twake Space. Its image is private and 0.1.0 is not
+  # tagged yet: only started with the chat-react profile (COMPOSE_PROFILES in
+  # .env), with TWAKE_SPACE_CHAT_IMAGE until then.
+  chat-react:
+    image: ${TWAKE_SPACE_CHAT_IMAGE:-ghcr.io/linagora/twake-space-chat:0.1.0}
+    profiles: [chat-react]
+    container_name: twake-space-chat
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      HOMESERVER_URL: https://matrix.${BASE_DOMAIN}
+      # Its origin may frame /embed/ (frame-ancestors)
+      TWAKE_SPACE_URL: https://space.${BASE_DOMAIN}
+      # The hidden sign-in frame inside Twake Space goes through the SSO
+      SSO_URL: https://auth.${BASE_DOMAIN}/
+      # Drive picker and Mail composer: Chat swaps the ID token of its own
+      # client for a chat app token on the user's Cozy (COZY_CHAT_APP_URL)
+      SSO_CLIENT_ID: twake-chat-react
+      TWAKE_DRIVE_URL: https://{localpart}.${BASE_DOMAIN}
+      # "Send an e-mail" on a profile opens the React Twake Mail
+      TWAKE_MAIL_URL: ${TWAKE_SPACE_MAIL_URL:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - twake-network
+    labels:
+      - "traefik.enable=true"
+      # Above the router of the Cozy instances (*.${BASE_DOMAIN})
+      - "traefik.http.routers.chat-react.rule=Host(`chat-react.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.chat-react.entrypoints=websecure"
+      - "traefik.http.routers.chat-react.tls=true"
+      - "traefik.http.routers.chat-react.priority=100"
+      - "traefik.http.services.chat-react.loadbalancer.server.port=8080"
+
 networks:
   twake-network:
     external: true
