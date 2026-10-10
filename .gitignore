@@ -26,6 +26,7 @@ chat_app/chat/config.json
 chat_app/tom/config.yaml
 chat_app/tom-bridge/config.yaml
 chat_app/tom-bridge/registration.yaml
+chat_app/synapse/twake-space-registration.yaml
 calendar_app/conf-side-service/configuration.properties
 calendar_app/frontend/account/openpaas.js
 calendar_app/frontend/excal/env.js

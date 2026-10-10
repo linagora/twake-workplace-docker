@@ -439,7 +439,18 @@
          "preferred_username" : "uid",
          "uuid" : "uuid"
       },
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twakespace" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "org_id" : "organizationId",
+         "org_role" : "organizationRole",
+         "preferred_username" : "uid",
+         "uuid" : "uuid"
+      },
+      "twakespace-backend" : {}
    },
    "oidcRPMetaDataMacros" : {
       "calendar" : {},
@@ -450,7 +461,9 @@
       "docs" : {},
       "grist" : {},
       "twaketasks" : {},
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twakespace" : {},
+      "twakespace-backend" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -731,6 +744,37 @@
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsPublic" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 0
+      },
+      "twakespace" : {
+         "oidcRPMetaDataOptionsAccessTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthnLevel" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twakespace",
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsLogoutBypassConfirm" : 1,
+         "oidcRPMetaDataOptionsLogoutSessionRequired" : 1,
+         "oidcRPMetaDataOptionsLogoutType" : "back",
+         "oidcRPMetaDataOptionsLogoutUrl" : "http://twake-space-backend:8080/auth/backchannel-logout",
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://space.${BASE_DOMAIN}/",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://space.${BASE_DOMAIN}/auth/callback",
+         "oidcRPMetaDataOptionsRefreshToken" : 1,
+         "oidcRPMetaDataOptionsRefreshTokenRotation" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 1
+      },
+      "twakespace-backend" : {
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twakespace-backend",
+         "oidcRPMetaDataOptionsClientSecret" : "twakespace-backend-secret",
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
+         "oidcRPMetaDataOptionsPublic" : 0,
+         "oidcRPMetaDataOptionsRequirePKCE" : 0
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -742,7 +786,9 @@
       "docs" : {},
       "grist" : {},
       "twaketasks" : {},
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twakespace" : {},
+      "twakespace-backend" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
@@ -753,7 +799,9 @@
       "docs" : {},
       "grist" : {},
       "twaketasks" : {},
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twakespace" : {},
+      "twakespace-backend" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

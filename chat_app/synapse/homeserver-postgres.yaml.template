@@ -190,6 +190,8 @@ registration_shared_secret: "bH_8Ot;-4INv:yfXHZ1.ul_XP2KuL5xC-R4x#.9G6.+6J0^-V#"
 # tom-bridge: syncs the Matrix profiles from the Twake Workplace common settings.
 app_service_config_files:
   - /config/tom-bridge-registration.yaml
+  # Twake Space backend, when TWAKE_SPACE_MATRIX_* are set (compose-wrapper.sh)
+${TWAKE_SPACE_APPSERVICE}
 
 enable_set_displayname: false
 enable_set_avatar_url: false

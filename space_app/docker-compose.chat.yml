@@ -1,0 +1,11 @@
+# Chat tab: Synapse of chat_app pushes the room events to the backend
+# (application service chat_app/synapse/twake-space-registration.yaml).
+# compose-wrapper.sh adds this file when TWAKE_SPACE_MATRIX_AS_TOKEN is set.
+services:
+  twake-space-backend:
+    environment:
+      MATRIX_HOMESERVER_URL: http://synapse:8008
+      MATRIX_SERVER_NAME: ${BASE_DOMAIN}
+      MATRIX_AS_TOKEN: ${TWAKE_SPACE_MATRIX_AS_TOKEN}
+      MATRIX_HS_TOKEN: ${TWAKE_SPACE_MATRIX_HS_TOKEN}
+      SECRETS_KEY: ${TWAKE_SPACE_SECRETS_KEY}

@@ -1,0 +1,15 @@
+# Synapse application service registration of the Twake Space backend, which
+# gets the events of every room (feed messages, reactions, mentions). Rendered
+# by compose-wrapper.sh from the root .env (TWAKE_SPACE_MATRIX_*).
+id: twake-space
+url: http://twake-space-backend:8080
+as_token: "${TWAKE_SPACE_MATRIX_AS_TOKEN}"
+hs_token: "${TWAKE_SPACE_MATRIX_HS_TOKEN}"
+sender_localpart: twake_space
+namespaces:
+  users: []
+  rooms:
+    - exclusive: false
+      regex: ".*"
+  aliases: []
+rate_limited: false

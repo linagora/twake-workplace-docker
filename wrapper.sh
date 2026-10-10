@@ -20,11 +20,12 @@ REPOS=(
     ["grist_app"]="${BASE_DIR}/grist_app"
     ["linshare_app"]="${BASE_DIR}/linshare_app"
     ["tasks_app"]="${BASE_DIR}/tasks_app"
+    ["space_app"]="${BASE_DIR}/space_app"
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "tmail_app" "calendar_app" "chat_app"  "docs_app" "grist_app" "linshare_app" "tasks_app")
-STOP_ORDER=("tasks_app" "linshare_app" "grist_app" "docs_app" "chat_app" "calendar_app" "tmail_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "tmail_app" "calendar_app" "chat_app"  "docs_app" "grist_app" "linshare_app" "tasks_app" "space_app")
+STOP_ORDER=("space_app" "tasks_app" "linshare_app" "grist_app" "docs_app" "chat_app" "calendar_app" "tmail_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 # ----------------------------
 # App selection: friendly flags -> repo
@@ -44,7 +45,12 @@ APP_FLAGS=(
     ["--grist"]="grist_app"
     ["--linshare"]="linshare_app"
     ["--tasks"]="tasks_app"
+    ["--space"]="space_app"
 )
+
+# Repos whose images are not public yet: only their own flag starts them, not
+# a plain `up` nor --full.
+OPT_IN=("space_app")
 
 # Repo-level dependencies: repos that must also run for a given repo to work.
 # Distinct from REPO_DEPS below, which gates startup on individual container
@@ -65,6 +71,7 @@ REPO_REQUIRES=(
     ["grist_app"]="twake_auth"
     ["linshare_app"]="twake_auth"
     ["tasks_app"]="twake_auth"
+    ["space_app"]="tasks_app tmail_app chat_app"
 )
 
 # Dependencies: containers that must be healthy before starting a repo.
@@ -91,9 +98,9 @@ REPO_REQUIRES=(
 # docs_app and grist_app are confidential OIDC clients (docs, grist) and keep
 # their data in twake_db's postgres, valkey and minio. Grist also loads the
 # OIDC discovery at boot and stays down while the IdP is unreachable.
-# tasks_app runs OIDC discovery at boot (it stops without the IdP), migrates
-# its own database in twake_db's postgres and declares its queues on its
-# rabbitmq.
+# tasks_app and space_app run OIDC discovery at boot (they stop without the
+# IdP), migrate their own database in twake_db's postgres and declare their
+# queues on its rabbitmq.
 declare -A REPO_DEPS
 REPO_DEPS=(
     ["onlyoffice_app"]="postgres rabbitmq"
@@ -106,6 +113,7 @@ REPO_DEPS=(
     ["grist_app"]="lemonldap-ng postgres visio-valkey minio"
     ["linshare_app"]="lemonldap-ng postgres mongodb"
     ["tasks_app"]="lemonldap-ng postgres rabbitmq"
+    ["space_app"]="lemonldap-ng postgres rabbitmq"
 )
 
 show_help() {
@@ -113,7 +121,8 @@ show_help() {
     echo
     echo "App flags (start only the selected apps, infra pulled in automatically):"
     echo "  --mail --chat --drive --meet --calendar --office --docs --grist --tasks"
-    echo "  --full                          All apps (equivalent to listing every flag)"
+    echo "  --full                          All apps but Twake Space"
+    echo "  --space                         Twake Space, never started by --full nor a plain up"
     echo
     echo "Examples:"
     echo "  $0 up -d                        Start all repos in order"
@@ -290,6 +299,7 @@ for arg in "$@"; do
     elif [[ "$arg" == "--full" ]]; then
         FULL=1
         for repo in "${APP_FLAGS[@]}"; do
+            [[ " ${OPT_IN[*]} " == *" $repo "* ]] && continue
             SELECTED_APPS+=("$repo")
         done
     elif [[ -n "${REPOS[$arg]}" ]]; then
@@ -349,7 +359,10 @@ elif [[ -n "$TARGET_REPO" ]]; then
     REPOS_TO_RUN=("$TARGET_REPO")
 else
     if [[ "$COMMAND" == "up" ]]; then
-        REPOS_TO_RUN=("${START_ORDER[@]}")
+        REPOS_TO_RUN=()
+        for repo in "${START_ORDER[@]}"; do
+            [[ " ${OPT_IN[*]} " == *" $repo "* ]] || REPOS_TO_RUN+=("$repo")
+        done
     else
         REPOS_TO_RUN=("${STOP_ORDER[@]}")
     fi
