@@ -19,11 +19,12 @@ REPOS=(
     ["docs_app"]="${BASE_DIR}/docs_app"
     ["grist_app"]="${BASE_DIR}/grist_app"
     ["linshare_app"]="${BASE_DIR}/linshare_app"
+    ["tasks_app"]="${BASE_DIR}/tasks_app"
 )
 
 # Order of operations
-START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "tmail_app" "calendar_app" "chat_app"  "docs_app" "grist_app" "linshare_app")
-STOP_ORDER=("linshare_app" "grist_app" "docs_app" "chat_app" "calendar_app" "tmail_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
+START_ORDER=("twake_db" "twake_auth" "cozy_stack" "onlyoffice_app" "meet_app" "tmail_app" "calendar_app" "chat_app"  "docs_app" "grist_app" "linshare_app" "tasks_app")
+STOP_ORDER=("tasks_app" "linshare_app" "grist_app" "docs_app" "chat_app" "calendar_app" "tmail_app" "meet_app" "onlyoffice_app" "cozy_stack" "twake_auth" "twake_db")
 
 # ----------------------------
 # App selection: friendly flags -> repo
@@ -42,6 +43,7 @@ APP_FLAGS=(
     ["--docs"]="docs_app"
     ["--grist"]="grist_app"
     ["--linshare"]="linshare_app"
+    ["--tasks"]="tasks_app"
 )
 
 # Repo-level dependencies: repos that must also run for a given repo to work.
@@ -62,6 +64,7 @@ REPO_REQUIRES=(
     ["docs_app"]="twake_auth"
     ["grist_app"]="twake_auth"
     ["linshare_app"]="twake_auth"
+    ["tasks_app"]="twake_auth"
 )
 
 # Dependencies: containers that must be healthy before starting a repo.
@@ -88,6 +91,9 @@ REPO_REQUIRES=(
 # docs_app and grist_app are confidential OIDC clients (docs, grist) and keep
 # their data in twake_db's postgres, valkey and minio. Grist also loads the
 # OIDC discovery at boot and stays down while the IdP is unreachable.
+# tasks_app runs OIDC discovery at boot (it stops without the IdP), migrates
+# its own database in twake_db's postgres and declares its queues on its
+# rabbitmq.
 declare -A REPO_DEPS
 REPO_DEPS=(
     ["onlyoffice_app"]="postgres rabbitmq"
@@ -99,13 +105,14 @@ REPO_DEPS=(
     ["docs_app"]="lemonldap-ng postgres visio-valkey minio"
     ["grist_app"]="lemonldap-ng postgres visio-valkey minio"
     ["linshare_app"]="lemonldap-ng postgres mongodb"
+    ["tasks_app"]="lemonldap-ng postgres rabbitmq"
 )
 
 show_help() {
     echo "Usage: $0 <up|down> [repo] [service] [app flags] [docker-compose options]"
     echo
     echo "App flags (start only the selected apps, infra pulled in automatically):"
-    echo "  --mail --chat --drive --meet --calendar --office --docs --grist"
+    echo "  --mail --chat --drive --meet --calendar --office --docs --grist --tasks"
     echo "  --full                          All apps (equivalent to listing every flag)"
     echo
     echo "Examples:"
