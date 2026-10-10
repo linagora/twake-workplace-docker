@@ -58,6 +58,7 @@ services:
       - ENABLE_APPS="mail,linshare,chat,calendar,meet,contacts"
       - BASE_DOMAIN=${BASE_DOMAIN}
       - COZY_MAIL_APP_URL=${COZY_MAIL_APP_URL:-}
+      - COZY_CHAT_APP_URL=${COZY_CHAT_APP_URL:-}
     volumes:
       - ./scripts:/scripts
       - /var/run/docker.sock:/var/run/docker.sock

@@ -447,7 +447,14 @@
          "preferred_username" : "uid",
          "uuid" : "uuid"
       },
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twake-chat-react" : {
+         "email" : "mail",
+         "family_name" : "sn",
+         "given_name" : "givenName",
+         "name" : "cn",
+         "preferred_username" : "uid"
+      }
    },
    "oidcRPMetaDataMacros" : {
       "calendar" : {},
@@ -459,7 +466,8 @@
       "grist" : {},
       "twake-mail-react" : {},
       "twaketasks" : {},
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twake-chat-react" : {}
    },
    "oidcRPMetaDataOptions" : {
       "calendar" : {
@@ -766,6 +774,21 @@
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsPublic" : 0,
          "oidcRPMetaDataOptionsRequirePKCE" : 0
+      },
+      "twake-chat-react" : {
+         "oidcRPMetaDataOptionsAllowClientCredentialsGrant" : 0,
+         "oidcRPMetaDataOptionsAllowOffline" : 0,
+         "oidcRPMetaDataOptionsAllowPasswordGrant" : 0,
+         "oidcRPMetaDataOptionsAuthnLevel" : 1,
+         "oidcRPMetaDataOptionsBypassConsent" : 1,
+         "oidcRPMetaDataOptionsClientID" : "twake-chat-react",
+         "oidcRPMetaDataOptionsDisplayName" : "Twake Chat (React)",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
+         "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS512",
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris" : "https://chat-react.${BASE_DOMAIN}/",
+         "oidcRPMetaDataOptionsPublic" : 1,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://chat-react.${BASE_DOMAIN}/oidc/callback",
+         "oidcRPMetaDataOptionsRequirePKCE" : 1
       }
    },
    "oidcRPMetaDataOptionsExtraClaims" : {
@@ -778,7 +801,8 @@
       "grist" : {},
       "twake-mail-react" : {},
       "twaketasks" : {},
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twake-chat-react" : {}
    },
    "oidcRPMetaDataScopeRules" : {
       "calendar" : {},
@@ -790,7 +814,8 @@
       "grist" : {},
       "twake-mail-react" : {},
       "twaketasks" : {},
-      "twaketasks-backend" : {}
+      "twaketasks-backend" : {},
+      "twake-chat-react" : {}
    },
    "oidcRPStateTimeout" : 600,
    "oidcServiceAccessTokenExpiration" : 3600,

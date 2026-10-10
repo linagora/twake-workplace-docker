@@ -152,6 +152,8 @@ oidc_providers:
 sso:
   client_whitelist:
     - https://chat.${BASE_DOMAIN}
+    # The React Twake Chat, framed by Twake Space: no "Continue" page
+    - https://chat-react.${BASE_DOMAIN}/
   update_profile_information: true
 
 # Whether to allow non server admin to create groups on this server
