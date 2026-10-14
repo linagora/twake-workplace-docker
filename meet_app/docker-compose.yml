@@ -1,6 +1,6 @@
 services:
   livekit:
-    #    image: livekit/livekit-server:v1.13.7
+    #    image: livekit/livekit-server:v1.13.10
     platform: linux/amd64
     build:
       context: .
@@ -28,11 +28,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # Same images as the Twake Workplace staging (infra twake-workplace-apps,
-  # chart lasuite-all-in-one 0.1.12): LaSuite Meet backend and LinTO frontend.
-  # Transcription, summary and recording are disabled, as on staging.
+  # Same versions as the dev environment (twake-workplace-cozy-apps, chart
+  # meet/meet 0.0.17): LaSuite Meet backend v1.28.0 and LinTO frontend v1.19.
+  # Transcription, summary and recording are disabled.
   backend:
-    image: lasuite/meet-backend:v1.13.0
+    image: lasuite/meet-backend:v1.28.0
     container_name: visio-backend
     platform: linux/amd64
     # The image USER ("1001:127:-1000") is not a valid docker user spec, which
@@ -114,7 +114,7 @@ services:
       start_period: 30s
 
   frontend:
-    image: ghcr.io/linto-ai/meet-frontend:71b86651
+    image: ghcr.io/linto-ai/meet-frontend:v1.19
     container_name: visio-frontend
     platform: linux/amd64
     depends_on:
