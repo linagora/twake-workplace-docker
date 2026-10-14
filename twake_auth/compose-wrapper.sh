@@ -158,7 +158,7 @@ wait_lemonldap_healthy() {
 LMCONF_CLI=/usr/share/lemonldap-ng/bin/lemonldap-ng-cli
 LMCONF_IMPORTED=/var/lib/lemonldap-ng/conf/.imported-lmConf-1.sha256
 import_lmconf() {
-  local rendered imported merged
+  local rendered imported saved merged restored
   rendered=$(sha256sum config/lmConf-1.json | cut -d' ' -f1)
   imported=$(sudo docker exec lemonldap-ng cat "$LMCONF_IMPORTED" 2>/dev/null || true)
   if [ "$rendered" = "$imported" ]; then
@@ -166,11 +166,15 @@ import_lmconf() {
   fi
 
   echo "Importing config/lmConf-1.json into LemonLDAP..."
-  merged=$(sudo docker exec lemonldap-ng "$LMCONF_CLI" save 2>/dev/null \
+  saved=$(sudo docker exec lemonldap-ng "$LMCONF_CLI" save 2> >(grep -v '\] \[debug\]' >&2))
+  merged=$(echo "$saved" \
     | jq --slurpfile rendered config/lmConf-1.json \
         '$rendered[0] + with_entries(select(.key | test("^oidcService(Old|New)?(PrivateKey|PublicKey|KeyId|KeyType)")))')
-  if ! echo "$merged" | sudo docker exec -i lemonldap-ng "$LMCONF_CLI" -yes 1 restore - >/dev/null 2>&1; then
-    echo "❌ Failed to import config/lmConf-1.json. Check: docker exec lemonldap-ng $LMCONF_CLI -yes 1 restore /var/lib/lemonldap-ng/conf/lmConf-1.json"
+  # restore exits 0 when it rejects the config, so its output is the verdict.
+  restored=$(echo "$merged" | sudo docker exec -i lemonldap-ng "$LMCONF_CLI" -yes 1 restore - 2>&1 || true)
+  if ! grep -q 'has been restored as version' <<<"$restored"; then
+    echo "❌ Failed to import config/lmConf-1.json:" >&2
+    grep -v '\] \[debug\]' <<<"$restored" >&2
     exit 1
   fi
   echo "$rendered" | sudo docker exec -i lemonldap-ng sh -c "cat > $LMCONF_IMPORTED"
