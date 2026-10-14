@@ -59,7 +59,7 @@ services:
       - twake-network   
        
   patcher:
-    image: docker:26-cli
+    image: docker:29-cli
     container_name: patcher-onlyoffice
     networks:
       - twake-network
