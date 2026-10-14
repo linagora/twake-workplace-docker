@@ -22,6 +22,7 @@ Before configuring the stack, register an OIDC client at the provider with:
 | Setting | Value |
 | --- | --- |
 | Redirect URI | `https://auth.<BASE_DOMAIN>/?openidconnectcallback=1` |
+| Post-logout redirect URI | `https://auth.<BASE_DOMAIN>/oauth2/rlogoutreturn` (required from LemonLDAP 2.22) |
 | Grant types | `authorization_code` |
 | Token endpoint auth method | `client_secret_post` |
 | Scopes | `openid profile email` |
@@ -40,7 +41,7 @@ OIDC_CLIENT_ID=<from the OP>
 OIDC_CLIENT_SECRET=<from the OP>
 ```
 
-`OIDC_OP_NAME` is a stable label that becomes a JSON key in the rendered config and shows up in logs. Pick something short.
+`OIDC_OP_NAME` is a stable label that becomes a JSON key in the rendered config and shows up in logs. Pick something short, with letters, digits, hyphens and underscores only.
 
 Bring the auth stack up:
 

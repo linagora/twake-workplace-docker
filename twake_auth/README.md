@@ -20,6 +20,7 @@ The local LDAP is therefore still required even in external-SSO mode — the SCI
 Register an OIDC client with the external provider and have ready:
 
 - **Redirect URI** — `https://auth.<BASE_DOMAIN>/?openidconnectcallback=1`
+- **Post-logout redirect URI**: `https://auth.<BASE_DOMAIN>/oauth2/rlogoutreturn` (required from LemonLDAP 2.22)
 - **Grant type** — `authorization_code`
 - **Scopes** — `openid profile email`
 - **Client authentication method** — `client_secret_post`
@@ -64,7 +65,7 @@ OIDC_CLIENT_ID=<from the OP>
 OIDC_CLIENT_SECRET=<from the OP>
 ```
 
-`OIDC_OP_NAME` is just a label you pick — it becomes the JSON key under `oidcOPMetaData{ExportedVars,Options,JSON}` in the rendered config and shows up in the lemonldap logs. Use anything short and stable.
+`OIDC_OP_NAME` is just a label you pick — it becomes the JSON key under `oidcOPMetaData{ExportedVars,Options,JSON}` in the rendered config and shows up in the lemonldap logs. Use anything short and stable, with letters, digits, hyphens and underscores only.
 
 ## Switching modes
 
