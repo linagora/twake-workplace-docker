@@ -7,7 +7,7 @@
 # com.twake.tasks.space.provisioned.v1 on `activity`.
 services:
   twake-tasks-backend:
-    image: ${TWAKE_TASKS_BACKEND_IMAGE:-ghcr.io/linagora/twake-tasks-backend:0.2.13}
+    image: ${TWAKE_TASKS_BACKEND_IMAGE:-ghcr.io/linagora/twake-tasks-backend:0.2.16}
     container_name: twake-tasks-backend
     restart: unless-stopped
     read_only: true
@@ -43,7 +43,7 @@ services:
       - twake-network
 
   twake-tasks-frontend:
-    image: ${TWAKE_TASKS_FRONTEND_IMAGE:-ghcr.io/linagora/twake-tasks-frontend:0.2.14}
+    image: ${TWAKE_TASKS_FRONTEND_IMAGE:-ghcr.io/linagora/twake-tasks-frontend:0.2.17}
     container_name: twake-tasks-frontend
     restart: unless-stopped
     read_only: true
