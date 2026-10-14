@@ -41,7 +41,7 @@ services:
       - twake-network
 
   ldap-rest:
-    image: yadd/ldap-rest:latest
+    image: yadd/ldap-rest:0.20.1
     container_name: ldap-rest
     restart: unless-stopped
     environment:
@@ -150,7 +150,7 @@ services:
       - twake-network
 
   reverse-proxy:
-    image: traefik:v2.11
+    image: traefik:v2.11.58
     container_name: reverse-proxy
     restart: unless-stopped
     ports:
@@ -178,7 +178,7 @@ services:
 
   twake-docker-socket:
     container_name: docker-socket
-    image: tecnativa/docker-socket-proxy
+    image: tecnativa/docker-socket-proxy:v0.5.0
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
