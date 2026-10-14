@@ -786,6 +786,7 @@
          "oidcRPMetaDataOptionsClientSecret" : "twaketasks-backend-secret",
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsPublic" : 0,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://tasks.${BASE_DOMAIN}/auth/callback",
          "oidcRPMetaDataOptionsRequirePKCE" : 0
       },
       "twake-chat-react" : {
@@ -832,6 +833,7 @@
          "oidcRPMetaDataOptionsClientSecret" : "twakespace-backend-secret",
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsPublic" : 0,
+         "oidcRPMetaDataOptionsRedirectUris" : "https://space.${BASE_DOMAIN}/auth/callback",
          "oidcRPMetaDataOptionsRequirePKCE" : 0
       }
    },
