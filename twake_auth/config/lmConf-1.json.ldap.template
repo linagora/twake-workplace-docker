@@ -523,7 +523,7 @@
          "oidcRPMetaDataOptionsLogoutType": "back",
          "oidcRPMetaDataOptionsLogoutUrl": "https://oauthcallback.${BASE_DOMAIN}/oidc/default/logout",
          "oidcRPMetaDataOptionsNoJwtHeader": 0,
-         "oidcRPMetaDataOptionsPostLogoutRedirectUris": "https://user2-home.${BASE_DOMAIN}/",
+         "oidcRPMetaDataOptionsPostLogoutRedirectUris": "https://user2-home.${BASE_DOMAIN}/ twakedrive://afterlogout",
          "oidcRPMetaDataOptionsPublic": 0,
          "oidcRPMetaDataOptionsRedirectUris" : "https://oauthcallback.${BASE_DOMAIN}/oidc/redirect",
          "oidcRPMetaDataOptionsRefreshToken" : 0,
