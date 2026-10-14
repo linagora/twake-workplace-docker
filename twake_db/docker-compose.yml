@@ -68,7 +68,7 @@ services:
       - twake-network
 
   valkey:
-    image: bitnamilegacy/valkey
+    image: bitnamilegacy/valkey:8.1.1
     container_name: visio-valkey
     environment:
       VALKEY_PASSWORD: valkeypass
@@ -143,7 +143,7 @@ services:
 
 
   rabbitmq:
-    image: rabbitmq:3.13.3-management
+    image: rabbitmq:3.13.6-management
     container_name: rabbitmq
     restart: unless-stopped
     networks:
@@ -191,7 +191,7 @@ services:
   # and the service publishes them as user.settings.updated on the settings
   # exchange for TMail and tom-bridge.
   common-settings:
-    image: ghcr.io/linagora/twake-workplace-common-settings:v0.0.10
+    image: ghcr.io/linagora/twake-workplace-common-settings:v0.0.11
     container_name: common-settings
     restart: unless-stopped
     depends_on:
@@ -246,7 +246,7 @@ services:
 
 
   minio:
-    image: bitnamilegacy/minio:2025.2.7
+    image: bitnamilegacy/minio:2025.4.22
     container_name: minio
     hostname: minio
     restart: always
