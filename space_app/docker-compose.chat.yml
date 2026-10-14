@@ -6,7 +6,7 @@ services:
   # tom-bridge adds to each Matrix space but never creates. Exits 0 when the
   # account already exists.
   twake-space-init:
-    image: matrixdotorg/synapse:v1.152.1
+    image: matrixdotorg/synapse:v1.160.0
     restart: "no"
     # The image's healthcheck probes a Synapse this container does not run
     healthcheck:
