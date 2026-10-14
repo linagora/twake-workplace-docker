@@ -1,6 +1,6 @@
 services:
   cozy-stack:
-    image: cozy/cozy-stack:latest
+    image: cozy/cozy-stack:1.6.64
     platform: linux/amd64
     container_name: cozyt
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
     networks:
       - twake-network
   patcher-cozy:
-    image: docker:26-cli
+    image: docker:29-cli
     container_name: patcher-cozy
     networks:
       - twake-network
