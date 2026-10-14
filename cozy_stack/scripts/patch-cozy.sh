@@ -65,8 +65,11 @@ create_instance() {
 install_app() {
   SLUG="\$1"
   APP_DOMAIN="\$2"
+  APP_SOURCE="\$3"
   if cozy-stack apps show "\$SLUG" --domain "\$APP_DOMAIN" >/dev/null 2>&1; then
     echo "✔ \$SLUG already installed on \$APP_DOMAIN"
+  elif [ -n "\$APP_SOURCE" ]; then
+    cozy-stack apps install "\$SLUG" "\$APP_SOURCE" --domain "\$APP_DOMAIN"
   else
     cozy-stack apps install "\$SLUG" --domain "\$APP_DOMAIN"
   fi
@@ -76,6 +79,10 @@ install_app() {
 create_instance "user1.$BASE_DOMAIN" "user1@$BASE_DOMAIN" "User One"
 create_instance "user2.$BASE_DOMAIN" "user2@$BASE_DOMAIN" "User Two"
 create_instance "user3.$BASE_DOMAIN" "user3@$BASE_DOMAIN" "User Three"
+
+for USERID in user1 user2 user3; do
+  cozy-stack instances modify "\$USERID.$BASE_DOMAIN" --oidc_id "\$USERID"
+done
 
 
 
@@ -102,6 +109,34 @@ for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
       '{"chat.embedded-app-url": "${COZY_CHAT_APP_URL:-https://chat.$BASE_DOMAIN}"}'
   fi
 
+  # space and project are only published on the dev channel of the registry
+  if echo ",\$ENABLED_APPS," | grep -q ",space,"; then
+    echo "▶ Installing space app for \$DOMAIN"
+    if install_app space "\$DOMAIN" registry://space/dev; then
+      cozy-stack feature flags --domain "\$DOMAIN" \
+        '{"space.embedded-app-url": "https://space.$BASE_DOMAIN"}'
+    else
+      echo "⚠ space not installed on \$DOMAIN"
+    fi
+  fi
+
+  if echo ",\$ENABLED_APPS," | grep -q ",project,"; then
+    echo "▶ Installing project app for \$DOMAIN"
+    if install_app project "\$DOMAIN" registry://project/dev; then
+      cozy-stack feature flags --domain "\$DOMAIN" \
+        '{"project.embedded-app-url": "https://tasks.$BASE_DOMAIN"}'
+    else
+      echo "⚠ project not installed on \$DOMAIN"
+    fi
+  fi
+
+  if echo ",\$ENABLED_APPS," | grep -q ",calendar,"; then
+    echo "▶ Installing calendar app for \$DOMAIN"
+    install_app calendar "\$DOMAIN"
+    cozy-stack feature flags --domain "\$DOMAIN" \
+      '{"calendar.embedded-app-url": "https://calendar.$BASE_DOMAIN"}'
+  fi
+
   cozy-stack feature flags --domain "\$DOMAIN" \
     '{"home.add-tile.add-shortcut": "true"}'
 
@@ -120,9 +155,6 @@ for DOMAIN in user1.$BASE_DOMAIN user2.$BASE_DOMAIN user3.$BASE_DOMAIN; do
     '{"cozy.searchbar.enabled": "true"}'    
 done
 
-for USERID in user1 user2 user3; do
-  cozy-stack instances modify "\$USERID.$BASE_DOMAIN" --oidc_id "\$USERID"
-done
 echo "▶ Applying global feature defaults..."
 cozy-stack features defaults \
   '{"drive.office": {"enabled": true, "write": true}}'

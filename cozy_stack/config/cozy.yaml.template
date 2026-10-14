@@ -133,16 +133,28 @@ authentication:
       allow_oauth_token: true
       logout_url: https://auth.${BASE_DOMAIN}/oauth2/logout
       id_token_jwk_url: https://auth.${BASE_DOMAIN}/oauth2/jwks
-      # The React Twake Mail (OIDC client twake-mail-react) and the React Twake
-      # Chat (twake-chat-react) swap their ID token for a token of their app, to
-      # use the Drive intents (file picker) and, for Chat, the Mail composer.
-      # The stack accepts their origin from <app>.embedded-app-url.
+      # Each app swaps its ID token for a token of its Cozy app. The entry is
+      # the OIDC client id, and the Cozy app must be installed on the instance
+      # (patch-cozy.sh). instance_claim finds the instance from the token, so the
+      # client exports workplaceFqdn. The origin of each app comes from the
+      # <app>.embedded-app-url flag that patch-cozy.sh sets.
       allow_app_token_exchange: true
       app_token_exchange:
         twake-mail-react:
           software_id: registry://mail
+          instance_claim: workplaceFqdn
         twake-chat-react:
           software_id: registry://chat
+          instance_claim: workplaceFqdn
+        twakespace:
+          software_id: registry://space
+          instance_claim: workplaceFqdn
+        twaketasks:
+          software_id: registry://project
+          instance_claim: workplaceFqdn
+        openpaas:
+          software_id: registry://calendar
+          instance_claim: workplaceFqdn
 # jobs parameters to configure the job system
 jobs:
   # path to the imagemagick convert binary

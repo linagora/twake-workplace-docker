@@ -55,7 +55,7 @@ services:
       - cozy-stack
     environment:
       - CONTAINER=cozyt
-      - ENABLE_APPS="mail,linshare,chat,calendar,meet,contacts"
+      - ENABLE_APPS="mail,linshare,chat,space,project,calendar,meet,contacts"
       - BASE_DOMAIN=${BASE_DOMAIN}
       - COZY_MAIL_APP_URL=${COZY_MAIL_APP_URL:-}
       - COZY_CHAT_APP_URL=${COZY_CHAT_APP_URL:-}
