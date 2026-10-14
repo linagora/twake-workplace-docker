@@ -41,6 +41,10 @@ render_lmconf() {
       # (quotes, backslashes, dollars) don't corrupt the rendered file.
       ENVSUBST_VARS='$BASE_DOMAIN $LDAP_BASE_DN $OIDC_OP_NAME'
       : "${OIDC_OP_NAME:?OIDC_OP_NAME required when AUTH_MODE=OpenIDConnect}"
+      [[ "$OIDC_OP_NAME" =~ ^[A-Za-z0-9_-]+$ ]] || {
+        echo "OIDC_OP_NAME must only contain letters, digits, hyphens and underscores" >&2
+        exit 1
+      }
       : "${OIDC_OP_DISCOVERY_URL:?OIDC_OP_DISCOVERY_URL required when AUTH_MODE=OpenIDConnect}"
       : "${OIDC_CLIENT_ID:?OIDC_CLIENT_ID required when AUTH_MODE=OpenIDConnect}"
       : "${OIDC_CLIENT_SECRET:?OIDC_CLIENT_SECRET required when AUTH_MODE=OpenIDConnect}"
