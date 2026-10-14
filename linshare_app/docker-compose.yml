@@ -3,7 +3,7 @@ services:
     backend-linshare:
         container_name: linshare_backend
         restart: on-failure
-        image: linagora/linshare-backend:6.5
+        image: linagora/linshare-backend:6.5.3
         volumes:
             - linshare_data:/var/lib/linshare
             - ./config/backend/log4j.properties:/etc/linshare/log4j.properties
