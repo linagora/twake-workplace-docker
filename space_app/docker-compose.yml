@@ -3,7 +3,7 @@
 # See docs/space-and-tasks.md.
 services:
   twake-space-backend:
-    image: ${TWAKE_SPACE_BACKEND_IMAGE:-ghcr.io/linagora/twake-space-backend:0.1.19}
+    image: ${TWAKE_SPACE_BACKEND_IMAGE:-ghcr.io/linagora/twake-space-backend:0.1.22}
     container_name: twake-space-backend
     restart: unless-stopped
     read_only: true
@@ -39,7 +39,7 @@ services:
       - twake-network
 
   twake-space-frontend:
-    image: ${TWAKE_SPACE_FRONTEND_IMAGE:-ghcr.io/linagora/twake-space-frontend:0.1.42}
+    image: ${TWAKE_SPACE_FRONTEND_IMAGE:-ghcr.io/linagora/twake-space-frontend:0.1.44}
     container_name: twake-space-frontend
     restart: unless-stopped
     read_only: true
