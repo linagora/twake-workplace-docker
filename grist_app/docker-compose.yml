@@ -21,7 +21,7 @@ services:
       - twake-network
 
   grist:
-    image: gristlabs/grist-oss:1.7.20
+    image: gristlabs/grist-oss:1.7.21
     container_name: grist
     environment:
       APP_HOME_URL: https://grist.${BASE_DOMAIN}
