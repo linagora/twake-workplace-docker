@@ -445,7 +445,8 @@
          "org_id" : "organizationId",
          "org_role" : "organizationRole",
          "preferred_username" : "uid",
-         "uuid" : "uuid"
+         "uuid" : "uuid",
+         "workplaceFqdn" : "workplaceFqdn"
       },
       "twaketasks-backend" : {},
       "twake-chat-react" : {
@@ -453,7 +454,8 @@
          "family_name" : "sn",
          "given_name" : "givenName",
          "name" : "cn",
-         "preferred_username" : "uid"
+         "preferred_username" : "uid",
+         "workplaceFqdn" : "workplaceFqdn"
       },
       "twakespace" : {
          "email" : "mail",
@@ -463,7 +465,8 @@
          "org_id" : "organizationId",
          "org_role" : "organizationRole",
          "preferred_username" : "uid",
-         "uuid" : "uuid"
+         "uuid" : "uuid",
+         "workplaceFqdn" : "workplaceFqdn"
       },
       "twakespace-backend" : {}
    },
@@ -765,6 +768,7 @@
          "oidcRPMetaDataOptionsAuthnLevel" : 1,
          "oidcRPMetaDataOptionsBypassConsent" : 1,
          "oidcRPMetaDataOptionsClientID" : "twaketasks",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsLogoutBypassConfirm" : 1,
          "oidcRPMetaDataOptionsLogoutSessionRequired" : 1,
@@ -811,6 +815,7 @@
          "oidcRPMetaDataOptionsAuthnLevel" : 1,
          "oidcRPMetaDataOptionsBypassConsent" : 1,
          "oidcRPMetaDataOptionsClientID" : "twakespace",
+         "oidcRPMetaDataOptionsIDTokenForceClaims" : 1,
          "oidcRPMetaDataOptionsIDTokenSignAlg" : "RS256",
          "oidcRPMetaDataOptionsLogoutBypassConfirm" : 1,
          "oidcRPMetaDataOptionsLogoutSessionRequired" : 1,
