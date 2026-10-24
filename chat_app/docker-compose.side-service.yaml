@@ -49,3 +49,8 @@ services:
       - "traefik.http.routers.matrix-rtc.tls=true"
       - "traefik.http.routers.matrix-rtc.priority=100"
       - "traefik.http.services.matrix-rtc.loadbalancer.server.port=8080"
+
+  chat-react:
+    environment:
+      # The LiveKit server the call tokens name, which the well-known does not list
+      CSP_CONNECT_SRC: wss://livekit.${BASE_DOMAIN}
