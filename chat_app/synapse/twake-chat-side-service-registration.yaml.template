@@ -1,0 +1,20 @@
+# Synapse application service registration of twake-chat-side-service,
+# whose as_token checks that the callers of /sfu/get are in the call's room.
+# Rendered by compose-wrapper.sh from the root .env (TWAKE_CHAT_SIDE_SERVICE_*).
+id: twake-chat-side-service
+as_token: "${TWAKE_CHAT_SIDE_SERVICE_AS_TOKEN}"
+hs_token: "${TWAKE_CHAT_SIDE_SERVICE_HS_TOKEN}"
+sender_localpart: _twake_chat_side_service
+# No events
+url: null
+# The service calls the homeserver on every token request.
+rate_limited: false
+namespaces:
+  # Not exclusive: the service reads the power levels of a room as the caller.
+  users:
+    - exclusive: false
+      regex: "@.*"
+  aliases: []
+  rooms: []
+io.element.msc4502.scopes:
+  - "urn:matrix:client:io.element.msc4502:rooms:is_joined"

@@ -1,0 +1,51 @@
+# twake-chat-side-service: Chat asks /sfu/get on matrix-rtc.${BASE_DOMAIN}
+# (rtc_foci of the well-known) for its call tokens, which this application
+# service (chat_app/synapse/twake-chat-side-service-registration.yaml) asks Meet
+# for. compose-wrapper.sh adds this file when TWAKE_CHAT_SIDE_SERVICE_AS_TOKEN
+# is set.
+services:
+  twake-chat-side-service:
+    # latest is main: pin a version tag at the first release
+    image: ${TWAKE_CHAT_SIDE_SERVICE_IMAGE:-ghcr.io/linagora/twake-chat-side-service:latest}
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    depends_on:
+      synapse:
+        condition: service_started
+    environment:
+      AS_TOKEN: ${TWAKE_CHAT_SIDE_SERVICE_AS_TOKEN}
+      MATRIX_HOMESERVER_URL: http://synapse:8008
+      MATRIX_SERVER_NAME: ${BASE_DOMAIN}
+      DATABASE_URL: postgres://twake_chat_side_service:twake_chat_side_service@postgres:5432/twake_chat_side_service
+      MEET_URL: https://meet.${BASE_DOMAIN}
+      MEET_CLIENT_ID: ${TWAKE_CHAT_SIDE_SERVICE_MEET_CLIENT_ID:?the Meet application of the service, see docs/chat-side-service.md}
+      MEET_CLIENT_SECRET: ${TWAKE_CHAT_SIDE_SERVICE_MEET_CLIENT_SECRET:?the Meet application of the service, see docs/chat-side-service.md}
+      MEET_SERVICE_ACCOUNT_EMAIL: ${TWAKE_CHAT_SIDE_SERVICE_MEET_SERVICE_ACCOUNT_EMAIL:?the owner of the Meet rooms of the calls, see docs/chat-side-service.md}
+      LDAP_URL: ldap://ldap
+      LDAP_BASE: ou=users,${LDAP_BASE_DN}
+      LDAP_BIND_DN: cn=admin,${LDAP_BASE_DN}
+      LDAP_BIND_PASSWORD: admin
+      # Meet is reached through Traefik, whose certificate this CA signs
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
+    volumes:
+      - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
+    extra_hosts:
+      - "meet.${BASE_DOMAIN}:172.27.0.100"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health/ready').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - twake-network
+    labels:
+      - "traefik.enable=true"
+      # Only /sfu/get is public; the service answers CORS itself. Above the
+      # router of the Cozy instances (*.${BASE_DOMAIN})
+      - "traefik.http.routers.matrix-rtc.rule=Host(`matrix-rtc.${BASE_DOMAIN}`) && Path(`/sfu/get`)"
+      - "traefik.http.routers.matrix-rtc.entrypoints=websecure"
+      - "traefik.http.routers.matrix-rtc.tls=true"
+      - "traefik.http.routers.matrix-rtc.priority=100"
+      - "traefik.http.services.matrix-rtc.loadbalancer.server.port=8080"
