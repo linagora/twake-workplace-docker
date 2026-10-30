@@ -3,7 +3,7 @@ services:
   # twake-calendar-side-service 1.1.3), except calendar-web and the side service:
   # the dev runs unpublished builds of these two, the closest releases are used.
   tcalendar-frontend:
-    image: linagora/twake-calendar-web:1.3.1
+    image: ${CALENDAR_FRONTEND_IMAGE:-linagora/twake-calendar-web:1.3.1}
     platform: linux/amd64
     container_name: twake_calendar_frontend
     restart: unless-stopped
@@ -12,6 +12,10 @@ services:
         condition: service_healthy
     networks:
       - twake-network
+    environment:
+      # Twake Space (team calendar route /embed/calendars/<id>) and the Cozy
+      # Calendar app (calendar.embedded-app-url) frame the app
+      FRAME_ANCESTORS: "https://*.${BASE_DOMAIN}"
     volumes:
       - ./frontend/env.js:/usr/share/nginx/html/.env.js
     labels:
