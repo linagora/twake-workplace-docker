@@ -162,6 +162,7 @@ For deeper operational topics, see the operator docs:
 - [`docs/cookbook.md`](docs/cookbook.md) — day-to-day commands and debugging
 - [`docs/CLI.md`](docs/CLI.md) — `scripts/twake` operator CLI reference
 - [`docs/operations.md`](docs/operations.md) — host hardening, boot order, version floors
+- [`docs/chat-side-service.md`](docs/chat-side-service.md): call tokens of Twake Chat through Meet
 - [`docs/scim-import.md`](docs/scim-import.md) — bulk user provisioning over SCIM
 - [`docs/local-app-dev.md`](docs/local-app-dev.md) — serve a locally-built cozy-web app in the HTTPS/SSO stack
 - [`docs/cozy-defaults.md`](docs/cozy-defaults.md) — cozy context settings (feature flags, sharing trust)
