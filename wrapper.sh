@@ -71,7 +71,7 @@ REPO_REQUIRES=(
     ["grist_app"]="twake_auth"
     ["linshare_app"]="twake_auth"
     ["tasks_app"]="twake_auth"
-    ["space_app"]="tasks_app tmail_app chat_app"
+    ["space_app"]="tasks_app tmail_app chat_app calendar_app meet_app"
 )
 
 # Dependencies: containers that must be healthy before starting a repo.

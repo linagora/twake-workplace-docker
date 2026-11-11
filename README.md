@@ -93,7 +93,7 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     | `--grist` | Grist |
     | `--tasks` | Twake Tasks |
     | `--full` | Everything but Twake Space |
-    | `--space` | Twake Space, with Tasks, Mail and Chat (its images are not public yet, so only this flag starts it) |
+    | `--space` | Twake Space, with Tasks, Mail, Chat, Calendar and Meet (its images are not public yet, so only this flag starts it) |
 
     On `down`, an app flag stops only that app and leaves the shared services running for whatever else is up.
 

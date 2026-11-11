@@ -7,7 +7,7 @@ A space has tabs, each one an app in a frame (Tasks, Mail, Chat, Drive), with
 an overlay frame over the whole page for the app's windows and dialogs.
 
 ```bash
-./wrapper.sh up --space -d                  # pulls in tasks, mail, chat, auth, db
+./wrapper.sh up --space -d                  # pulls in tasks, mail, chat, calendar, meet, auth, db
 space_app/seed-space.sh "Demo"              # user1 admin, user2 editor
 space_app/seed-space.sh "Roadmap" user2 user1 user3
 ```
@@ -80,6 +80,15 @@ are not either. As a result:
     `POST /_synapse/admin/v1/deactivate/@twakespace:${BASE_DOMAIN}`.
 - Drive: each person's Drive (`<slug>-drive.${BASE_DOMAIN}`), which Twake
   Space may frame (`CSP_FRAME_SRC`).
+- Calendar: `/embed/calendars/<team calendar id>` of `calendar_app`. The side
+  service gives each space a team calendar from the `twake.space.*` events
+  (`twakespace.enabled`), shares it with the members and tells Twake Space
+  (`com.twake.calendar.space.provisioned.v1`). A space seeded before the side
+  service ran has no team calendar until its next space event.
+- Meetings: the space header's video menu schedules a meeting in the team
+  calendar, whose Meet room the side service creates through Meet's external
+  API, and joins a room of `meet_app` in Twake Space's call window. The
+  backend of `meet_app` registers the side service's Application at start.
 
 ## Hosts
 

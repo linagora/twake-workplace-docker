@@ -25,7 +25,7 @@ services:
       # which space_app always runs with
       MATRIX_HOMESERVER_URL: http://synapse:8008
       MATRIX_SERVER_NAME: ${BASE_DOMAIN}
-      SPACE_APPS: chat,tasks,mail
+      SPACE_APPS: chat,tasks,mail,calendar
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/root-ca.crt
     volumes:
       - ../twake_auth/traefik/ssl/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
@@ -69,6 +69,11 @@ services:
       # (linagora/twake-space-chat, service chat-react of chat_app): empty,
       # the tab says Chat is not set up
       CHAT_URL: ${TWAKE_SPACE_CHAT_URL:-}
+      # The Calendar tab frames /embed/calendars/<team calendar> of
+      # calendar_app, whose side service gives each space its team calendar
+      CALENDAR_URL: https://calendar.${BASE_DOMAIN}
+      # The call window frames the rooms of meet_app
+      MEET_URL: https://meet.${BASE_DOMAIN}
       # The Drive tab frames each person's Drive (<slug>-drive.${BASE_DOMAIN}),
       # whose origins join frame-src. The variable replaces the default 'self'
       DRIVE_URL: https://{slug}-drive.{domain}/
