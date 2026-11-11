@@ -56,3 +56,13 @@ user.search.limited.domains=${BASE_DOMAIN}
 # Twake Workplace settings: the language comes from common-settings
 # over RabbitMQ (twp.* in rabbitmq.properties).
 twp.settings.enabled=true
+
+# Meet rooms of the events, created through the external API of meet_app with
+# the Application its backend registers at start
+meet.enabled=true
+meet.external.api.base.url=https://meet.${BASE_DOMAIN}
+meet.application.client_id=twake-calendar
+meet.application.client_secret=twake-calendar-secret
+
+# A team calendar for each space of Twake Space (space_app)
+twakespace.enabled=true
