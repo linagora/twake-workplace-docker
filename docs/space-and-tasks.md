@@ -84,11 +84,39 @@ are not either. As a result:
   service gives each space a team calendar from the `twake.space.*` events
   (`twakespace.enabled`), shares it with the members and tells Twake Space
   (`com.twake.calendar.space.provisioned.v1`). A space seeded before the side
-  service ran has no team calendar until its next space event.
+  service ran has no team calendar until its next space event (see
+  Upgrading).
 - Meetings: the space header's video menu schedules a meeting in the team
   calendar, whose Meet room the side service creates through Meet's external
   API, and joins a room of `meet_app` in Twake Space's call window. The
-  backend of `meet_app` registers the side service's Application at start.
+  backend of `meet_app` registers the side service's Application at start,
+  limited to the users of `MAIL_DOMAIN`.
+
+## Upgrading
+
+On a stack that ran before the Calendar tab:
+
+- Generate `MEET_APPLICATION_JWT_SECRET_KEY` and `CALENDAR_MEET_CLIENT_SECRET`
+  in `.env` (see the README): `meet_app` and `calendar_app` refuse to start
+  without them.
+- The side service moves to 2.5.0.1 and sabre to 2.5.0.1. Its event search
+  index needs the steps of its
+  [upgrade instructions](https://github.com/linagora/twake-calendar-side-service/blob/31fd14d8dbf4c1dc4b4316651f572a48a996a780/upgrade-instructions.md)
+  for 2.4.3 (new fields and analyzer, then a reindex), on the OpenSearch of
+  `tmail_app`. Without them, delegates and subscribers miss older events in
+  search.
+- Existing spaces get their team calendar from a replay of their
+  `twake.space.created` event, sent to the side service's queue alone so that
+  Tasks does not create a second project. The event is the one
+  `seed-space.sh` publishes, with the space's id and members:
+
+  ```bash
+  R="docker exec rabbitmq rabbitmqadmin"
+  $R declare exchange name=space-replay type=direct durable=false
+  $R declare binding source=space-replay destination=tcalendar:twake-space routing_key=twake.space.created
+  $R publish exchange=space-replay routing_key=twake.space.created payload="$EVENT"
+  $R delete exchange name=space-replay
+  ```
 
 ## Hosts
 
