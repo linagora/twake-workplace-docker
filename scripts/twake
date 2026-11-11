@@ -201,7 +201,7 @@ cmd_preflight() {
     local missing=()
     local k
     for k in BASE_DOMAIN LDAP_REST_ADMIN_TOKEN COZY_ADMIN_PASSPHRASE \
-             RABBITMQ_USER RABBITMQ_PASSWORD; do
+             RABBITMQ_USER RABBITMQ_PASSWORD ONLYOFFICE_SECRET; do
       [[ -z "${!k:-}" ]] && missing+=("$k")
     done
     if (( ${#missing[@]} == 0 )); then ok "required env vars present"

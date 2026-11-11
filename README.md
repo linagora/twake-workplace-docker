@@ -71,11 +71,11 @@ The stack runs identically in two configurations: locally for evaluation, or on 
 
 3.  **Trust the self-signed CA** at [`twake_auth/traefik/ssl/root-ca.pem`](twake_auth/traefik/ssl/root-ca.pem) in your OS *and* browser trust stores. Trusting it in the browser alone is not enough — some iframes fail otherwise.
 
-4.  **Generate the Meet secrets** in `.env`. Meet serves its external API on `meet.twake.local`, where the calendar creates the rooms of its events: the key that signs its tokens and the calendar's secret are yours, never shared defaults.
+4.  **Generate the secrets** in `.env`. Meet serves its external API on `meet.twake.local`, where the calendar creates the rooms of its events: the key that signs its tokens and the calendar's secret are yours, never shared defaults. Cozy and OnlyOffice sign their requests with `ONLYOFFICE_SECRET`. The stack does not start without them.
 
     ```bash
-    printf 'MEET_APPLICATION_JWT_SECRET_KEY=%s\nCALENDAR_MEET_CLIENT_SECRET=%s\n' \
-      "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" >> .env
+    printf 'MEET_APPLICATION_JWT_SECRET_KEY=%s\nCALENDAR_MEET_CLIENT_SECRET=%s\nONLYOFFICE_SECRET=%s\n' \
+      "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" >> .env
     ```
 
 5.  **Start the stack:**
@@ -121,7 +121,7 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     CERT_MODE=letsencrypt
     ```
 
-    Generate the Meet secrets as in step 4 of the local setup: on a public domain, anyone can reach Meet's external API.
+    Generate the secrets as in step 4 of the local setup: on a public domain, anyone can reach Meet's external API and OnlyOffice.
 
 3.  **Obtain a wildcard certificate via DNS-01.** HTTP-01 cannot issue wildcards. Install the certbot plugin for your DNS provider (`python3-certbot-dns-cloudflare`, `python3-certbot-dns-ovh`, `python3-certbot-dns-route53`, …) and run:
 

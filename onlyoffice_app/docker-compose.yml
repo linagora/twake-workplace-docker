@@ -15,7 +15,7 @@ services:
       - DB_PWD=onlyoffice
       - AMQP_URI=amqp://guest:guest@rabbitmq
       - JWT_ENABLED=true
-      - JWT_SECRET=secret
+      - JWT_SECRET=${ONLYOFFICE_SECRET:?set ONLYOFFICE_SECRET in .env}
       - USE_UNAUTHORIZED_STORAGE=true
       - USE_FORWARDED_HEADERS=true
       - ALLOW_META_IP_ADDRESS=true
