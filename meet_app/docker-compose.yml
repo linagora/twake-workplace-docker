@@ -41,7 +41,15 @@ services:
     command:
       - /bin/sh
       - -c
-      - python manage.py migrate --no-input && exec gunicorn -c /usr/local/etc/gunicorn/meet.py meet.wsgi:application
+      # The Application of calendar_app's side service, which creates the Meet
+      # rooms of the events through the external API (secret hashed on save)
+      - >-
+        python manage.py migrate --no-input &&
+        python manage.py shell -c "import os; from core.models import Application;
+        app, _ = Application.objects.get_or_create(client_id=os.environ['CALENDAR_APPLICATION_CLIENT_ID'],
+        defaults={'name': 'Twake Calendar', 'scopes': ['rooms:create', 'rooms:list', 'rooms:retrieve', 'rooms:update']});
+        app.client_secret = os.environ['CALENDAR_APPLICATION_CLIENT_SECRET']; app.save()" &&
+        exec gunicorn -c /usr/local/etc/gunicorn/meet.py meet.wsgi:application
     environment:
       DJANGO_CONFIGURATION: Production
       DJANGO_SETTINGS_MODULE: meet.settings
@@ -79,6 +87,13 @@ services:
       FRONTEND_IS_SILENT_LOGIN_ENABLED: True
       RECORDING_ENABLE: False
       ROOM_SUBTITLE_ENABLED: False
+
+      EXTERNAL_API_ENABLED: True
+      APPLICATION_JWT_SECRET_KEY: ThisIsAnExampleJwtKeyForDevPurposeOnly
+      APPLICATION_BASE_URL: https://meet.${BASE_DOMAIN}
+      # Same as meet.application.* in calendar_app/conf-side-service
+      CALENDAR_APPLICATION_CLIENT_ID: twake-calendar
+      CALENDAR_APPLICATION_CLIENT_SECRET: twake-calendar-secret
 
       OIDC_RP_CLIENT_ID: visio
       OIDC_RP_CLIENT_SECRET: visio-secret

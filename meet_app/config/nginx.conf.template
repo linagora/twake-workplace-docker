@@ -5,9 +5,9 @@ server {
 
   root /usr/share/nginx/html;
 
-  # API, Django admin and its static files go to the LaSuite Meet backend, as
-  # the staging ingress does.
-  location ~ ^/(api/|admin|static/) {
+  # API, external API, Django admin and its static files go to the LaSuite
+  # Meet backend, as the staging ingress does.
+  location ~ ^/(api/|external-api/|admin|static/) {
     proxy_pass http://visio-backend:8000;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Host $host;
