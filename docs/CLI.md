@@ -20,7 +20,7 @@ What's actually required, per command:
 
 | Command | Variables it reads | Tools |
 | --- | --- | --- |
-| `preflight` | `BASE_DOMAIN`, `LDAP_REST_ADMIN_TOKEN`, `COZY_ADMIN_PASSPHRASE`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD` (presence-only — preflight just verifies they're set) | `jq`, `curl`, `docker` |
+| `preflight` | `BASE_DOMAIN`, `LDAP_REST_ADMIN_TOKEN`, `COZY_ADMIN_PASSPHRASE`, `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `ONLYOFFICE_SECRET` (presence-only — preflight just verifies they're set) | `jq`, `curl`, `docker` |
 | `users add` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN` | `jq`, `curl` |
 | `users destroy` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN` | `jq`, `curl` |
 | `users ensure` | `LDAP_REST_ADMIN_TOKEN`, `BASE_DOMAIN`, `LDAP_BASE_DN` | `jq`, `curl` |
