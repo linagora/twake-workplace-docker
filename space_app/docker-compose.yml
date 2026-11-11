@@ -80,6 +80,9 @@ services:
       CSP_FRAME_SRC: "'self' https://*.${BASE_DOMAIN}"
       # Avatars of the common settings, served by each user's Cozy
       CSP_IMG_SRC: https://*.${BASE_DOMAIN}
+      # The platform top bar exchanges the SSO token on each person's Cozy
+      # (https://<workplaceFqdn>/auth/token_exchange)
+      CSP_CONNECT_SRC: https://*.${BASE_DOMAIN}
     labels:
       - "traefik.enable=true"
       # Above the router of the Cozy instances (*.${BASE_DOMAIN})
