@@ -71,7 +71,14 @@ The stack runs identically in two configurations: locally for evaluation, or on 
 
 3.  **Trust the self-signed CA** at [`twake_auth/traefik/ssl/root-ca.pem`](twake_auth/traefik/ssl/root-ca.pem) in your OS *and* browser trust stores. Trusting it in the browser alone is not enough — some iframes fail otherwise.
 
-4.  **Start the stack:**
+4.  **Generate the Meet secrets** in `.env`. Meet serves its external API on `meet.twake.local`, where the calendar creates the rooms of its events: the key that signs its tokens and the calendar's secret are yours, never shared defaults.
+
+    ```bash
+    printf 'MEET_APPLICATION_JWT_SECRET_KEY=%s\nCALENDAR_MEET_CLIENT_SECRET=%s\n' \
+      "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" >> .env
+    ```
+
+5.  **Start the stack:**
 
     ```bash
     ./wrapper.sh up -d
@@ -99,7 +106,7 @@ The stack runs identically in two configurations: locally for evaluation, or on 
 
     Some apps run from images that are not public yet, so they are off by default: list their profile in `COMPOSE_PROFILES` in `.env` to start them with their project. `mail-react` is the React Twake Mail on `mail-react.twake.local`, part of `tmail_app`. To show it in the Cozy Mail app instead of the Flutter one, which its Drive file picker needs, set `COZY_MAIL_APP_URL=https://mail-react.twake.local` in `.env`. `chat-react` is the React Twake Chat on `chat-react.twake.local`, part of `chat_app`. Its Drive picker and Mail composer need `COZY_CHAT_APP_URL=https://chat-react.twake.local` in `.env`, which leaves the Chat tile of the Cozy home empty (the React Chat refuses that frame).
 
-5.  **Open** `https://user1.twake.local` and log in with the demo credentials (see *Login & next steps*).
+6.  **Open** `https://user1.twake.local` and log in with the demo credentials (see *Login & next steps*).
 
 ### On a public domain (`mydomain.fr`)
 
@@ -113,6 +120,8 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     MAIL_DOMAIN=mydomain.fr
     CERT_MODE=letsencrypt
     ```
+
+    Generate the Meet secrets as in step 4 of the local setup: on a public domain, anyone can reach Meet's external API.
 
 3.  **Obtain a wildcard certificate via DNS-01.** HTTP-01 cannot issue wildcards. Install the certbot plugin for your DNS provider (`python3-certbot-dns-cloudflare`, `python3-certbot-dns-ovh`, `python3-certbot-dns-route53`, …) and run:
 

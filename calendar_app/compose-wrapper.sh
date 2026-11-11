@@ -14,7 +14,8 @@ set -euo pipefail
 if [ "$ACTION" = "up" ]; then
 # Process configuration
 echo "Processing configuration..."
-envsubst '$BASE_DOMAIN $MAIL_DOMAIN' < ./conf-side-service/configuration.properties.template > ./conf-side-service/configuration.properties
+: "${CALENDAR_MEET_CLIENT_SECRET:?set CALENDAR_MEET_CLIENT_SECRET in .env (openssl rand -hex 32)}"
+envsubst '$BASE_DOMAIN $MAIL_DOMAIN $CALENDAR_MEET_CLIENT_SECRET' < ./conf-side-service/configuration.properties.template > ./conf-side-service/configuration.properties
 envsubst '$BASE_DOMAIN' < ./frontend/account/openpaas.js.template > ./frontend/account/openpaas.js
 envsubst '$BASE_DOMAIN' < ./frontend/excal/env.js.template > ./frontend/excal/env.js
 envsubst '$BASE_DOMAIN' < ./frontend/contacts/env.js.template > ./frontend/contacts/env.js
