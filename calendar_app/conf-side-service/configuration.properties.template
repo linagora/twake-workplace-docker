@@ -62,7 +62,7 @@ twp.settings.enabled=true
 meet.enabled=true
 meet.external.api.base.url=https://meet.${BASE_DOMAIN}
 meet.application.client_id=twake-calendar
-meet.application.client_secret=twake-calendar-secret
+meet.application.client_secret=${CALENDAR_MEET_CLIENT_SECRET}
 
 # A team calendar for each space of Twake Space (space_app)
 twakespace.enabled=true

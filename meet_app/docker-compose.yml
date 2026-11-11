@@ -42,13 +42,16 @@ services:
       - /bin/sh
       - -c
       # The Application of calendar_app's side service, which creates the Meet
-      # rooms of the events through the external API (secret hashed on save)
+      # rooms of the events through the external API (secret hashed on save),
+      # acting only for the users of MAIL_DOMAIN
       - >-
         python manage.py migrate --no-input &&
-        python manage.py shell -c "import os; from core.models import Application;
+        python manage.py shell -c "import os; from core.models import Application, ApplicationDomain;
         app, _ = Application.objects.get_or_create(client_id=os.environ['CALENDAR_APPLICATION_CLIENT_ID'],
-        defaults={'name': 'Twake Calendar', 'scopes': ['rooms:create', 'rooms:list', 'rooms:retrieve', 'rooms:update']});
-        app.client_secret = os.environ['CALENDAR_APPLICATION_CLIENT_SECRET']; app.save()" &&
+        defaults={'name': 'Twake Calendar'});
+        app.scopes = ['rooms:create', 'rooms:list', 'rooms:retrieve', 'rooms:update'];
+        app.client_secret = os.environ['CALENDAR_APPLICATION_CLIENT_SECRET']; app.save();
+        ApplicationDomain.objects.get_or_create(application=app, domain=os.environ['CALENDAR_APPLICATION_DOMAIN'].lower())" &&
         exec gunicorn -c /usr/local/etc/gunicorn/meet.py meet.wsgi:application
     environment:
       DJANGO_CONFIGURATION: Production
@@ -89,11 +92,13 @@ services:
       ROOM_SUBTITLE_ENABLED: False
 
       EXTERNAL_API_ENABLED: True
-      APPLICATION_JWT_SECRET_KEY: ThisIsAnExampleJwtKeyForDevPurposeOnly
+      # Signs the tokens of the external API, which meet.${BASE_DOMAIN} serves
+      APPLICATION_JWT_SECRET_KEY: ${MEET_APPLICATION_JWT_SECRET_KEY:?set MEET_APPLICATION_JWT_SECRET_KEY in .env (openssl rand -hex 32)}
       APPLICATION_BASE_URL: https://meet.${BASE_DOMAIN}
       # Same as meet.application.* in calendar_app/conf-side-service
       CALENDAR_APPLICATION_CLIENT_ID: twake-calendar
-      CALENDAR_APPLICATION_CLIENT_SECRET: twake-calendar-secret
+      CALENDAR_APPLICATION_CLIENT_SECRET: ${CALENDAR_MEET_CLIENT_SECRET:?set CALENDAR_MEET_CLIENT_SECRET in .env (openssl rand -hex 32)}
+      CALENDAR_APPLICATION_DOMAIN: ${MAIL_DOMAIN}
 
       OIDC_RP_CLIENT_ID: visio
       OIDC_RP_CLIENT_SECRET: visio-secret
