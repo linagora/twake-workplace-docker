@@ -123,6 +123,8 @@ The stack runs identically in two configurations: locally for evaluation, or on 
 
     Generate the secrets as in step 4 of the local setup: on a public domain, anyone can reach Meet's external API and OnlyOffice.
 
+    Outgoing mail goes straight to the recipients' mail servers, which needs outbound port 25. To send it through a relay instead, set `MAIL_RELAY` to its `host` or `host:port` (no authentication).
+
 3.  **Obtain a wildcard certificate via DNS-01.** HTTP-01 cannot issue wildcards. Install the certbot plugin for your DNS provider (`python3-certbot-dns-cloudflare`, `python3-certbot-dns-ovh`, `python3-certbot-dns-route53`, …) and run:
 
     ```bash

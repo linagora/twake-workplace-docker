@@ -288,8 +288,7 @@
                 <deliveryThreads>10</deliveryThreads>
                 <sendpartial>true</sendpartial>
                 <bounceProcessor>bounces</bounceProcessor>
-                <gateway>202.123.27.104</gateway>
-                <gatewayPort>25</gatewayPort>
+                <gateway>${MAIL_RELAY}</gateway>
                 <debug>true</debug>
                 <startTLS>false</startTLS>
                 <heloName>smtps.${BASE_DOMAIN}</heloName>
