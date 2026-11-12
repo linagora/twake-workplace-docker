@@ -39,7 +39,23 @@ else
 fi
 export TOM_BRIDGE_AS_TOKEN TOM_BRIDGE_HS_TOKEN
 envsubst '$TOM_BRIDGE_AS_TOKEN $TOM_BRIDGE_HS_TOKEN $BASE_DOMAIN_REGEX' < ./tom-bridge/registration.yaml.template > ./tom-bridge/registration.yaml
-envsubst '$BASE_DOMAIN $LDAP_BASE_DN' < ./synapse/homeserver-postgres.yaml.template > ./synapse/homeserver-postgres.yaml
+# twake-chat-side-service gives Twake Chat its call tokens: Chat finds the
+# service in the well-known, and the service checks the callers' membership with
+# is_joined.
+envsubst '$TWAKE_CHAT_SIDE_SERVICE_AS_TOKEN $TWAKE_CHAT_SIDE_SERVICE_HS_TOKEN' < ./synapse/twake-chat-side-service-registration.yaml.template > ./synapse/twake-chat-side-service-registration.yaml
+export TWAKE_CHAT_SIDE_SERVICE_APPSERVICE="" TWAKE_CHAT_SIDE_SERVICE_CONFIG=""
+if [ -n "${TWAKE_CHAT_SIDE_SERVICE_AS_TOKEN:-}" ]; then
+  TWAKE_CHAT_SIDE_SERVICE_APPSERVICE="  - /config/twake-chat-side-service-registration.yaml"
+  TWAKE_CHAT_SIDE_SERVICE_CONFIG="experimental_features:
+  msc4502_enabled: true # is_joined for application services
+# livekit_base_url for Twake Chat Flutter, livekit_service_url (MSC4195) for the others
+extra_well_known_client_content:
+  org.matrix.msc4143.rtc_foci:
+    - type: livekit
+      livekit_base_url: https://matrix-rtc.${BASE_DOMAIN}
+      livekit_service_url: https://matrix-rtc.${BASE_DOMAIN}"
+fi
+envsubst '$BASE_DOMAIN $LDAP_BASE_DN $TWAKE_CHAT_SIDE_SERVICE_APPSERVICE $TWAKE_CHAT_SIDE_SERVICE_CONFIG' < ./synapse/homeserver-postgres.yaml.template > ./synapse/homeserver-postgres.yaml
 
 # Check if file was created
 if [ ! -f "./synapse/homeserver-postgres.yaml" ]; then
@@ -70,4 +86,13 @@ fi
 fi
 
 # Pass all arguments to docker compose
-sudo docker compose --env-file ../.env "$@"
+FILES=()
+if [ -n "${TWAKE_CHAT_SIDE_SERVICE_AS_TOKEN:-}" ]; then
+  FILES=(-f docker-compose.yaml -f docker-compose.side-service.yaml)
+  # Any -f turns off the automatic override file: keep it
+  for OVERRIDE in docker-compose.override.yml docker-compose.override.yaml; do
+    if [ -f "$OVERRIDE" ]; then FILES+=(-f "$OVERRIDE"); fi
+  done
+fi
+
+sudo docker compose --env-file ../.env "${FILES[@]}" "$@"
