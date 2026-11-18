@@ -58,11 +58,13 @@ for USER in user1 user2 user3; do
   } | ldapmodify -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW"
 done
 
-# Organization mode: every account belongs to ORGANIZATION_ID, exported as the
-# org_id OIDC claim (Twake Space and Twake Tasks refuse users without it).
-# user1 owns it.
-for USER in $(ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "ou=users,${LDAP_BASE_DN}" \
-    -s one -LLL uid | sed -n 's/^uid: //p'); do
+# Organization mode: the accounts whose uid starts with ORGANIZATION_ID belong
+# to it, exported as the org_id OIDC claim (Twake Space refuses users without
+# it); <ORGANIZATION_ID>1 owns it. The account named exactly ORGANIZATION_ID
+# holds the organization instance and is no member. Any other account is B2C
+# and left as it is.
+for USER in $( [ -z "$ORGANIZATION_ID" ] || ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" \
+    -b "ou=users,${LDAP_BASE_DN}" -s one -LLL "(&(uid=${ORGANIZATION_ID}*)(!(uid=${ORGANIZATION_ID})))" uid | sed -n 's/^uid: //p'); do
   DN="uid=${USER},ou=users,${LDAP_BASE_DN}"
   ENTRY=$(ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "$DN" -s base -LLL \
     objectClass twakeOrganizationId 2>/dev/null || true)
@@ -71,7 +73,7 @@ for USER in $(ldapsearch -x -H "$URI" -D "$BIND_DN" -w "$BIND_PW" -b "ou=users,$
     continue
   fi
   ROLE=member
-  [ "$USER" = user1 ] && ROLE=owner
+  [ "$USER" = "${ORGANIZATION_ID}1" ] && ROLE=owner
   echo "Putting $DN in the organization ${ORGANIZATION_ID} ($ROLE)"
   {
     echo "dn: $DN"
