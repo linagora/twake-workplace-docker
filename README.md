@@ -64,6 +64,10 @@ The stack runs identically in two configurations: locally for evaluation, or on 
     127.0.0.1  user1.twake.local user1-home.twake.local user1-linshare.twake.local user1-drive.twake.local user1-settings.twake.local user1-mail.twake.local user1-chat.twake.local user1-notes.twake.local user1-dataproxy.twake.local
     127.0.0.1  user2.twake.local user2-home.twake.local user2-linshare.twake.local user2-drive.twake.local user2-settings.twake.local user2-mail.twake.local user2-chat.twake.local user2-notes.twake.local user2-dataproxy.twake.local
     127.0.0.1  user3.twake.local user3-home.twake.local user3-linshare.twake.local user3-drive.twake.local user3-settings.twake.local user3-mail.twake.local user3-chat.twake.local user3-notes.twake.local user3-dataproxy.twake.local
+    127.0.0.1  twakedemo.twake.local twakedemo-home.twake.local twakedemo-drive.twake.local twakedemo-settings.twake.local twakedemo-notes.twake.local twakedemo-dataproxy.twake.local
+    127.0.0.1  twakedemo1.twake.local twakedemo1-home.twake.local twakedemo1-drive.twake.local twakedemo1-settings.twake.local twakedemo1-notes.twake.local twakedemo1-dataproxy.twake.local
+    127.0.0.1  twakedemo2.twake.local twakedemo2-home.twake.local twakedemo2-drive.twake.local twakedemo2-settings.twake.local twakedemo2-notes.twake.local twakedemo2-dataproxy.twake.local
+    127.0.0.1  twakedemo3.twake.local twakedemo3-home.twake.local twakedemo3-drive.twake.local twakedemo3-settings.twake.local twakedemo3-notes.twake.local twakedemo3-dataproxy.twake.local
     127.0.0.1  chat.twake.local matrix.twake.local tom.twake.local fed.twake.local traefik.twake.local calendar-ng.twake.local livekit.twake.local docs.twake.local grist.twake.local tasks.twake.local chat-react.twake.local space.twake.local
     ```
 
@@ -166,7 +170,15 @@ Three demo accounts are seeded into the local LDAP:
 | `https://user2.twake.local` | `user2` | `user2`  |
 | `https://user3.twake.local` | `user3` | `user3`  |
 
-Every account belongs to one organization, `ORGANIZATION_ID` in `.env` (`twake-demo` by default), with `user1` as its owner. Each `up` puts accounts created since, for instance with `scripts/twake users add`, in it as members. LemonLDAP keeps it in the `organizationId` and `organizationRole` session attributes, for the OIDC clients that ask for them (as `org_id` and `org_role`).
+These three accounts are B2C: they belong to no organization, so they have Drive and Twake Tasks but not Twake Space. The demo organization, twakeDemo (`ORGANIZATION_ID` in `.env`, `twakedemo` by default), has three accounts of its own, created by `scripts/seed-organization.sh` once the stack is up:
+
+| Workspace                        | Login        | Password     |
+| :------------------------------- | :----------- | :----------- |
+| `https://twakedemo1.twake.local` | `twakedemo1` | `twakedemo1` |
+| `https://twakedemo2.twake.local` | `twakedemo2` | `twakedemo2` |
+| `https://twakedemo3.twake.local` | `twakedemo3` | `twakedemo3` |
+
+How to add a B2C account or a member of the organization, and what changes for a stack provisioned before: [`docs/organizations.md`](docs/organizations.md).
 
 For deeper operational topics, see the operator docs:
 

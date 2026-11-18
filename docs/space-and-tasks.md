@@ -8,17 +8,20 @@ an overlay frame over the whole page for the app's windows and dialogs.
 
 ```bash
 ./wrapper.sh up --space -d                  # pulls in tasks, mail, chat, calendar, meet, auth, db
-space_app/seed-space.sh "Demo"              # user1 admin, user2 editor
-space_app/seed-space.sh "Roadmap" user2 user1 user3
+scripts/seed-organization.sh                # the twakeDemo organization and its accounts
+space_app/seed-space.sh "Demo"              # twakedemo1 admin, twakedemo2 editor
+space_app/seed-space.sh "Roadmap" twakedemo2 twakedemo1 twakedemo3
 ```
 
 ## Organization mode
 
-Twake Space and Twake Tasks refuse a user without an organization (the
-`org_id` claim, HTTP 403).
+Twake Space refuses a user without an organization (the `org_id` claim, HTTP
+403). Twake Tasks takes one as a B2C user. user1, user2 and user3 are B2C, so
+the spaces are seeded with the accounts of the demo organization.
 
-- LDAP: `ldap-ensure` puts every account in `ORGANIZATION_ID` (`.env`,
-  `twake-demo` by default), user1 as its owner (see the README).
+- LDAP: `ldap-ensure` puts the accounts whose uid starts with
+  `ORGANIZATION_ID` (`.env`, `twakedemo` by default) in it, twakedemo1 as its
+  owner (see [organizations.md](organizations.md)).
 - LemonLDAP exports it as `org_id` and `org_role`, and `entryUUID` as `uuid`,
   to the public clients `twakespace` and `twaketasks`. Their backends introspect
   the tokens with the confidential clients `twakespace-backend` and
