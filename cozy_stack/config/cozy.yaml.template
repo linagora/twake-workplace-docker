@@ -232,7 +232,8 @@ jobs:
     # push:     false
     # sms:      false
     # sendmail: false
-    share-group:     false
+    # share-group stays on: it carries a group membership change to the
+    # sharings of that group, such as an organization's shared drives.
     share-replicate: false
     share-track:     false
     share-upload:    false
@@ -594,6 +595,8 @@ contexts:
   # cozy_stack/config/default-flags.yaml (or the matching *.local.yaml
   # override). See docs/cozy-defaults.md.
   default:
+    # COZY_CENTRALIZED_ORG_DIRECTORY in ../.env, see docs/organizations.md.
+    centralized_org_directory: {{ .Env.COZY_CENTRALIZED_ORG_DIRECTORY }}
     sharing:
 __DEFAULT_SHARING__
     features:
@@ -645,3 +648,18 @@ rabbitmq:
           delivery_limit: 5
           bindings:
             - domain.user.deleted
+        - name: stack.b2b.group.lifecycle
+          declare: true
+          declare_dlx: true
+          declare_dlq: true
+          dlx_name: stack.b2b.dlx
+          dlq_name: stack.dead.letter.b2b.group.lifecycle
+          dl_routing_key: b2b.group.dead
+          prefetch: 8
+          delivery_limit: 5
+          bindings:
+            - b2b.group.created
+            - b2b.group.updated
+            - b2b.group.deleted
+            - b2b.group.member.added
+            - b2b.group.member.removed

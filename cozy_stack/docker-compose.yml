@@ -1,6 +1,6 @@
 services:
   cozy-stack:
-    image: cozy/cozy-stack:1.6.64
+    image: cozy/cozy-stack:1.6.71
     platform: linux/amd64
     container_name: cozyt
     restart: unless-stopped
@@ -21,9 +21,16 @@ services:
       INBOX_SECRET: ${ONLYOFFICE_SECRET:?set ONLYOFFICE_SECRET in .env}
       OUTBOX_SECRET: ${ONLYOFFICE_SECRET:?set ONLYOFFICE_SECRET in .env}
       SAFE_HTTP_TRUSTED_PRIVATE_NETWORKS: ${SAFE_HTTP_TRUSTED_PRIVATE_NETWORKS:-}
+      COZY_CENTRALIZED_ORG_DIRECTORY: ${COZY_CENTRALIZED_ORG_DIRECTORY:-true}
       COMMON_SETTINGS_API_KEY: ${COMMON_SETTINGS_API_KEY}
+    # The demo organization's instances share drives with each other: their
+    # names must reach Traefik, not the host's loopback.
     extra_hosts:
       - "auth.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}1.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}2.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}3.${BASE_DOMAIN}:172.27.0.100"
     volumes:
       - cozy-data:/var/lib/cozy/
       - ./config/docker-entrypoint.sh:/usr/local/bin/docker-entrypoint.sh
