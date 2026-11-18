@@ -10,9 +10,10 @@
 #      mailbox of the team mailbox: the Mail tab frames its facade.
 #
 # Usage: ./seed-space.sh "Space name" [admin [member...]]
-#   ./seed-space.sh "Demo"                  # user1 admin, user2 editor
-#   ./seed-space.sh "Roadmap" user2 user1 user3
-# The demo users must be in the organization (ldap-ensure, ORGANIZATION_ID).
+#   ./seed-space.sh "Demo"                  # twakedemo1 admin, twakedemo2 editor
+#   ./seed-space.sh "Roadmap" twakedemo2 twakedemo1 twakedemo3
+# The users must be in the organization (ORGANIZATION_ID, see
+# scripts/seed-organization.sh): Twake Space refuses the B2C accounts.
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -23,7 +24,7 @@ set +a
 
 NAME="${1:?Usage: $0 \"Space name\" [admin [member...]]}"
 shift
-[ $# -gt 0 ] || set -- user1 user2
+[ $# -gt 0 ] || set -- "${ORGANIZATION_ID}1" "${ORGANIZATION_ID}2"
 ADMIN=$1
 shift
 MEMBERS=("$@")
