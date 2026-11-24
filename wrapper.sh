@@ -62,7 +62,7 @@ declare -A REPO_REQUIRES
 REPO_REQUIRES=(
     ["twake_auth"]="twake_db"
     ["cozy_stack"]="twake_auth"
-    ["meet_app"]="twake_auth"
+    ["meet_app"]="twake_auth cozy_stack"
     ["chat_app"]="twake_auth"
     ["calendar_app"]="twake_auth tmail_app meet_app"
     ["tmail_app"]="twake_auth"
@@ -81,6 +81,8 @@ REPO_REQUIRES=(
 #   - cozy_stack: confidential client (IDCOZY) with disable_password_authentication=true,
 #     so OIDC is the only login path.
 #   - meet_app: confidential client (visio) — exchanges code with client_secret server-side.
+#     Its one-shot meet-bucket job also needs twake_db's minio up, or the
+#     backend never starts.
 #   - tmail_app, calendar_app: public clients with lazy introspection, gated as a
 #     precaution so the first login is never racing the IdP startup.
 # onlyoffice_app gated on its backing services (both live in twake_db, so they
@@ -107,7 +109,7 @@ REPO_DEPS=(
     ["onlyoffice_app"]="postgres rabbitmq"
     ["chat_app"]="lemonldap-ng"
     ["cozy_stack"]="lemonldap-ng"
-    ["meet_app"]="lemonldap-ng"
+    ["meet_app"]="lemonldap-ng minio"
     ["tmail_app"]="lemonldap-ng"
     ["calendar_app"]="lemonldap-ng mongodb rabbitmq opensearch"
     ["docs_app"]="lemonldap-ng postgres visio-valkey minio"

@@ -413,7 +413,8 @@
          "email" : "mail",
          "name" : "cn",
          "oidc_state" : "state",
-         "preferred_username" : "uid"
+         "preferred_username" : "uid",
+         "workplaceFqdn" : "workplaceFqdn"
       },
       "docs" : {
          "email" : "mail",
