@@ -20,8 +20,8 @@ token of the call. Its own deployment guide:
 - The AS token lets the service act as any user of Synapse: keep it as secret as
   an admin token.
 - `TWAKE_CHAT_SIDE_SERVICE_IMAGE` replaces the image, such as with a local build.
-- The Meet of `meet_app` is the upstream `lasuite/meet-backend`, which has no
-  `livekit-token/` route: the service answers 502 until the Meet fork is deployed.
+- The Meet of `meet_app` is LinTO's fork (`ghcr.io/linto-ai/meet-backend`),
+  which has the `livekit-token/` route.
 - On a running stack, after changing these settings: `./compose-wrapper.sh up -d`
   in `chat_app` (it renders the Synapse configuration, creates the service and
   recreates chat-react when its profile is on), then

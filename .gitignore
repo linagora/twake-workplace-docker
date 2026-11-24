@@ -12,6 +12,8 @@ tmail_app/tmail-web-conf/.env
 tmail_app/tmail-web-react/env.js
 meet_app/config/nginx.conf
 meet_app/config/livekit.yaml
+meet_app/config/root-ca.crt
+meet_app/drive-token/__pycache__/
 docs_app/config/nginx.conf
 linshare_app/config/backend/linshare.extra.properties
 linshare_app/config/user-ui/config.js

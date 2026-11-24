@@ -20,6 +20,13 @@ keys:
 #  <LIVEKIT_API_KEY>: <LIVEKIT_API_SECRET>
   9f3b2c7a8e6d4f1c: 6a9d0a3f5e4b8c2f9a7d6e3c1b4f8a2e
 
+# Tells the backend when a recording starts and stops, which the frontend's
+# recording state follows. Sent through the frontend's nginx, which marks it
+# https: the backend redirects plain http.
+webhook:
+  api_key: 9f3b2c7a8e6d4f1c
+  urls:
+    - http://visio-frontend:8080/api/v1.0/rooms/webhooks-livekit/
 
 
 redis:

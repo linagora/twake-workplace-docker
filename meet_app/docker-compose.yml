@@ -28,16 +28,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # Same versions as the dev environment (twake-workplace-cozy-apps, chart
-  # meet/meet 0.0.17): LaSuite Meet backend v1.28.0 and LinTO frontend v1.19.
-  # Transcription, summary and recording are disabled.
+  # LinTO's fork of Meet, which uploads the screen recordings to the owner's
+  # Drive. Transcription and summary are disabled.
   backend:
-    image: lasuite/meet-backend:v1.28.0
+    image: ghcr.io/linto-ai/meet-backend:v1.42
     container_name: visio-backend
     platform: linux/amd64
-    # The image USER ("1001:127:-1000") is not a valid docker user spec, which
-    # breaks docker exec and the healthcheck.
-    user: "1001:127"
     command:
       - /bin/sh
       - -c
@@ -53,17 +49,18 @@ services:
         app.client_secret = os.environ['CALENDAR_APPLICATION_CLIENT_SECRET']; app.save();
         ApplicationDomain.objects.get_or_create(application=app, domain=os.environ['CALENDAR_APPLICATION_DOMAIN'].lower())" &&
         exec gunicorn -c /usr/local/etc/gunicorn/meet.py meet.wsgi:application
-    environment:
+    environment: &backend-environment
       DJANGO_CONFIGURATION: Production
       DJANGO_SETTINGS_MODULE: meet.settings
       DJANGO_SILENCED_SYSTEM_CHECKS: security.W004, security.W008
       DJANGO_SECRET_KEY: ThisIsAnExampleKeyForDevPurposeOnly
-      DJANGO_ALLOWED_HOSTS: meet.${BASE_DOMAIN},visio-backend,localhost
-      ALLOWED_HOSTS: meet.${BASE_DOMAIN},visio-backend,localhost
+      DJANGO_ALLOWED_HOSTS: meet.${BASE_DOMAIN},visio-backend,visio-frontend,localhost
+      ALLOWED_HOSTS: meet.${BASE_DOMAIN},visio-backend,visio-frontend,localhost
       DJANGO_CSRF_TRUSTED_ORIGINS: https://meet.${BASE_DOMAIN}
       REDIS_URL: redis://:valkeypass@valkey:6379/1
-      DJANGO_EMAIL_HOST: "mailcatcher"
-      DJANGO_EMAIL_PORT: 1025
+      DJANGO_EMAIL_HOST: tmail-backend
+      DJANGO_EMAIL_PORT: 25
+      DJANGO_EMAIL_FROM: noreply@${MAIL_DOMAIN}
       DJANGO_EMAIL_DOMAIN: meet.${BASE_DOMAIN}
       DJANGO_EMAIL_APP_BASE_URL: https://meet.${BASE_DOMAIN}
 
@@ -88,8 +85,29 @@ services:
       FRONTEND_USE_FRENCH_GOV_FOOTER: False
       FRONTEND_USE_PROCONNECT_BUTTON: False
       FRONTEND_IS_SILENT_LOGIN_ENABLED: True
-      RECORDING_ENABLE: False
       ROOM_SUBTITLE_ENABLED: False
+
+      # LiveKit egress writes the recording to the bucket, the celery beat
+      # polls the bucket for it, then the worker uploads it to the owner's
+      # Drive (Meetings folder) and emails them.
+      RECORDING_ENABLE: True
+      RECORDING_WORKER_CLASSES: '{"screen_recording":"core.recording.worker.services.VideoCompositeEgressService"}'
+      RECORDING_STORAGE_POLLING_ENABLED: True
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+      AWS_S3_ACCESS_KEY_ID: vW9xY2zA5bC8dE1fG4hJ3kL
+      AWS_S3_SECRET_ACCESS_KEY: hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL
+      AWS_S3_REGION_NAME: us-east-1
+      AWS_STORAGE_BUCKET_NAME: meet-media-storage
+      CELERY_ENABLED: True
+      CELERY_BROKER_URL: redis://:valkeypass@valkey:6379/2
+      # drive-token stands in for the Cloudery; the instance comes from the
+      # workplaceFqdn claim LemonLDAP sends.
+      CLOUDERY_URL: http://meet-drive-token:8080
+      CLOUDERY_TOKEN: meet-drive-token-dev
+      OIDC_USERINFO_TWAKE_INSTANCE_FIELD: workplaceFqdn
+      TWAKE_INSTANCE_DOMAIN: ${BASE_DOMAIN}
+      # The Drive upload (aiohttp) checks the instance certificate.
+      SSL_CERT_FILE: /etc/ssl/certs/root-ca.crt
 
       EXTERNAL_API_ENABLED: True
       # Signs the tokens of the external API, which meet.${BASE_DOMAIN} serves
@@ -116,9 +134,20 @@ services:
       LOGIN_REDIRECT_URL_FAILURE: /
       LOGOUT_REDIRECT_URL: /
     restart: always
-    extra_hosts:
+    # The Drive instances of the users and of the demo organization, as in
+    # cozy_stack.
+    extra_hosts: &backend-extra-hosts
       - "auth.${BASE_DOMAIN}:172.27.0.100"
       - "livekit.${BASE_DOMAIN}:172.27.0.100"
+      - "user1.${BASE_DOMAIN}:172.27.0.100"
+      - "user2.${BASE_DOMAIN}:172.27.0.100"
+      - "user3.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}1.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}2.${BASE_DOMAIN}:172.27.0.100"
+      - "${ORGANIZATION_ID}3.${BASE_DOMAIN}:172.27.0.100"
+    volumes: &backend-volumes
+      - ./config/root-ca.crt:/etc/ssl/certs/root-ca.crt:ro
     labels:
       - "traefik.enable=false"
     networks:
@@ -126,6 +155,8 @@ services:
     depends_on:
       livekit:
         condition: service_healthy
+      meet-bucket:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen(urllib.request.Request('http://localhost:8000/api/v1.0/config/', headers={'X-Forwarded-Proto': 'https'}))\" || exit 1"]
       interval: 10s
@@ -133,8 +164,78 @@ services:
       retries: 6
       start_period: 30s
 
+  # Runs the recording tasks, and the beat that polls the bucket for finished
+  # recordings.
+  celery:
+    image: ghcr.io/linto-ai/meet-backend:v1.42
+    container_name: visio-celery
+    platform: linux/amd64
+    command: ["celery", "-A", "meet.celery_app", "worker", "--beat", "-l", "INFO", "--pool=solo"]
+    environment: *backend-environment
+    extra_hosts: *backend-extra-hosts
+    volumes: *backend-volumes
+    restart: always
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  egress:
+    image: livekit/egress:v1.15.0
+    container_name: visio-egress
+    platform: linux/amd64
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - ./config/egress.yaml:/etc/egress.yaml:ro
+    # Chrome's sandbox, which renders the room composite.
+    cap_add:
+      - SYS_ADMIN
+    restart: always
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+    depends_on:
+      livekit:
+        condition: service_healthy
+
+  meet-bucket:
+    image: bitnamilegacy/minio:2025.4.22
+    container_name: visio-bucket
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        mc alias set twake http://minio:9000 vW9xY2zA5bC8dE1fG4hJ3kL hJ6kL9mN2pQ5rS8tU1vW4xY7zA0bC3dE6fG9hJ2kL &&
+        mc mb --ignore-existing twake/meet-media-storage
+    restart: "no"
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
+  meet-drive-token:
+    image: python:3.13-alpine
+    container_name: visio-drive-token
+    command: ["python", "/app/server.py"]
+    environment:
+      COZY_ADMIN_URL: http://cozyt:6060
+      COZY_ADMIN_PASSPHRASE: ${COZY_ADMIN_PASSPHRASE:-admin}
+      DRIVE_TOKEN_SECRET: meet-drive-token-dev
+      BASE_DOMAIN: ${BASE_DOMAIN}
+    volumes:
+      - ./drive-token/server.py:/app/server.py:ro
+    restart: always
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - twake-network
+
   frontend:
-    image: ghcr.io/linto-ai/meet-frontend:v1.19
+    image: ghcr.io/linto-ai/meet-frontend:v1.42
     container_name: visio-frontend
     platform: linux/amd64
     depends_on:

@@ -9,4 +9,5 @@
 | Cozy default context settings         | [cozy-defaults.md](cozy-defaults.md)  |
 | Day-to-day commands and debugging     | [cookbook.md](cookbook.md)            |
 | `twake` CLI reference                 | [CLI.md](CLI.md)                      |
+| Meet recordings in the Drive          | [meet-recording.md](meet-recording.md) |
 | Operator helper scripts               | [../scripts/README.md](../scripts/README.md) |
