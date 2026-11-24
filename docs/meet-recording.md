@@ -31,6 +31,7 @@ sequenceDiagram
 
 ## What it needs
 
+- `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` in `.env`. LiveKit, the Meet backend and egress all read them from there.
 - `cozy_stack` and twake_db's MinIO. `./wrapper.sh up --meet` starts them.
 - `tmail_app` for the email. Without it the MP4 still reaches the Drive, but the recording ends as `notification_failed`.
 - The user's instance must resolve from `visio-backend` and `visio-celery`. Their `extra_hosts` list user1 to user3 and the demo organization's instances. A user added later needs a line there.
