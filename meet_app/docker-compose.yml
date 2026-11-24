@@ -74,8 +74,8 @@ services:
 
       # Browsers and the backend both use this URL: traefik routes it to
       # LiveKit (signaling), media goes over UDP 7881 (see livekit.yaml).
-      LIVEKIT_API_KEY: 9f3b2c7a8e6d4f1c
-      LIVEKIT_API_SECRET: 6a9d0a3f5e4b8c2f9a7d6e3c1b4f8a2e
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:?set LIVEKIT_API_KEY in .env (openssl rand -hex 16)}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in .env (openssl rand -hex 32)}
       LIVEKIT_API_URL: https://livekit.${BASE_DOMAIN}
       LIVEKIT_VERIFY_SSL: False
       ALLOW_UNREGISTERED_ROOMS: False
@@ -188,9 +188,17 @@ services:
     container_name: visio-egress
     platform: linux/amd64
     environment:
-      EGRESS_CONFIG_FILE: /etc/egress.yaml
-    volumes:
-      - ./config/egress.yaml:/etc/egress.yaml:ro
+      EGRESS_CONFIG_BODY: |
+        api_key: ${LIVEKIT_API_KEY:?set LIVEKIT_API_KEY in .env}
+        api_secret: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in .env}
+        ws_url: ws://livekit:7880
+        # Lets the recorder's Chrome join over ws:// from the https composite template.
+        insecure: true
+        redis:
+          address: valkey:6379
+          password: valkeypass
+        health_port: 9090
+        log_level: info
     # Chrome's sandbox, which renders the room composite.
     cap_add:
       - SYS_ADMIN
