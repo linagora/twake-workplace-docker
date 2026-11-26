@@ -111,7 +111,7 @@ services:
   docs-celery:
     image: lasuite/impress-backend:v5.7.0
     container_name: docs-celery
-    command: ["celery", "-A", "impress.celery_app", "worker", "-l", "INFO"]
+    command: ["celery", "-A", "impress.celery_app", "worker", "-l", "INFO", "--pool=solo"]
     environment: *docs-backend-env
     restart: unless-stopped
     extra_hosts:
