@@ -14,6 +14,7 @@ services:
     environment:
       - discovery.type=single-node
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx768m
+      - DISABLE_PERFORMANCE_ANALYZER_AGENT_CLI=true
       - cluster.name=opensearch
       - DISABLE_SECURITY_PLUGIN=true
       - DISABLE_INSTALL_DEMO_CONFIG=true
@@ -115,9 +116,9 @@ services:
       - "traefik.http.middlewares.lemonldap-host.headers.customRequestHeaders.Host=jmap.${BASE_DOMAIN}"
     environment:
       - JAVA_TOOL_OPTIONS=
-        -Xms2000m
+        -Xms256m
         -Xmx2000m
-        -XX:+AlwaysPreTouch
+        -XX:G1PeriodicGCInterval=300000
         -XX:+ExitOnOutOfMemoryError
         -Xlog:gc*:file=/root/gc.log
         -XX:MaxGCPauseMillis=20
