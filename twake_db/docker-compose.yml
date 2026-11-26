@@ -126,7 +126,7 @@ services:
       - mongodb_data:/data/db
     #ports:
       #- "27017:27017"
-    command: [ "mongod", "--bind_ip", "0.0.0.0" ]
+    command: [ "mongod", "--bind_ip", "0.0.0.0", "--wiredTigerCacheSizeGB", "0.25" ]
     healthcheck:
       test:
         [
@@ -232,8 +232,8 @@ services:
       CASSANDRA_PASSWORD: jK9mL2nP5qR8tW3vX
       CASSANDRA_PASSWORD_SEEDER: yes
       JAVA_TOOL_OPTIONS: -Dcassandra.skip_wait_for_gossip_to_settle=0
-      HEAP_NEWSIZE: 256M
-      MAX_HEAP_SIZE: 1024M
+      HEAP_NEWSIZE: 128M
+      MAX_HEAP_SIZE: 512M
  
     volumes:
       - cassandra_data:/bitnami/cassandra
