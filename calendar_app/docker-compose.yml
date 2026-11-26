@@ -30,6 +30,8 @@ services:
     platform: linux/amd64
     hostname: tcalendar-side-service.${BASE_DOMAIN}
     restart: unless-stopped
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx768m
     networks:
       - twake-network
     volumes:
