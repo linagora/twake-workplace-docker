@@ -163,7 +163,7 @@
    "corsEnabled" : 1,
    "corsExpose_Headers" : "*",
    "corsMax_Age" : "86400",
-   "crowdSecAgentResponseCode" : "",
+   "crowdSecAgentResponseCode" : 404,
    "crowdsec" : 0,
    "crowdsecAction" : "reject",
    "crowdsecAgent" : 0,
